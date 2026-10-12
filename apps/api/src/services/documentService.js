@@ -3,6 +3,7 @@ import { DocumentAnalysisSchema, DocumentSchema, DOCUMENT_MIME_TYPES, MAX_DOCUME
 import { ApiError } from '../middleware/errorHandler.js';
 import { requestValidatedAI } from './providerRequest.js';
 import { calculateDelayMinutes, documentVerified } from './documentValidationService.js';
+import { calculateStay } from '../../../../shared/hospitalization.js';
 export { calculateDelayMinutes, documentVerified } from './documentValidationService.js';
 
 function matchesSignature(bytes, mime) {
@@ -32,9 +33,15 @@ export async function parseUpload(req) {
 export async function analyzeDocument(upload, { provider, config, signal }) {
   if (!provider.analyzeDocument) throw new ApiError('DOCUMENT_INTELLIGENCE_NOT_AVAILABLE', '目前僅支援示範文件流程，真實文件辨識尚未開放。', 501, false);
   const analysis = await requestValidatedAI(async combined => DocumentAnalysisSchema.parse(await provider.analyzeDocument(upload, combined)), { config, signal });
-  if (analysis.documentType === 'unknown') throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇清晰的登機證或延誤證明。', 422, true);
+  if (analysis.documentType === 'unknown') throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇清晰且符合服務需求的文件。', 422, true);
   const fields = { ...analysis.fields };
   if (analysis.documentType === 'delay_certificate') fields.delayMinutes = calculateDelayMinutes(fields);
+  if (analysis.documentType === 'diagnosis_certificate') {
+    const stay = calculateStay(fields);
+    fields.inpatientDays = stay.days; fields.inpatientDaysSource = stay.source;
+    fields.diagnosis = null; // Clinical details are unnecessary for service navigation.
+  }
   const verified = documentVerified({ ...analysis, fields }, config.journeyConfidenceThreshold);
-  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
+  const medical = ['diagnosis_certificate', 'bank_passbook'].includes(analysis.documentType);
+  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
 }

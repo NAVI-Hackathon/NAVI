@@ -11,7 +11,7 @@ export function validateGroundedAnswer(raw, context) {
     if (data.sourceIds.length || data.answer !== INSUFFICIENT_ANSWER) throw new ApiError('AI_RESPONSE_INVALID', '回答缺少可靠依據。');
     return data;
   }
-  const pieces = [{ text: context.answer, sourceIds: context.sourceIds }, ...context.sources.map(source => ({ text: source.content, sourceIds: [source.id] }))];
+  const pieces = [{ text: context.answer, sourceIds: context.sourceIds }, ...context.sources.flatMap(source => [source.content, ...source.content.split('\n')].map(text => ({ text, sourceIds: [source.id] })))];
   const selected = data.answer.split(/\n+/).map(text => pieces.find(piece => piece.text === text.trim()));
   const sourceIds = [...new Set(data.sourceIds)];
   // ponytail: extractive answers only; allow free paraphrase once claim-level grounding has evaluations.
@@ -25,12 +25,12 @@ export async function answerKnowledge(question, { provider, config, signal }) {
     if (!provider.answerKnowledge) throw new ApiError('AI_GENERATION_UNAVAILABLE', '目前無法產生說明。');
     const result = await requestValidatedAI(async combined => validateGroundedAnswer(await provider.answerKnowledge(question, context, combined), context), { config, signal });
     if (!result.supported) return insufficient();
-    return { answer: result.answer, confidence: result.confidence, sources: getSources(result.sourceIds), supported: true, isMock: true, answerMode: provider.mode === 'demo' ? 'demo' : 'grounded_extract' };
+    return { answer: result.answer, confidence: result.confidence, sources: getSources(result.sourceIds), supported: true, isMock: context.isMock !== false, answerMode: provider.mode === 'demo' ? 'demo' : 'grounded_extract' };
   } catch (error) {
     if (['AI_RATE_LIMITED', 'AI_REQUEST_BUDGET_REACHED', 'FREE_TIER_NOT_CONFIRMED', 'LIVE_AI_DISABLED_IN_CI', 'PAID_AI_DISABLED'].includes(error.code)) throw error;
     if (signal?.aborted || error.code === 'REQUEST_CANCELLED' || !(error instanceof ApiError)) throw error;
     // Non-critical wording can fall back to the actual retrieved template, never to demo facts.
     provider.recordFallback?.('knowledge');
-    return { answer: context.answer, confidence: 0, sources: getSources(context.sourceIds), supported: true, isMock: true, answerMode: 'retrieval_template' };
+    return { answer: context.answer, confidence: 0, sources: getSources(context.sourceIds), supported: true, isMock: context.isMock !== false, answerMode: 'retrieval_template' };
   }
 }

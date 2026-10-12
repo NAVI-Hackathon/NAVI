@@ -1,0 +1,10 @@
+{
+  "diagnosis_certificate": {
+    "confidence": 0.97,
+    "fields": { "patientName": "NAVI SYNTHETIC PATIENT", "hospitalName": "臺中榮民總醫院", "admissionDate": "2026-10-01", "dischargeDate": "2026-10-05", "diagnosis": null, "certificateKind": "diagnosis_certificate", "reportedInpatientDays": null }
+  },
+  "bank_passbook": {
+    "confidence": 0.97,
+    "fields": { "accountHolder": "NAVI SYNTHETIC PATIENT", "bankName": "NAVI 示範銀行", "accountLast4": "1234" }
+  }
+}

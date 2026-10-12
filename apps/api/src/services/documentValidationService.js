@@ -1,3 +1,4 @@
+import { calculateStay } from '../../../../shared/hospitalization.js';
 const clock = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export function calculateDelayMinutes(fields) {
   const { scheduledDeparture, actualDeparture, departureDate, actualDepartureDate } = fields;
@@ -20,6 +21,8 @@ export function documentVerified(document, threshold) {
   const fields = document.fields;
   const sufficient = document.documentType === 'boarding_pass'
     ? Boolean(fields.flightNumber || (fields.origin && fields.destination))
-    : document.documentType === 'delay_certificate' && calculateDelayMinutes(fields) !== null;
+    : document.documentType === 'delay_certificate' ? calculateDelayMinutes(fields) !== null
+      : document.documentType === 'diagnosis_certificate' ? Boolean(fields.patientName && fields.hospitalName && calculateStay(fields).days !== null && (!fields.admissionDate || !fields.dischargeDate || !fields.reportedInpatientDays || calculateStay(fields).days === fields.reportedInpatientDays))
+        : document.documentType === 'bank_passbook' && Boolean(fields.accountHolder && fields.bankName && /^\d{4}$/.test(fields.accountLast4 ?? ''));
   return Boolean(sufficient && document.confidence >= threshold);
 }

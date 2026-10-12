@@ -1,6 +1,10 @@
 // Valid single-page PDFs with synthetic facts only; no passenger PII or airline assets.
 export function samplePdf(documentType) {
-  const lines = documentType === 'boarding_pass'
+  const lines = documentType === 'diagnosis_certificate'
+    ? ['NAVI SYNTHETIC HOSPITALIZATION PROOF', 'NOT A VALID MEDICAL DOCUMENT', 'Hospital: NAVI SYNTHETIC HOSPITAL', 'Patient: NAVI SYNTHETIC PATIENT', 'Admission: 2026-10-01', 'Discharge: 2026-10-05']
+    : documentType === 'bank_passbook'
+      ? ['NAVI SYNTHETIC BANK PASSBOOK', 'NOT A VALID BANK DOCUMENT', 'Bank: NAVI SYNTHETIC BANK', 'Holder: NAVI SYNTHETIC PATIENT', 'Account: ****1234']
+    : documentType === 'boarding_pass'
     ? ['NAVI TEST - BOARDING PASS', 'SYNTHETIC SAMPLE - NOT VALID FOR TRAVEL', 'Passenger: NAVI TEST PASSENGER', 'Flight: BR 196', 'From: NRT (Tokyo)', 'To: TPE (Taipei)', 'Departure date: 2026-10-07', 'Scheduled departure: 14:20']
     : ['NAVI TEST - AIRLINE DELAY CERTIFICATE', 'SYNTHETIC SAMPLE - NOT AN OFFICIAL DOCUMENT', 'Flight: BR 196', 'From: NRT (Tokyo)', 'To: TPE (Taipei)', 'Departure date: 2026-10-07', 'Actual departure date: 2026-10-07', 'Scheduled departure: 14:20', 'Actual departure: 21:43'];
   const escape = value => value.replace(/[\\()]/g, '\\$&');

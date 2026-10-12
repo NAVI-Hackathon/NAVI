@@ -43,7 +43,7 @@ npm run dev:navi
 
 **Developer B Phase 2 已完成 Backend AI 整合；Phase 3 已加入零成本防護與本地評估**。`dev`／`dev:navi`／`dev:all`／`dev:api` 一律以 Demo 啟動，不受舊 `.env` 的 `AI_MODE=live` 影響，也不送出 Gemini 請求。Free Tier 設定確認後，需人工執行 `npm run dev:live` 才啟用真實 Intent、文件抽取、JSON grounded knowledge 與 server-owned Journey。Live 失敗不會偷偷轉 Demo。
 
-**目前住院工作區使用 Mock 文件與瀏覽器 workflow**；一般模式的入口 Intent 使用 Backend API，依明確啟動模式區分 Demo／Live；`/demo` 則完全使用本地 Mock Adapter。Backend 完整文件與 server-owned Journey API 目前只支援班機延誤，尚未接入住院工作區。[完整 Backend Phase 2 文件](docs/backend-ai-phase-2.md)包含契約、設定、實測與限制。
+**目前住院工作區仍使用 Mock 文件與瀏覽器 workflow**；一般模式的入口 Intent 使用 Backend API，依明確啟動模式區分 Demo／Live；`/demo` 則完全使用本地 Mock Adapter。Backend 已支援住院 server-owned Journey、診斷書／住院證明、存摺抽取與交叉驗證；A 的工作區尚未接入這些 API。本次只使用注入 transport 與合成文件測試，沒有真實 Gemini 請求。[住院 Backend 與 PR Review](docs/backend-hospitalization.md)記錄最新契約與限制；[歷史 Backend Phase 2](docs/backend-ai-phase-2.md)保留班機延誤整合紀錄。
 
 Backend 設定集中於 `apps/api/src/config/env.js`，範例在 `apps/api/.env.example`；預設 `gemini-3.5-flash-lite` / minimal thinking，整體 AI deadline 10 秒。`.env` 只在本機，不能 commit。Live 未設定 Key 或未確認 Free Tier 時不允許外部請求；Demo 不需要 Key。health 的配置欄位僅表示 Key 存在，不代表供應商連線成功或 Billing 狀態。
 
@@ -147,11 +147,11 @@ npm run test:ai           # 相容舊指令：現在執行 Local evaluation
 
 輸入「我上週在台中榮總住院五天，要怎麼申請理賠？」→ 意圖理解（Gemini 或示範判讀）→ 住院醫療理賠工作區 **35%**（事件資訊 20 + 服務辨識 15）→ 診斷書或住院證明 **70%**（文件 20 + 住院資訊完整 15，住院 5 天）→ 存摺影本 **90%**（匯款給付 20）→ 確認資料並填妥保險金申請書 **100%**（10）→ 依醫院選擇管道：醫起通（合作醫院）、理賠聯盟鏈或郵寄，並提醒醫起通仍需開立診斷書、聯盟鏈 10 日內寄回正本、單次超過新台幣 30 萬元需等正本寄達。
 
-住院理賠旅程由前端依官網資料計算；一般模式的後端負責意圖理解（`hospitalization_claim`）。Backend `POST /api/journeys` 對住院需求僅建立 `supported: false`、準備度 0 的需求預覽，文件與確認 API 回傳 `409 SERVICE_NOT_SUPPORTED`。Backend 原有的班機延誤旅程 API 仍保留，前端不再使用。
+目前前端住院旅程仍由本地 Adapter 計算；Backend `POST /api/journeys` 已可建立 `hospitalization_claim` 的 server-owned Journey（35%），上傳診斷書／住院證明（70%）與存摺（90%），再確認（100%）。Backend 權重與院所／管道資料集中於 `shared/hospitalization.js`，與 A 現有成功路徑一致；A 接入時應直接渲染 API Journey，移除重複計算。班機延誤僅保留 Legacy API／測試，不是法國巴黎人壽展示服務。
 
 文件齊備時為 `READY_FOR_REVIEW`／90%；確認後為 `READY_TO_PROCEED`／100%。100% 只代表資料完整，不判斷保障、理賠資格、核准或送出申請。移除／替換文件會撤回分數與確認。目前 UI 文件不會讀取或上傳；只有明確啟用 Live 並通過 Free Tier guard 時，自然語言描述才會送到 Gemini。使用 Live Backend 文件 API 時，文件 bytes 會在本次 request 傳送至 Gemini；Demo 只讀指定 fixture，Repository 不儲存 bytes。
 
-Frontend 住院助手依本地官網整理資料提供說明與來源；Backend JSON 知識庫仍僅支援班機延誤，來源標明 prototype。住院／醫療等其他服務問題會回傳資訊不足與空來源，不會引用登機證或延誤證明，也不會呼叫 Gemini 補猜。
+Frontend 與 Backend 都依本地 `data/cardif_seed_data.json` 提供服務知識。Backend 已支援住院應備文件、地址變更、受益人表單、保單借款、密碼鎖定與官網服務入口；`public_site_snapshot` 來源附 ID、原始 URL、整理日期及可信導覽目標。Legacy 班機資料仍標明 prototype。找不到可靠內容或涉及投保建議、理賠核定、資格／金額判斷時回傳資訊不足與空來源，不呼叫 Gemini 補猜。
 
 其他已辨識需求只顯示「目前 Prototype 尚未開放完整服務旅程」，不展示假的完整 Workflow。模糊需求顯示「我還需要一些資訊」；低信心已知需求進入專員確認。真人接續僅準備本機摘要，不會聯絡專員。
 

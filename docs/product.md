@@ -1,51 +1,31 @@
 # NAVI · Product scope
 
-**AI Service Journey Navigator**  
-**Understand. Guide. Resolve.**  
-理解需求，引導流程，完成服務。
+NAVI — AI Service Journey Navigator。法國巴黎人壽智慧服務導航，將使用者描述轉為可執行的服務旅程。
 
-NAVI 是 AI 智慧服務旅程導航平台，將使用者的需求轉化成可執行的服務旅程。使用者不需要知道功能名稱、保險術語、文件位置或正確服務入口；描述想處理什麼，平台即整理目前狀態與下一步。
+AI interprets. The system decides.
 
-## 品牌與定位
+產品嵌入模擬保險官網，提供自然語言知識查詢、可追溯來源，以及「帶我去」換頁／分頁、捲動與高亮。NAVI 與模擬官網維持獨立 routing 與執行程序。使用者介面以台灣繁體中文為主。
 
-Customers shouldn't need to understand insurance to use insurance.
+## 本次展示
 
-NAVI understands what users need and turns their intent into an actionable service journey.
+- 主旅程：住院醫療理賠，35 → 70 → 90 → 100。
+- 文件：診斷書或住院證明、存摺影本（匯款給付示範）。病理／手術文件依病況列為條件性，不一律必備。
+- 服務導航：合作院所醫起通、理賠聯盟鏈與郵寄管道說明；實際使用條件依來源與專員確認。
+- 知識：保單資料／地址變更、受益人變更表單、保單借款、網路服務／密碼鎖定及 FAQ。
+- 來源：本地公開官網整理資料，附原始網址與整理日期，沒有官方網站 runtime fetch。
 
-「使用者不應該先學會複雜的保險流程，才能使用保險服務。」
+## 已完成與實際落差
 
-「NAVI 會理解使用者真正想做什麼，並將需求轉化成清楚、可執行的服務旅程。」
+Developer A 的 UI、Motion、桌面三欄、手機 Tabs、來源面板、sessionStorage 與示範重設沿用現況。本次 Developer B 沒有修改 `apps/web` 或 `apps/mock-site`。
 
-平台未來可以涵蓋理賠、保單變更、繳費、保單與產品知識查詢、FAQ / 文件搜尋、功能入口導航、文件理解、Next Best Action 與專員接續。**這是平台定位，不代表本次新增這些流程的完整實作。**
+Backend 支援 server-owned 住院 Journey、Demo 文件、Gemini Structured Extraction transport、欄位驗證／矛盾檢查、deterministic 準備度／下一步與可追溯知識摘錄。前端目前仍用本地 Mock 文件／workflow 與本地知識搜尋，尚未接入完整 Backend Journey／Knowledge API。A 接入後應直接渲染後端狀態，不再重算分數。
 
-## 已完成範圍
+實際 Gemini 理解與辨識能力本次未驗證；只使用合成資料與注入 transport，零外部 AI 請求。準備度只代表原型的資料準備程度，不是保障、給付、核准、帳戶真偽或正式文件有效性的判定。
 
-- Flight Delay Claim 為第一個完整 Golden Path；其他類型提供意圖判讀與尚未開放完整旅程的說明。
-- 繁中為主，英文為輔；Header / 助理 / 摘要 / metadata 全面使用 NAVI。
-- 深色 command surface 首頁、三欄服務工作區、服務準備度、文件與下一步。
-- 固定 35 → 70 → 90 → 100；登機證、延誤證明、移除、重傳、確認、服務導引預覽。
-- 來源側面板／手機 bottom sheet、FAQ、未知意圖的補充說明與低信心專員接續與文字服務摘要。
-- Loading、空白輸入、文件處理／成功／不支援／失敗重試、toast 與 dialog。
-- 同分頁 sessionStorage 進度保留及一次性品牌 key 遷移；不讀取或傳送文件內容。
+## 邊界
 
-## Design system
+無投保建議、保障／理賠資格或金額判斷、完整送件、真人通知、Auth、MongoDB、Vector DB、Multi-Agent。住院天數依有效日期做含入出院日的原型計算，或使用文件明載天數並標示來源，不計算保單核付日數。部分資料／矛盾需要人工確認。
 
-主底色 `#0A0B0D`，surface `#101215`，raised `#15181C`；主文字 `#EEEFE9`，secondary `#B4BABB`，muted `#90989D`。小範圍 sage accent `#97C9B3` 用於進度、成功、active 與 focus。明亮 CTA 提供穩定對比，其餘以分隔線與空白建立層次。
+預算 $0：預設 Demo、本地知識與 InMemory；Free Tier Guard、禁止付費 flag、Live budget 保持原樣。Live 必須另經人工確認與啟動，不自動切換或增加額度。
 
-繁中使用系統字型（PingFang TC / Noto Sans TC / Microsoft JhengHei fallback）。Display 38–62、H1 30、H2 18、H3 16、body 14、small 13、label 12、caption 11、metric 72；高密度文件輔助文字有個別較小尺寸。主要數值使用 tabular-nums。Spacing 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64；radius 8 / 14 / 22。Wordmark 採 NAVI 與簡單階梯路徑符號，非正式 BNP / Cardif 品牌標誌。
-
-桌面三欄以中央為主；1280px 以上文件並排。平板兩欄，助理可展開／收合；760px 以下採總覽／旅程／助理分頁，總覽優先呈現準備度與下一步。
-
-## Motion system
-
-CSS tokens：fast 150ms、normal 250ms、slow 500ms；standard / enter / exit easing；距離 4–8px，按下 scale .98。首頁分析 1500ms；文件處理 1000ms。動畫以 opacity / transform 為主；數字與圓弧共享 500ms 插值，不增加動畫套件。
-
-範例文字 250ms 快速填入、分析步驟、timeline 線填滿／勾選、current node breathing、文件掃描、欄位 reveal（40ms 間隔）、延誤數字、下一步內容 reveal、來源 panel、dialog entrance / shorter exit、toast 均共用 motion tokens。Reduced motion 取消非必要動畫與數字插值；可用系統偏好或右上選項切換。
-
-Native dialog 加入 Tab / Shift+Tab 邊界處理、Escape、關閉後焦點恢復。互動使用 semantic buttons、輸入 labels、focus-visible、狀態文字與 progressbar ARIA；不靠顏色作為唯一訊號。
-
-## 範圍邊界
-
-NAVI 是 Intelligent Service Navigation & Orchestration Layer，不取代核心保險系統。100% 準備度不代表核准；前往服務僅開說明視窗。Workflow 仍停在 READY_FOR_REVIEW。
-
-Phase 2A 已新增 Express 與 server-only Gemini 自然語言理解、嚴格 Schema、deterministic service mapping、Unknown 補充說明、低信心轉交與明確示範備援。真實 Provider QA 待 API Key 設定。沒有 MongoDB、RAG、真實 OCR、官方條款、真人或正式送件；文件／FAQ／來源仍為 Mock。模型 confidence 不代表已校準機率。
+班機延誤、車禍 enum 與相關合成 fixtures 僅保留向下相容／Legacy regression；不宣稱法國巴黎人壽提供這些服務。最新契約、PR #2 Review 與驗證見 [Backend 住院實作](backend-hospitalization.md)。

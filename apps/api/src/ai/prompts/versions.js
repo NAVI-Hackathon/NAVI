@@ -1,1 +1,1 @@
-export const PROMPT_VERSIONS = Object.freeze({ intent: 'intent-v2', document: 'document-v2', knowledge: 'knowledge-v1', handoff: 'handoff-v1' });
+export const PROMPT_VERSIONS = Object.freeze({ intent: 'intent-v3-hospital', document: 'document-v3-hospital', knowledge: 'knowledge-v2-cardif', handoff: 'handoff-v1' });

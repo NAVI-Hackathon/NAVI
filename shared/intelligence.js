@@ -17,6 +17,11 @@ export const IntentDataSchema = z.object({
     destination: field,
     delayMinutes: z.number().int().min(0).max(525600).nullable(),
     incidentDate: z.iso.date().nullable(),
+    hospitalName: field.optional(),
+    patientName: field.optional(),
+    admissionDate: z.iso.date().nullable().optional(),
+    dischargeDate: z.iso.date().nullable().optional(),
+    reportedInpatientDays: z.number().int().min(1).max(3660).nullable().optional(),
   }).strict(),
 }).strict();
 

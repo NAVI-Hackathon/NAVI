@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { IntentDataSchema, intentTypes, serviceTypes } from '../../../../shared/intelligence.js';
 import { DocumentAnalysisSchema, DocumentClockTimeSchema } from '../../../../shared/journey.js';
 import { normalizeIntent } from '../schemas/intent.schema.js';
+import { hasNegatedHospitalization } from '../../../../shared/hospitalization.js';
 
 const confidence = z.number().finite();
 const text = z.string().trim().min(1).max(120).nullable();
@@ -24,22 +25,27 @@ export function normalizeGeminiIntent(raw) {
   const { missingInformation, ...data } = GeminiIntentSchema.parse(raw);
   data.intent = canonical(data.intent, intentTypes);
   data.serviceType = canonical(data.serviceType, serviceTypes);
+  if (/^medical[\s_-]*claim$/i.test(raw.serviceType) && (!/住院|inpatient|hospitali[sz]/i.test(data.summary) || hasNegatedHospitalization(data.summary) || /outpatient/i.test(data.summary))) data.serviceType = 'unknown';
   data.confidence = Math.max(0, Math.min(1, data.confidence));
   // A recognized class without travel details is still actionable; never invent those details.
   if (data.serviceType === 'unknown' || data.intent === 'unknown') data.confidence = Math.min(data.confidence, 0.4);
   else if (data.serviceType === 'flight_delay') {
-    const provided = Object.values(data.extractedData).filter(value => value !== null).length;
+    const provided = ['origin', 'destination', 'delayMinutes', 'incidentDate'].filter(key => data.extractedData[key] !== null).length;
     data.confidence = Math.max(0, data.confidence - (4 - provided) * 0.02);
   }
   data.confidence = Math.round(data.confidence * 1000) / 1000;
   return normalizeIntent(data);
 }
 export const GeminiDocumentSchema = z.object({
-  documentType: z.enum(['boarding_pass', 'delay_certificate', 'unknown']), confidence,
+  documentType: z.enum(['boarding_pass', 'delay_certificate', 'diagnosis_certificate', 'bank_passbook', 'unknown']), confidence,
   fields: z.object({ passengerName: text, flightNumber: text, origin: text, destination: text,
     departureDate: z.iso.date().nullable(), actualDepartureDate: z.iso.date().nullable(),
     scheduledDeparture: DocumentClockTimeSchema,
     actualDeparture: DocumentClockTimeSchema,
+    patientName: text.optional(), hospitalName: text.optional(), admissionDate: z.iso.date().nullable().optional(), dischargeDate: z.iso.date().nullable().optional(),
+    certificateKind: z.enum(['diagnosis_certificate', 'hospitalization_proof']).nullable().optional(),
+    reportedInpatientDays: z.number().int().min(1).max(3660).nullable().optional(),
+    accountHolder: text.optional(), bankName: text.optional(), accountLast4: z.string().regex(/^\d{4}$/).nullable().optional(),
   }).strict(),
 }).strict();
 export const documentJsonSchema = z.toJSONSchema(GeminiDocumentSchema.extend({ confidence: z.number().min(0).max(1) }));
@@ -47,6 +53,11 @@ export function normalizeGeminiDocument(raw) {
   const parsed = GeminiDocumentSchema.parse(raw);
   parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
   if (parsed.documentType === 'unknown') return { documentType: 'unknown', confidence: Math.min(parsed.confidence, 0.4), fields: {} };
+  if (parsed.documentType === 'diagnosis_certificate') return DocumentAnalysisSchema.parse({ ...parsed, fields: {
+    patientName: parsed.fields.patientName ?? null, hospitalName: parsed.fields.hospitalName ?? null, admissionDate: parsed.fields.admissionDate ?? null, dischargeDate: parsed.fields.dischargeDate ?? null,
+    diagnosis: null, certificateKind: parsed.fields.certificateKind ?? null, reportedInpatientDays: parsed.fields.reportedInpatientDays ?? null,
+  } });
+  if (parsed.documentType === 'bank_passbook') return DocumentAnalysisSchema.parse({ ...parsed, fields: { accountHolder: parsed.fields.accountHolder ?? null, bankName: parsed.fields.bankName ?? null, accountLast4: parsed.fields.accountLast4 ?? null } });
   const allowed = parsed.documentType === 'boarding_pass'
     ? ['passengerName', 'flightNumber', 'origin', 'destination', 'departureDate', 'scheduledDeparture']
     : ['passengerName', 'flightNumber', 'origin', 'destination', 'departureDate', 'actualDepartureDate', 'scheduledDeparture', 'actualDeparture'];
