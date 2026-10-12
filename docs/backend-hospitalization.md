@@ -1,6 +1,6 @@
 # Developer B · 住院 Backend 與 PR #2 Review
 
-日期：2026-10-12。同步 main 至 `32a6c6a` 後實作；Developer A 的 `apps/web`、`apps/mock-site` 與 SEED 均未修改。原有未提交的 `docs/phase-2a-report.md` 修改保留、不納入提交。依最新 AGENTS 在 `codex/backend-hospitalization` 工作，不直接推 main。
+日期：2026-10-12。同步 main 至 `32a6c6a` 後實作，功能 commit 為 `c8d00fe`；Developer A 的 `apps/web`、`apps/mock-site` 與 SEED 均未修改。原有未提交的 `docs/phase-2a-report.md` 修改保留、不納入提交。最初以分支與 Draft PR #3 交付，後依使用者明確指示整合並直接推送 main。這是先前完成的後端變更，不代表重新規劃的 Phase 4A／4B／4C 已完成。
 
 ## PR #2 Review
 
@@ -112,7 +112,7 @@ Free Tier Guard、ALLOW_PAID_AI=false、共享 Live budget、外網 test guard�
 | API Key／環境檔 | 本機 Key 未出現在 Frontend bundle；實際 `.env` 不被 Git 追蹤 |
 | 前端／個資／成本 | 前端 source 無差異；只用合成文件，無真實病患／銀行測試資料；真實 Gemini 請求 0、新增付費依賴 0 |
 
-雙站 smoke 與瀏覽器端到端未完成；不能將後端 HTTP Demo 等同於嵌入式前端驗收。交付維持 draft PR，不合併 main；需在相依檔案能正常讀取的環境重新完成 Mock Build、lint、雙站 smoke，並由 A review 共用契約與接入 Adapter。
+雙站 smoke 與瀏覽器端到端未完成；不能將後端 HTTP Demo 等同於嵌入式前端驗收。使用者已要求將既有變更推送 main，這不改變上述未完成驗證的狀態；仍需重新完成 Mock Build、lint、雙站 smoke，並由 A review 共用契約與接入 Adapter。
 
 ## 限制
 
