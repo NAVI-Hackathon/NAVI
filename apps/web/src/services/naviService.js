@@ -41,6 +41,7 @@ export function createJourneyService({ mode, understand, storage, storageKey, do
 
   return {
     mode,
+    capabilities: { manualEntry: true },
     restore() {
       try { session = restoreSession(storage?.getItem(storageKey) ?? 'null'); } catch { session = null; }
       return session ? toSnapshot(session) : null;

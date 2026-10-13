@@ -1,4 +1,5 @@
 import { createJourneyService } from './naviService.js';
+import { createApiJourneyService } from './apiJourney.js';
 import { understandIntent } from './intelligence.js';
 import { mockUnderstanding } from '../mocks/understanding.js';
 
@@ -18,10 +19,10 @@ export function createMockAdapter({ storage = safeSessionStorage(), analysisDela
   });
 }
 
-/** Real API Adapter: intent understanding through apps/api (Gemini). */
-export function createApiAdapter({ storage = safeSessionStorage(), documentDelayMs = 1000 } = {}) {
-  return createJourneyService({
-    mode: 'live', storage, storageKey: 'navi.journey', documentDelayMs,
+/** Real API Adapter: intent, journey, documents and readiness all come from apps/api. */
+export function createApiAdapter({ storage = safeSessionStorage(), ...options } = {}) {
+  return createApiJourneyService({
+    storage, ...options,
     understand: (message, { signal } = {}) => understandIntent(message, { signal }),
   });
 }

@@ -533,3 +533,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .knowledge-related .navigate-link { min-height: 32px; }
 .knowledge-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; font-size: 11px; color: var(--color-text-muted); }
 .knowledge-footer p { flex: 1 1 280px; }
+
+/* Server-flagged documents (formal mode) */
+.doc-status.is-review { color: var(--color-warning); }
+.doc-match.is-review { color: var(--color-warning); }

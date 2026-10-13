@@ -11,6 +11,7 @@ import { naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { searchKnowledge } from './domain/knowledge.js';
+import { JOURNEY_EXPIRED_MESSAGE } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 
 const embedded = isEmbedPath(location.pathname);
@@ -87,6 +88,40 @@ export default function App() {
     return () => { window.removeEventListener('popstate', onPop); analysisCtl.current?.abort(); };
   }, []);
 
+  /** The server no longer has this journey (expired or restarted): start over cleanly. */
+  const expire = useCallback(() => {
+    analysisCtl.current?.abort();
+    service.reset();
+    setSnapshot(null);
+    setDocStates({});
+    setDialog(null);
+    setAnalysisPhase(null);
+    history.replaceState(null, '', location.pathname + location.search);
+    setView('landing');
+    setFeedback({ kind: 'expired', title: '這份服務旅程已失效', body: `${JOURNEY_EXPIRED_MESSAGE}描述你的情況，就能建立新的服務旅程。` });
+  }, [service]);
+
+  // Formal mode: the journey lives on the server, so re-read it after a reload.
+  useEffect(() => {
+    if (!service.sync || !snapshotRef.current) return;
+    const ctl = new AbortController();
+    service.sync({ signal: ctl.signal }).then(next => { if (next) setSnapshot(next); }).catch(error => {
+      if (ctl.signal.aborted) return;
+      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+    });
+    return () => ctl.abort();
+  }, [service, expire]);
+
+  /** Run a journey action; server failures become a toast, an expired journey restarts. */
+  async function attempt(run) {
+    try { return await run(); }
+    catch (error) {
+      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      else notify(error?.message && error?.code ? error.message : '目前暫時無法處理，請稍後再試。');
+      return null;
+    }
+  }
+
   const busyType = Object.entries(docStates).find(([, s]) => s.status === 'processing')?.[0] ?? null;
   const notify = useCallback(message => setToast({ message, key: Date.now() }), []);
   const dismissToast = useCallback(() => setToast(null), []);
@@ -154,9 +189,12 @@ export default function App() {
       const next = await service.uploadDocument(type, source);
       setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
-      notify(`${documentSpecs[type].title}已辨識，準備完成度已更新。`);
-    } catch {
-      setDocStates(s => ({ ...s, [type]: { status: 'failed' } }));
+      const added = next.journey.documents.find(d => d.documentType === type);
+      notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有資料需要確認，已轉由專員協助。` : `${documentSpecs[type].title}已辨識，準備完成度已更新。`);
+    } catch (error) {
+      if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
+      // Server messages (e.g. 文件類型與目前服務需求不同) are written for the user.
+      setDocStates(s => ({ ...s, [type]: { status: 'failed', message: error?.code && error.message ? error.message : null } }));
     } finally {
       setFailNext(false);
     }
@@ -174,19 +212,26 @@ export default function App() {
       : null;
 
   const actions = {
+    // Where uploaded files go differs by mode; say so plainly next to the upload cards.
+    documentNotice: service.capabilities.manualEntry
+      ? '文件辨識使用示範資料；你的檔案不會被讀取或上傳。'
+      : '文件會傳送到 NAVI 服務辨識，不會保存檔案本身；這是示範原型，請勿上傳真實病歷或銀行資料。',
     upload,
     navigate,
-    remove(type) {
-      setSnapshot(service.removeDocument(type));
+    async remove(type) {
+      const next = await attempt(() => service.removeDocument(type));
+      if (!next) return;
+      setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       notify('文件已移除，準備完成度已更新。');
     },
-    manual(type, fields) {
+    // Manual entry exists only where the journey is computed locally (/demo).
+    manual: service.capabilities.manualEntry ? (type, fields) => {
       if (!fields) { setDocStates(s => ({ ...s, [type]: { status: 'manual' } })); return; }
       setSnapshot(service.submitManual(type, fields));
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       notify(`${documentSpecs[type].title}內容已確認，準備完成度已更新。`);
-    },
+    } : null,
     resetDocument(type) { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); },
     review() { setDialog('review'); },
     proceed() { setDialog('proceed'); },
@@ -212,7 +257,7 @@ export default function App() {
           break;
         }
         case 'PROVIDE_INFORMATION':
-          if (action.target === 'inpatient_info') setDocStates(s => ({ ...s, diagnosis_certificate: { status: 'manual' } }));
+          if (action.target === 'inpatient_info' && service.capabilities.manualEntry) setDocStates(s => ({ ...s, diagnosis_certificate: { status: 'manual' } }));
           break;
         case 'REVIEW_INFORMATION': setDialog('review'); break;
         case 'PROCEED_TO_SERVICE': setDialog(snapshot?.context.kind === 'hospital' ? 'proceed' : 'service'); break;
@@ -277,7 +322,11 @@ export default function App() {
         <AnimatePresence>
           {snapshot && dialog === 'review' && (
             <ReviewDialog key="review" snapshot={snapshot} onClose={closeDialog}
-              onConfirm={() => { setSnapshot(service.confirm()); setDialog(null); notify('資料已確認，準備完成度已達 100%。'); }}
+              onConfirm={async () => {
+                const next = await attempt(() => service.confirm());
+                if (!next) return;
+                setSnapshot(next); setDialog(null); notify('資料已確認，準備完成度已達 100%。');
+              }}
               onProceed={() => setDialog('proceed')} />
           )}
           {snapshot && dialog === 'proceed' && (

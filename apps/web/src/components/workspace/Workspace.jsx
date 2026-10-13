@@ -38,7 +38,7 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
           registerInput={registerInput}
         />
       ))}
-      <p className="doc-privacy"><Icon name="lock" size={13} />文件辨識使用示範資料；你的檔案不會被讀取或上傳。</p>
+      <p className="doc-privacy"><Icon name="lock" size={13} />{actions.documentNotice}</p>
     </div>
   );
 }

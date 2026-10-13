@@ -19,7 +19,8 @@ function fieldRows(type, fields) {
       ['文件類型', '診斷證明書'],
       ['病患姓名', fields.patientName],
       ['醫院', fields.hospitalName],
-      ['診斷', fields.diagnosis],
+      // The server never extracts clinical details (diagnosis is null); only show it when present.
+      ...(fields.diagnosis ? [['診斷', fields.diagnosis]] : []),
       ['住院期間', stayText(fields.admissionDate, fields.dischargeDate)],
       ['住院天數', <DaysValue key="days" days={stayDays(fields.admissionDate, fields.dischargeDate)} />, true],
     ];
@@ -34,10 +35,13 @@ function fieldRows(type, fields) {
 
 function Result({ type, document }) {
   const manual = document.entryMethod === 'manual';
+  const review = document.status === 'needs_review';
   return (
     <motion.div className="doc-result" initial="hidden" animate="show" variants={staggerChildren(0.06, 0.05)}>
       <motion.div className="doc-result-head" variants={fadeUp}>
-        <span className="doc-status"><CheckDraw size={12} strokeWidth={2.6} />{manual ? '已手動確認' : '辨識完成'}</span>
+        {review
+          ? <span className="doc-status is-review"><Icon name="alert" size={12} />需要專員確認</span>
+          : <span className="doc-status"><CheckDraw size={12} strokeWidth={2.6} />{manual ? '已手動確認' : '辨識完成'}</span>}
         <span className="doc-confidence">{manual ? '手動輸入' : `辨識信心 ${Math.round(document.confidence * 100)}%`}</span>
       </motion.div>
       <dl className="doc-fields">
@@ -47,10 +51,17 @@ function Result({ type, document }) {
           </motion.div>
         ))}
       </dl>
-      <motion.p className="doc-match" variants={fadeUp}>
-        <Icon name="check" size={14} strokeWidth={2.2} />符合項目：{documentSpecs[type].match}
-      </motion.p>
-      {!manual && <motion.p className="doc-filename" variants={fadeUp}>{document.filename} · 示範辨識資料</motion.p>}
+      {review ? (
+        <motion.p className="doc-match is-review" variants={fadeUp}>
+          <Icon name="info" size={14} />部分欄位不完整或與其他資料不一致，可重新上傳較清楚的文件，或由專員協助確認。
+        </motion.p>
+      ) : (
+        <motion.p className="doc-match" variants={fadeUp}>
+          <Icon name="check" size={14} strokeWidth={2.2} />符合項目：{documentSpecs[type].match}
+        </motion.p>
+      )}
+      {/* Fixture results are never presented as AI recognition. */}
+      {!manual && <motion.p className="doc-filename" variants={fadeUp}>{document.filename} · {document.isMock ? '示範辨識資料，未讀取文件內容' : 'AI 辨識結果，請核對內容'}</motion.p>}
     </motion.div>
   );
 }
@@ -74,7 +85,7 @@ export default function DocumentCard({ type, document, uiState, busy, onUpload, 
   const [error, setError] = useState('');
   const processing = uiState?.status === 'processing';
   const failed = uiState?.status === 'failed';
-  const manual = uiState?.status === 'manual';
+  const manual = uiState?.status === 'manual' && Boolean(onManual);
   const disabled = Boolean(busy);
 
   function receive(files) {
@@ -125,10 +136,10 @@ export default function DocumentCard({ type, document, uiState, busy, onUpload, 
             <Icon name="alert" size={18} />
             <div>
               <strong>暫時無法辨識這份文件</strong>
-              <p>你可以重新上傳較清楚的照片，或手動確認文件內容。</p>
+              <p>{uiState?.message ?? (onManual ? '你可以重新上傳較清楚的照片，或手動確認文件內容。' : '你可以重新上傳較清楚的照片或 PDF。')}</p>
               <div className="doc-failed-actions">
                 <button type="button" className="button button-secondary button-small" onClick={() => { onRetry(type); input.current?.click(); }}>重新上傳<Icon name="upload" size={15} /></button>
-                <button type="button" className="button button-ghost button-small" onClick={() => onManual(type, null)}>手動輸入<Icon name="edit" size={15} /></button>
+                {onManual && <button type="button" className="button button-ghost button-small" onClick={() => onManual(type, null)}>手動輸入<Icon name="edit" size={15} /></button>}
               </div>
             </div>
           </motion.div>
