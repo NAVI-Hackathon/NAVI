@@ -1,11 +1,13 @@
 import { DEFAULT_CONFIDENCE_THRESHOLD, intentDisposition } from '../../../../shared/intelligence.js';
 import { validateUnderstanding } from '../domain/intelligence.js';
+import { hasNegatedHospitalization } from '../../../../shared/hospitalization.js';
 
 // Demo-mode intent understanding. Never presented as AI: meta.source is always demo_fallback.
 const empty = { origin: null, destination: null, delayMinutes: null, incidentDate: null };
 const scenarios = [
   {
-    match: text => /住院|開刀|手術|出院|醫療.*理賠|理賠.*醫院/.test(text),
+    // Same rule as the backend demo provider: an actual stay is required, and 「沒有住院」 rules it out.
+    match: text => /住院|出院|inpatient|hospitali[sz]|admitted.{0,20}hospital|stayed.{0,30}hospital/i.test(text) && !hasNegatedHospitalization(text),
     data: { intent: 'service_request', serviceType: 'hospitalization_claim', confidence: 0.94, summary: '你住院後想申請醫療理賠。先確認醫院是否可用醫起通，再整理需要的文件。' },
   },
   {

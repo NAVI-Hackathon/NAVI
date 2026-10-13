@@ -21,7 +21,7 @@ function hospitalStepText(i, journey) {
   const proceeding = journey.currentStage === 'READY_TO_PROCEED';
   return [
     '已整理你描述的住院情況。',
-    hospital?.partner ? `${hospital.matchedName} 是醫起通合作醫院，可由醫院直接上傳文件。` : hospital ? `${hospital.mentioned} 不在醫起通合作名單，可改用理賠聯盟鏈或郵寄申請。` : '還不知道住院的醫院，上傳診斷書後會再確認。',
+    hospital?.partner ? `${hospital.matchedName} 是醫起通合作醫院，可由醫院直接上傳文件。` : hospital ? `無法將「${hospital.mentioned}」對應到醫起通合作院所，可改用理賠聯盟鏈或郵寄申請；若是合作院所，請提供醫院全名。` : '還不知道住院的醫院，上傳診斷書後會再確認。',
     ready || proceeding ? '必要文件已備齊。' : '補齊診斷書或住院證明，以及匯款用的存摺影本。',
     proceeding ? '資料已確認，保險金申請書已填妥。' : ready ? '請確認辨識出的資料，並填寫保險金申請書。' : '文件備齊後進行確認。',
     proceeding ? '選擇申請管道，前往服務入口。' : '資料確認後，選擇醫起通、理賠聯盟鏈或郵寄申請。',
@@ -43,7 +43,7 @@ function ChannelList({ journey, onProceed, onNavigate }) {
             <div>
               <strong>{channel.name}</strong>
               {journey.nextAction.target === channel.id && <span className="tag tag-quiet">建議</span>}
-              {!channel.available && <span className="tag">非合作醫院</span>}
+              {!channel.available && <span className="tag">未對應合作院所</span>}
             </div>
             <p>{channel.notes[0]}</p>
             {onNavigate && (
@@ -93,7 +93,7 @@ export default function JourneyTimeline({ snapshot, documentsSlot, onReview, onP
           <div>
             <span>住院醫院</span>
             <strong>{hospital?.matchedName ?? hospital?.mentioned ?? certificate?.hospitalName ?? '待確認'}</strong>
-            {hospital && <small className={hospital.partner ? 'strip-note is-ok' : 'strip-note'}>{hospital.partner ? '醫起通合作醫院' : '非醫起通合作醫院'}</small>}
+            {hospital && <small className={hospital.partner ? 'strip-note is-ok' : 'strip-note'}>{hospital.partner ? '醫起通合作醫院' : '未對應合作院所'}</small>}
           </div>
           <div>
             <span>{certificate ? '診斷書上的住院期間' : '住院期間'}</span>

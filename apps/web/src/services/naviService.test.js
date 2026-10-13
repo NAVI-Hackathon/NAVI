@@ -48,6 +48,21 @@ test('a non-partner hospital routes to 理賠聯盟鏈 instead of 醫起通', as
   assert.equal(service.confirm().journey.nextAction.target, 'union_chain');
 });
 
+test('hospital matching is conservative: 「榮總」 alone is not a partner, named campuses and abbreviations are', async () => {
+  const hospitalFor = async story => (await fast(memoryStorage()).analyze(story)).snapshot.journey.claimContext.hospital;
+  assert.deepEqual(await hospitalFor('我上週在榮總住院五天，要怎麼申請理賠？'), { mentioned: '榮總', matchedName: null, partner: false });
+  assert.equal((await hospitalFor('我上週在台中榮總住院五天，要怎麼申請理賠？')).matchedName, '臺中榮民總醫院');
+  assert.equal((await hospitalFor('我在中榮住院三天，想申請理賠')).matchedName, '臺中榮民總醫院');
+});
+
+test('outpatient-only visits do not open the 住院 journey', async () => {
+  for (const story of ['我只有門診開刀，沒有住院，要怎麼申請理賠？', '我沒住院，只是去門診看病，可以申請理賠嗎', '我上週門診做了小手術']) {
+    const result = await fast(memoryStorage()).analyze(story);
+    assert.equal(result.snapshot, null, story);
+    assert.notEqual(result.understanding.data.serviceType, 'hospitalization_claim', story);
+  }
+});
+
 test('recognition failure leaves the journey unchanged and can be retried', async () => {
   const service = fast(memoryStorage());
   await service.analyze(DEMO_STORY);

@@ -45,7 +45,7 @@ export default function AssistantPanel({ snapshot, onHandoff, onNavigate }) {
 
   const facts = [
     ['已辨識服務', journey.title],
-    ...(isHospital ? [['住院醫院', hospital ? (hospital.matchedName ?? hospital.mentioned) : '待確認'], ['醫起通', hospital ? (hospital.partner ? '合作醫院' : '非合作醫院') : '待確認']] : []),
+    ...(isHospital ? [['住院醫院', hospital ? (hospital.matchedName ?? hospital.mentioned) : '待確認'], ['醫起通', hospital ? (hospital.partner ? '合作醫院' : '未對應合作院所') : '待確認']] : []),
   ];
 
   return (

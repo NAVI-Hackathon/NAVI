@@ -44,7 +44,6 @@ export const claimByMail = service('claim_by_mail');
 export const hospitalUpload = service('claim_hospital_upload');
 export const unionChain = service('claim_union_chain');
 export const paymentChange = service('change_payment_method');
-export const partnerHospitals = hospitalUpload.partner_hospitals ?? [];
 
 /** 住院醫療應備文件, e.g. 保險金申請書、診斷書或住院證明、病理組織檢查報告（依病況）… */
 export const inpatientDocuments = seed.claim_document_requirements['住院醫療'];

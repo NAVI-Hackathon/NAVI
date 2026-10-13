@@ -96,11 +96,13 @@ const byId = new Map(knowledgeEntries.map(entry => [entry.id, entry]));
 // ---- Tokenising -------------------------------------------------------------------------------
 // Chinese has no spaces: compare overlapping two-character pieces ("保單借款" → 保單 單借 借款),
 // after splitting on filler words that carry no meaning for search.
-const FILLER = /請問|我想要|我想|想要|我要|我的|要怎麼|怎麼|如何|可以|需要|什麼|哪裡|在哪|一下|有沒有|是不是|應該|哪些|幫我|告訴我|幾號|[嗎呢吧啊了的]/g;
+const FILLER = /請問|我想要|我想|想要|我要|我的|要怎麼|怎麼|如何|可以|需要|什麼|哪裡|在哪|一下|有沒有|是不是|應該|哪些|幫我|告訴我|幾號|做了|[嗎呢吧啊了的]/g;
 // Everyday words → the wording the official site uses.
 const SYNONYMS = [[/癌症/g, '防癌'], [/過世|死亡|往生/g, '身故'], [/殘廢/g, '失能'], [/看診|看醫生/g, '門診'], [/電話/g, '專線']];
 const normalise = text => text.toLowerCase().replace(/臺/g, '台').replace(/[\s\p{P}\p{S}]+/gu, ' ');
-const rewrite = text => SYNONYMS.reduce((out, [pattern, word]) => out.replace(pattern, word), normalise(text));
+// 「沒有住院」 says what did NOT happen; searching for 住院 there would surface the wrong claim type.
+const NEGATED = /(?:沒有|沒|未曾|未|不曾|不用|不是|非)(?:住院|住過院|入院)/g;
+const rewrite = text => SYNONYMS.reduce((out, [pattern, word]) => out.replace(pattern, word), normalise(text).replace(NEGATED, ' '));
 
 function tokens(text) {
   const out = new Set();

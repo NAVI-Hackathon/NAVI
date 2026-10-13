@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { DocumentSchema, ServiceJourneySchema, JOURNEY_STATES as STATES } from '../../../../shared/journey.js';
 import { serviceLabel, validateUnderstanding } from '../domain/intelligence.js';
-import { recognizeHospital } from '../domain/hospitals.js';
+import { HOSPITAL_WEIGHTS, findHospitalMention, matchPartnerHospital } from '../../../../shared/hospitalization.js';
 import { basicJourneys } from '../mocks/basicJourneys.js';
 import { documentFixtures, DOCUMENT_TYPES } from '../mocks/hospitalClaim.js';
 import {
   claimApplicationForm, claimByMail, diagnosisRule, hospitalUpload, inpatientDocuments, inpatientDocumentsAnchor, officialSource, passbookRuleAnchor,
-  partnerHospitals, passbookRule, reminders, unionChain,
+  passbookRule, reminders, unionChain,
 } from '../content/cardifData.js';
 
 // Local journey engine (both adapters). Produces journeys that validate against the shared
@@ -17,7 +17,8 @@ const CONFIDENCE_FOR_REVIEW = 0.65;
 const claimsSource = officialSource(claimByMail.url);
 
 // Readiness mapping (35 → 70 → 90 → 100), see commit message for the rationale.
-const WEIGHTS = { incident: 20, service: 15, diagnosis_certificate: 20, inpatient_info: 15, bank_passbook: 20, confirmation: 10 };
+// Hospitalization rules are owned by the backend (shared/hospitalization.js); the local demo reuses them.
+const WEIGHTS = HOSPITAL_WEIGHTS;
 
 const optionalDocs = inpatientDocuments.filter(name => name.includes('依病況'));
 const applicationForm = inpatientDocuments.find(name => name.includes('申請書'));
@@ -34,7 +35,10 @@ const destinations = {
 export const claimDestinations = destinations;
 
 function claimContext(story) {
-  const hospital = recognizeHospital(story, partnerHospitals);
+  // Conservative matching: 「榮總」 alone names no specific hospital, so it is never treated as a partner.
+  const mentioned = findHospitalMention(story);
+  const matchedName = mentioned ? matchPartnerHospital(mentioned) : null;
+  const hospital = mentioned ? { mentioned, matchedName, partner: Boolean(matchedName) } : null;
   const partner = Boolean(hospital?.partner);
   return {
     hospital,
