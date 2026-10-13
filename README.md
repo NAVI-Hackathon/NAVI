@@ -4,7 +4,7 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
-**Developer B 最新狀態：Phase 4A Review & Alignment。** 本次只處理相容性、回歸測試與架構盤點；Phase 4B／4C 尚未開始，沒有呼叫 Live Gemini，也沒有修改 A 的 UI／動畫。先前 main 已有的住院 Backend 能力不等於新階段驗收完成。PR #2 Review、前後端落差、Legacy 盤點及後續規劃見 [Phase 4A 報告](docs/backend-phase-4a.md)。
+**Developer B 最新狀態：Phase 4B 住院 Backend 驗證與可靠性補強。** 已同步 A 的 server-owned Journey 接入與共用住院規則修正；新增住院評估 76 題、零真實 Gemini。文件驗證、敏感資料最小留存、住院證明管道限制及過期行為已補強。Phase 4C 尚未開始。詳見 [Phase 4B 報告](docs/backend-phase-4b.md)；[Phase 4A](docs/backend-phase-4a.md) 保留當時的 Review 與差距盤點。
 
 ## Project Structure
 
@@ -135,7 +135,8 @@ npm run lint              # Mock Website 既有 ESLint
 npm run typecheck:mock    # Mock Website TypeScript
 npm run test:sites        # 先啟動 dev:all；雙站路由、資產、API proxy smoke checks
 npm run preview           # 只預覽 build，不會自動提供 API；需另啟 API / 設定部署 proxy
-npm run eval:ai:local     # 預設：120 個合成 fixture / deterministic cases，零 Gemini 請求
+npm run eval:ai:local     # 保留 120 個 Legacy 合成 fixture / deterministic cases，零 Gemini 請求
+npm run eval:hospitalization # 新增 76 個住院案例、8 項 metrics、loopback HTTP，零 Gemini 請求
 npm run eval:ai:live -- --plan # 只顯示 9 個案例計畫，零請求
 npm run eval:ai:live      # 人工確認 Free Tier 後才可執行，含 retry 最多 12 次
 npm run ai:status        # 本地配置檢查，不驗證帳戶或呼叫 Gemini
@@ -153,7 +154,7 @@ npm run test:ai           # 相容舊指令：現在執行 Local evaluation
 
 一般模式的前端住院旅程直接渲染 Backend 結果（`apps/web/src/services/apiJourney.js`），不在前端計分；`/demo` 的本地 Adapter 也改用同一份 `shared/hospitalization.js` 規則。正式模式暫不提供手動輸入文件（Backend 尚無對應 API），`/demo` 保留。Backend `POST /api/journeys` 可建立 `hospitalization_claim` 的 server-owned Journey（35%），上傳診斷書／住院證明（70%）與存摺（90%），再確認（100%）。Backend 權重與院所／管道資料集中於 `shared/hospitalization.js`，與前端示範路徑一致。班機延誤僅保留 Legacy API／測試，不是法國巴黎人壽展示服務。
 
-文件齊備時為 `READY_FOR_REVIEW`／90%；確認後為 `READY_TO_PROCEED`／100%。100% 只代表資料完整，不判斷保障、理賠資格、核准或送出申請。移除／替換文件會撤回分數與確認。目前 UI 文件不會讀取或上傳；只有明確啟用 Live 並通過 Free Tier guard 時，自然語言描述才會送到 Gemini。使用 Live Backend 文件 API 時，文件 bytes 會在本次 request 傳送至 Gemini；Demo 只讀指定 fixture，Repository 不儲存 bytes。
+文件齊備時為 `READY_FOR_REVIEW`／90%；確認後為 `READY_TO_PROCEED`／100%。100% 只代表資料完整，不判斷保障、理賠資格、核准或送出申請。移除／替換文件會撤回分數與確認。一般模式會將選定文件上傳 NAVI Backend；Demo Provider 依明確文件類型回傳合成資料，不讀取文件內容；`/demo` 本地模式不送文件到 Backend。只有明確啟用 Live 並通過 Free Tier guard 時，自然語言描述才會送到 Gemini。使用 Live Backend 文件 API 時，文件 bytes 會在本次 request 傳送至 Gemini；Demo 只讀指定 fixture，Repository 不儲存 bytes。
 
 Frontend 與 Backend 都依本地 `data/cardif_seed_data.json` 提供服務知識。Backend 已支援住院應備文件、地址變更、受益人表單、保單借款、密碼鎖定與官網服務入口；`public_site_snapshot` 來源附 ID、原始 URL、整理日期及可信導覽目標。Legacy 班機資料仍標明 prototype。找不到可靠內容或涉及投保建議、理賠核定、資格／金額判斷時回傳資訊不足與空來源，不呼叫 Gemini 補猜。
 

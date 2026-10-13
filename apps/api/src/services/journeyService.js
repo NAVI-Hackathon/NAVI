@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { ServiceJourneySchema } from '../../../../shared/journey.js';
 import { MAX_MESSAGE_LENGTH } from '../../../../shared/intelligence.js';
 import { understandIntent } from './intent.service.js';
-import { normalizeIntent } from '../schemas/intent.schema.js';
+import { normalizeIntent, HOSPITAL_SUMMARY } from '../schemas/intent.schema.js';
 import { getJourneyDefinition, getSources } from './knowledgeService.js';
 import { deriveJourney } from '../workflow/journeyStateMachine.js';
 import { analyzeDocument } from './documentService.js';
@@ -10,14 +10,12 @@ import { ApiError } from '../middleware/errorHandler.js';
 import { findHospitalMention, reportedStayDays } from '../../../../shared/hospitalization.js';
 
 const titles = { hospitalization_claim: '住院醫療理賠', vehicle_accident: '車輛事故', payment_method_change: '更改繳費方式', policy_change: '保單變更', policy_information: '保單資訊', unknown: '需要補充說明' };
-// Do not persist common identifiers even in transient demo conversations. No request body logging.
-const redact = text => text.replace(/\b[A-Z][12]\d{8}\b/gi, '[已遮蔽身分證字號]').replace(/\b09\d{2}[- ]?\d{3}[- ]?\d{3}\b/g, '[已遮蔽電話]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[已遮蔽電子郵件]');
 
 export function createJourneyService({ repository, provider, config }) {
   const save = journey => repository.save(ServiceJourneySchema.parse(deriveJourney({ ...journey, updatedAt: new Date().toISOString() }, config)));
   function get(id) {
     const journey = repository.get(id);
-    if (!journey) throw new ApiError('JOURNEY_NOT_FOUND', '找不到此案件，可能已過期，請重新開始。', 404, false);
+    if (!journey) throw new ApiError('JOURNEY_NOT_FOUND', '這份服務旅程已失效或不存在，請重新開始。', 404, false);
     return journey;
   }
   function editable(journey) {
@@ -28,6 +26,7 @@ export function createJourneyService({ repository, provider, config }) {
     get,
     async create({ message, intentResult }, signal) {
       const data = intentResult ? normalizeIntent(intentResult, message) : (await understandIntent(message, { provider, config, signal })).data;
+      if (data.serviceType === 'hospitalization_claim' && data.intent === 'knowledge_query') throw new ApiError('SERVICE_NOT_SUPPORTED', '請先查詢相關服務資訊，確認要申辦時再開始服務旅程。', 409, false);
       const definition = getJourneyDefinition(data.serviceType);
       if (data.serviceType === 'hospitalization_claim') {
         // Fill explicit local mentions for clients using the pre-PR schema; never infer dates.
@@ -35,7 +34,11 @@ export function createJourneyService({ repository, provider, config }) {
         data.extractedData.reportedInpatientDays ??= reportedStayDays(message);
       }
       const now = new Date().toISOString();
-      return save({ id: randomUUID(), serviceType: data.serviceType, title: definition?.title ?? titles[data.serviceType], summary: redact(data.summary).slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: redact(message).slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: intentResult ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
+      // Retain structured stay facts, not free-text clinical descriptions or provider narratives.
+      const hospital = data.serviceType === 'hospitalization_claim';
+      const summary = hospital ? HOSPITAL_SUMMARY : `使用者希望取得${definition?.title ?? titles[data.serviceType]}相關服務協助。`;
+      const conversation = hospital ? '使用者詢問住院醫療理賠；原始描述不留存。' : '使用者描述服務需求；原始描述不留存。';
+      return save({ id: randomUUID(), serviceType: data.serviceType, title: definition?.title ?? titles[data.serviceType], summary: summary.slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: conversation.slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: intentResult ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
     },
     async addDocument(id, upload, signal) {
       editable(get(id));

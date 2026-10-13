@@ -1,0 +1,76 @@
+{"id": "hospital-intent-taiwan", "kind": "intent", "synthetic": true, "message": "我上週在台中榮總住院五天，要怎麼申請理賠？", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-alias", "kind": "intent", "synthetic": true, "message": "中榮住院後要準備文件", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-traditional", "kind": "intent", "synthetic": true, "message": "我在臺中榮民總醫院住院五天", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-taiwan-university", "kind": "intent", "synthetic": true, "message": "我在台大住院三天", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-english", "kind": "intent", "synthetic": true, "message": "I was hospitalized for five days. How do I file a claim?", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-admitted", "kind": "intent", "synthetic": true, "message": "I was admitted to hospital for surgery.", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-discharge", "kind": "intent", "synthetic": true, "message": "我剛出院，要準備哪些理賠文件", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-no-proof", "kind": "intent", "synthetic": true, "message": "我住院五天，但沒有住院證明", "expected": "hospitalization_claim", "negation": false, "unsupported": false}
+{"id": "hospital-intent-negated", "kind": "intent", "synthetic": true, "message": "只有門診開刀，沒有住院", "expected": "unknown", "negation": true, "unsupported": true}
+{"id": "hospital-intent-never", "kind": "intent", "synthetic": true, "message": "未曾住院，想問門診手術", "expected": "unknown", "negation": true, "unsupported": true}
+{"id": "hospital-intent-no-english", "kind": "intent", "synthetic": true, "message": "I was not hospitalized, outpatient treatment only", "expected": "unknown", "negation": true, "unsupported": true}
+{"id": "hospital-intent-wasnt", "kind": "intent", "synthetic": true, "message": "I wasn't hospitalized.", "expected": "unknown", "negation": true, "unsupported": true}
+{"id": "hospital-intent-outpatient", "kind": "intent", "synthetic": true, "message": "Outpatient treatment only", "expected": "unknown", "negation": true, "unsupported": true}
+{"id": "hospital-intent-ambiguous", "kind": "intent", "synthetic": true, "message": "我有個問題", "expected": "unknown", "negation": false, "unsupported": true}
+{"id": "hospital-intent-other", "kind": "intent", "synthetic": true, "message": "我要換信用卡扣款", "expected": "payment_method_change", "negation": false, "unsupported": true}
+{"id": "hospital-hospital-short", "kind": "hospital", "synthetic": true, "name": "台中榮總", "expected": "臺中榮民總醫院"}
+{"id": "hospital-hospital-traditional", "kind": "hospital", "synthetic": true, "name": "臺中榮總", "expected": "臺中榮民總醫院"}
+{"id": "hospital-hospital-official", "kind": "hospital", "synthetic": true, "name": "臺中榮民總醫院", "expected": "臺中榮民總醫院"}
+{"id": "hospital-hospital-alias", "kind": "hospital", "synthetic": true, "name": "中榮", "expected": "臺中榮民總醫院"}
+{"id": "hospital-hospital-spaces", "kind": "hospital", "synthetic": true, "name": "台 中 榮 總", "expected": "臺中榮民總醫院"}
+{"id": "hospital-hospital-campus", "kind": "hospital", "synthetic": true, "name": "台中榮總埔里分院", "expected": "臺中榮民總醫院埔里分院"}
+{"id": "hospital-hospital-university", "kind": "hospital", "synthetic": true, "name": "台大", "expected": "臺大醫院"}
+{"id": "hospital-hospital-ambiguous", "kind": "hospital", "synthetic": true, "name": "榮總", "expected": null}
+{"id": "hospital-hospital-unlisted", "kind": "hospital", "synthetic": true, "name": "台中榮總不存在分院", "expected": null}
+{"id": "hospital-hospital-similar", "kind": "hospital", "synthetic": true, "name": "臺中榮民總醫院附近診所", "expected": null}
+{"id": "hospital-hospital-other", "kind": "hospital", "synthetic": true, "name": "NAVI SYNTHETIC NONPARTNER HOSPITAL", "expected": null}
+{"id": "hospital-hospital-empty", "kind": "hospital", "synthetic": true, "name": "", "expected": null}
+{"id": "hospital-document-same-day", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": "2026-10-01", "dischargeDate": "2026-10-01"}, "status": "verified", "days": 1, "source": "dates", "invalid": false}
+{"id": "hospital-document-cross-month", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": "2026-09-29", "dischargeDate": "2026-10-02"}, "status": "verified", "days": 4, "source": "dates", "invalid": false}
+{"id": "hospital-document-cross-year", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": "2025-12-30", "dischargeDate": "2026-01-02"}, "status": "verified", "days": 4, "source": "dates", "invalid": false}
+{"id": "hospital-document-leap", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": "2024-02-28", "dischargeDate": "2024-03-01"}, "status": "verified", "days": 3, "source": "dates", "invalid": false}
+{"id": "hospital-document-invalid-date", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": "2026-02-30"}, "status": "needs_review", "days": null, "source": null, "invalid": true}
+{"id": "hospital-document-reverse", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": "2026-10-06", "dischargeDate": "2026-10-01"}, "status": "needs_review", "days": null, "source": null, "invalid": false}
+{"id": "hospital-document-only-admission", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"dischargeDate": null}, "status": "needs_review", "days": null, "source": null, "invalid": false}
+{"id": "hospital-document-only-discharge", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": null}, "status": "needs_review", "days": null, "source": null, "invalid": false}
+{"id": "hospital-document-printed", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"admissionDate": null, "dischargeDate": null, "reportedInpatientDays": 5}, "status": "verified", "days": 5, "source": "printed_days", "invalid": false}
+{"id": "hospital-document-printed-conflict", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"reportedInpatientDays": 8}, "status": "needs_review", "days": 5, "source": "dates", "invalid": false}
+{"id": "hospital-document-no-hospital", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"hospitalName": null}, "status": "needs_review", "days": 5, "source": "dates", "invalid": false}
+{"id": "hospital-document-no-name", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"patientName": null}, "status": "needs_review", "days": 5, "source": "dates", "invalid": false}
+{"id": "hospital-document-unknown-kind", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"certificateKind": null}, "status": "needs_review", "days": 5, "source": "dates", "invalid": false}
+{"id": "hospital-document-proof", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {"certificateKind": "hospitalization_proof"}, "status": "verified", "days": 5, "source": "dates", "invalid": false}
+{"id": "hospital-document-no-bank", "kind": "document", "synthetic": true, "documentType": "bank_passbook", "fields": {"bankName": null}, "status": "needs_review", "days": null, "source": null, "invalid": false}
+{"id": "hospital-document-no-holder", "kind": "document", "synthetic": true, "documentType": "bank_passbook", "fields": {"accountHolder": null}, "status": "needs_review", "days": null, "source": null, "invalid": false}
+{"id": "hospital-document-no-last4", "kind": "document", "synthetic": true, "documentType": "bank_passbook", "fields": {"accountLast4": null}, "status": "needs_review", "days": null, "source": null, "invalid": false}
+{"id": "hospital-document-full-account", "kind": "document", "synthetic": true, "documentType": "bank_passbook", "fields": {"accountNumber": "00000000001234"}, "status": "needs_review", "days": null, "source": null, "invalid": true}
+{"id": "hospital-consistency-same", "kind": "consistency", "synthetic": true, "incident": {}, "diagnosis": {}, "bank": {}, "expectedIssues": []}
+{"id": "hospital-consistency-patient", "kind": "consistency", "synthetic": true, "incident": {"patientName": "NAVI OTHER SYNTHETIC PATIENT"}, "diagnosis": {}, "bank": {}, "expectedIssues": ["PATIENT_NAME_MISMATCH"]}
+{"id": "hospital-consistency-holder", "kind": "consistency", "synthetic": true, "incident": {}, "diagnosis": {}, "bank": {"accountHolder": "NAVI OTHER SYNTHETIC PATIENT"}, "expectedIssues": ["PATIENT_NAME_MISMATCH"]}
+{"id": "hospital-consistency-hospital-alias", "kind": "consistency", "synthetic": true, "incident": {"hospitalName": "中榮"}, "diagnosis": {}, "bank": {}, "expectedIssues": []}
+{"id": "hospital-consistency-hospital-other", "kind": "consistency", "synthetic": true, "incident": {"hospitalName": "臺大醫院"}, "diagnosis": {}, "bank": {}, "expectedIssues": ["HOSPITAL_NAME_MISMATCH"]}
+{"id": "hospital-consistency-admission-same", "kind": "consistency", "synthetic": true, "incident": {"admissionDate": "2026-10-01"}, "diagnosis": {}, "bank": {}, "expectedIssues": []}
+{"id": "hospital-consistency-admission-other", "kind": "consistency", "synthetic": true, "incident": {"admissionDate": "2026-10-02"}, "diagnosis": {}, "bank": {}, "expectedIssues": ["ADMISSION_DATE_MISMATCH"]}
+{"id": "hospital-consistency-discharge-other", "kind": "consistency", "synthetic": true, "incident": {"dischargeDate": "2026-10-06"}, "diagnosis": {}, "bank": {}, "expectedIssues": ["DISCHARGE_DATE_MISMATCH"]}
+{"id": "hospital-consistency-days-same", "kind": "consistency", "synthetic": true, "incident": {"reportedInpatientDays": 5}, "diagnosis": {}, "bank": {}, "expectedIssues": []}
+{"id": "hospital-consistency-days-other", "kind": "consistency", "synthetic": true, "incident": {"reportedInpatientDays": 7}, "diagnosis": {}, "bank": {}, "expectedIssues": ["INPATIENT_DAYS_MISMATCH"]}
+{"id": "hospital-consistency-null-not-mismatch", "kind": "consistency", "synthetic": true, "incident": {"patientName": null, "hospitalName": null, "admissionDate": null}, "diagnosis": {"patientName": null}, "bank": {}, "expectedIssues": []}
+{"id": "hospital-consistency-printed-other", "kind": "consistency", "synthetic": true, "incident": {}, "diagnosis": {"reportedInpatientDays": 7}, "bank": {}, "expectedIssues": ["INPATIENT_DAYS_MISMATCH"]}
+{"id": "hospital-workflow-golden", "kind": "workflow", "synthetic": true, "scenario": "golden", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-remove-diagnosis", "kind": "workflow", "synthetic": true, "scenario": "remove-diagnosis", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-remove-bank", "kind": "workflow", "synthetic": true, "scenario": "remove-bank", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-replace", "kind": "workflow", "synthetic": true, "scenario": "replace", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-reupload", "kind": "workflow", "synthetic": true, "scenario": "reupload", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-concurrent", "kind": "workflow", "synthetic": true, "scenario": "concurrent", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-premature-review", "kind": "workflow", "synthetic": true, "scenario": "premature-review", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-missing", "kind": "workflow", "synthetic": true, "scenario": "missing", "unsupported": true, "boundary": false}
+{"id": "hospital-workflow-expired", "kind": "workflow", "synthetic": true, "scenario": "expired", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-restart", "kind": "workflow", "synthetic": true, "scenario": "restart", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-unsupported", "kind": "workflow", "synthetic": true, "scenario": "unsupported", "unsupported": true, "boundary": false}
+{"id": "hospital-workflow-proof-channel", "kind": "workflow", "synthetic": true, "scenario": "proof-channel", "unsupported": false, "boundary": true}
+{"id": "hospital-workflow-unknown-kind", "kind": "workflow", "synthetic": true, "scenario": "unknown-kind", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-provider-business-fields", "kind": "workflow", "synthetic": true, "scenario": "provider-business-fields", "unsupported": false, "boundary": true}
+{"id": "hospital-workflow-privacy", "kind": "workflow", "synthetic": true, "scenario": "privacy", "unsupported": false, "boundary": false}
+{"id": "hospital-workflow-mock-live-boundary", "kind": "workflow", "synthetic": true, "scenario": "mock-live-boundary", "unsupported": false, "boundary": true}
+{"id": "hospital-document-low-diagnosis_certificate", "kind": "document", "synthetic": true, "documentType": "diagnosis_certificate", "fields": {}, "status": "needs_review", "days": 5, "source": "dates", "invalid": false, "confidence": 0.3}
+{"id": "hospital-document-low-bank_passbook", "kind": "document", "synthetic": true, "documentType": "bank_passbook", "fields": {}, "status": "needs_review", "days": null, "source": null, "invalid": false, "confidence": 0.3}
+{"id": "hospital-workflow-information-only", "kind": "workflow", "synthetic": true, "scenario": "information-only", "unsupported": true, "boundary": true}

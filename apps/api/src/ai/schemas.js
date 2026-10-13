@@ -50,6 +50,8 @@ export const GeminiDocumentSchema = z.object({
 }).strict();
 export const documentJsonSchema = z.toJSONSchema(GeminiDocumentSchema.extend({ confidence: z.number().min(0).max(1) }));
 export function normalizeGeminiDocument(raw) {
+  // Keep the existing public enum; accept the unambiguous alternative spelling only at provider intake.
+  if (raw?.fields?.certificateKind === 'hospitalization_certificate') raw = { ...raw, fields: { ...raw.fields, certificateKind: 'hospitalization_proof' } };
   const parsed = GeminiDocumentSchema.parse(raw);
   parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
   if (parsed.documentType === 'unknown') return { documentType: 'unknown', confidence: Math.min(parsed.confidence, 0.4), fields: {} };

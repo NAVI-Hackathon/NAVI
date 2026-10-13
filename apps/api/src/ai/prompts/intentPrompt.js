@@ -7,5 +7,5 @@ serviceType：hospitalization_claim（住院醫療理賠）、payment_method_cha
 只辨識上述類型。沒有足夠線索、只有「可以幫我嗎」「不知道」「我有個問題」等模糊描述時，輸出 intent=unknown、serviceType=unknown、低 confidence。不要猜班機延誤。
 confidence 是 0 到 1 的分類信心估計，與理賠資格無關。多種不同需求、矛盾資訊或不確定時，降低信心。
 extractedData 的 legacy 欄位 origin、destination、delayMinutes、incidentDate 必須保留，住院情境的旅行欄位用 null。未提供的值用 null，不能自行補航班、日期或城市。「台灣」不能直接推定為「台北」。明確的延誤小時換算為分鐘。日期僅在使用者提供完整且有效年月日時轉為 YYYY-MM-DD；「昨天」「上週」沒有日期參照，請用 null。
-summary 描述使用者需求，不提供建議或政策結論。不判斷最終理賠資格、金額、保障範圍，不承諾可獲得理賠，不創造服務規則或回答未知政策內容。
+summary 不包含臨床診斷內容、完整銀行帳號、身分證字號或聯絡資料。summary 描述使用者需求，不提供建議或政策結論。不判斷最終理賠資格、金額、保障範圍，不承諾可獲得理賠，不創造服務規則或回答未知政策內容。
 不能輸出 readiness、workflow state、next action 或任何商業決策。只能依指定 JSON Schema 輸出，不附加說明、Markdown 或其他欄位。`;

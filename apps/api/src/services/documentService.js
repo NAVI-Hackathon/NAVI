@@ -1,3 +1,4 @@
+import { redactIdentifiers } from '../utils/privacy.js';
 import { randomUUID } from 'node:crypto';
 import { DocumentAnalysisSchema, DocumentSchema, DOCUMENT_MIME_TYPES, MAX_DOCUMENT_BYTES } from '../../../../shared/journey.js';
 import { ApiError } from '../middleware/errorHandler.js';
@@ -12,6 +13,23 @@ function matchesSignature(bytes, mime) {
   if (mime === 'image/jpeg') return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
   return mime === 'image/webp' && bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';
 }
+// shortcut: basic container/truncation checks only; add full decoding and malware scanning before production uploads.
+function completeContainer(bytes, mime) {
+  if (mime === 'application/pdf') return /^%PDF-[12]\.\d/.test(bytes.subarray(0, 8).toString()) && bytes.subarray(-1024).includes(Buffer.from('%%EOF'));
+  if (mime === 'image/jpeg') return bytes.length > 4 && bytes.at(-2) === 255 && bytes.at(-1) === 217;
+  if (mime === 'image/webp') return bytes.length >= 20 && bytes.readUInt32LE(4) + 8 === bytes.length && ['VP8 ', 'VP8L', 'VP8X'].includes(bytes.subarray(12, 16).toString()) && bytes.readUInt32LE(16) <= bytes.length - 20;
+  let imageData = false;
+  for (let offset = 8; offset + 12 <= bytes.length;) {
+    const length = bytes.readUInt32BE(offset);
+    if (length > bytes.length - offset - 12) return false;
+    const kind = bytes.subarray(offset + 4, offset + 8).toString();
+    if (offset === 8 && (kind !== 'IHDR' || length !== 13 || bytes.readUInt32BE(offset + 8) === 0 || bytes.readUInt32BE(offset + 12) === 0)) return false;
+    if (kind === 'IDAT' && length > 0) imageData = true;
+    offset += length + 12;
+    if (kind === 'IEND') return length === 0 && imageData && offset === bytes.length;
+  }
+  return false;
+}
 export async function parseUpload(req) {
   if (!req.is('multipart/form-data') || !Buffer.isBuffer(req.body)) throw new ApiError('INVALID_INPUT', '請以 multipart/form-data 提供文件。', 400);
   let form;
@@ -25,8 +43,10 @@ export async function parseUpload(req) {
   if (!DOCUMENT_MIME_TYPES.includes(file.type)) throw new ApiError('UNSUPPORTED_FILE_TYPE', '請選擇 PDF、PNG、JPG 或 WebP。', 415);
   const bytes = Buffer.from(await file.arrayBuffer());
   if (!matchesSignature(bytes, file.type)) throw new ApiError('UNSUPPORTED_FILE_TYPE', '文件內容與格式不符，請重新選擇。', 415);
+  if (!completeContainer(bytes, file.type)) throw new ApiError('DOCUMENT_INVALID', '文件可能損壞或不完整，請重新選擇清晰的文件。', 422, true);
   const documentType = form.get('documentType');
   if (documentType !== null && typeof documentType !== 'string') throw new ApiError('INVALID_INPUT', '請提供有效的 documentType。', 400);
+  if (documentType !== null && !DocumentAnalysisSchema.options.some(schema => schema.shape.documentType.value === documentType)) throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇符合服務需求的文件。', 422, true);
   const filename = file.name.replace(/\\/g, '/').split('/').at(-1).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 180) || 'document';
   return { documentType, bytes, filename, mimeType: file.type, size: file.size };
 }
@@ -35,6 +55,10 @@ export async function analyzeDocument(upload, { provider, config, signal }) {
   const analysis = await requestValidatedAI(async combined => DocumentAnalysisSchema.parse(await provider.analyzeDocument(upload, combined)), { config, signal });
   if (analysis.documentType === 'unknown') throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇清晰且符合服務需求的文件。', 422, true);
   const fields = { ...analysis.fields };
+  for (const key of ['patientName', 'hospitalName', 'accountHolder', 'bankName']) {
+    const value = fields[key];
+    if (value && redactIdentifiers(value) !== value) fields[key] = null;
+  }
   if (analysis.documentType === 'delay_certificate') fields.delayMinutes = calculateDelayMinutes(fields);
   if (analysis.documentType === 'diagnosis_certificate') {
     const stay = calculateStay(fields);

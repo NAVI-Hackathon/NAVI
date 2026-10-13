@@ -1,3 +1,4 @@
+import { DocumentAnalysisSchema } from '../../../../shared/journey.js';
 import { calculateStay } from '../../../../shared/hospitalization.js';
 const clock = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export function calculateDelayMinutes(fields) {
@@ -18,11 +19,12 @@ export function travelInformationComplete(document) {
   return document?.documentType === 'boarding_pass' && ['passengerName', 'flightNumber', 'origin', 'destination', 'departureDate'].every(key => Boolean(document.fields[key]));
 }
 export function documentVerified(document, threshold) {
+  if (!DocumentAnalysisSchema.safeParse({ documentType: document.documentType, confidence: document.confidence, fields: document.fields }).success) return false;
   const fields = document.fields;
   const sufficient = document.documentType === 'boarding_pass'
     ? Boolean(fields.flightNumber || (fields.origin && fields.destination))
     : document.documentType === 'delay_certificate' ? calculateDelayMinutes(fields) !== null
-      : document.documentType === 'diagnosis_certificate' ? Boolean(fields.patientName && fields.hospitalName && calculateStay(fields).days !== null && (!fields.admissionDate || !fields.dischargeDate || !fields.reportedInpatientDays || calculateStay(fields).days === fields.reportedInpatientDays))
+      : document.documentType === 'diagnosis_certificate' ? Boolean(['diagnosis_certificate', 'hospitalization_proof'].includes(fields.certificateKind) && fields.patientName && fields.hospitalName && calculateStay(fields).days !== null && (!fields.admissionDate || !fields.dischargeDate || !fields.reportedInpatientDays || calculateStay(fields).days === fields.reportedInpatientDays))
         : document.documentType === 'bank_passbook' && Boolean(fields.accountHolder && fields.bankName && /^\d{4}$/.test(fields.accountLast4 ?? ''));
   return Boolean(sufficient && document.confidence >= threshold);
 }
