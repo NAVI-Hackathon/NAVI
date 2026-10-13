@@ -45,7 +45,7 @@ npm run dev:navi
 
 **Developer B Phase 2 已完成 Backend AI 整合；Phase 3 已加入零成本防護與本地評估**。`dev`／`dev:navi`／`dev:all`／`dev:api` 一律以 Demo 啟動，不受舊 `.env` 的 `AI_MODE=live` 影響，也不送出 Gemini 請求。Free Tier 設定確認後，需人工執行 `npm run dev:live` 才啟用真實 Intent、文件抽取、JSON grounded knowledge 與 server-owned Journey。Live 失敗不會偷偷轉 Demo。
 
-**目前住院工作區仍使用 Mock 文件與瀏覽器 workflow**；一般模式的入口 Intent 使用 Backend API，依明確啟動模式區分 Demo／Live；`/demo` 則完全使用本地 Mock Adapter。Backend 已支援住院 server-owned Journey、診斷書／住院證明、存摺抽取與交叉驗證；A 的工作區尚未接入這些 API。本次只使用注入 transport 與合成文件測試，沒有真實 Gemini 請求。[住院 Backend 與 PR Review](docs/backend-hospitalization.md)記錄先前住院實作的契約與限制；[歷史 Backend Phase 2](docs/backend-ai-phase-2.md)保留班機延誤整合紀錄。
+**一般模式（`/`、`/embed`）的住院工作區已接入 Backend server-owned Journey**：建立案件、上傳診斷書／住院證明與存摺、刪除、確認都呼叫 API，畫面只渲染 Backend 回傳的準備度、階段、下一步與理賠管道；依明確啟動模式區分 Demo／Live。`/demo`、`/embed?mode=demo` 則完全使用本地 Mock Adapter，作為 API 故障時的備案。本次只使用注入 transport 與合成文件測試，沒有真實 Gemini 請求。[住院 Backend 與 PR Review](docs/backend-hospitalization.md)記錄先前住院實作的契約與限制；[歷史 Backend Phase 2](docs/backend-ai-phase-2.md)保留班機延誤整合紀錄。
 
 Backend 設定集中於 `apps/api/src/config/env.js`，範例在 `apps/api/.env.example`；預設 `gemini-3.5-flash-lite` / minimal thinking，整體 AI deadline 10 秒。`.env` 只在本機，不能 commit。Live 未設定 Key 或未確認 Free Tier 時不允許外部請求；Demo 不需要 Key。health 的配置欄位僅表示 Key 存在，不代表供應商連線成功或 Billing 狀態。
 
@@ -101,19 +101,21 @@ VITE_MOCK_SITE_URL=http://127.0.0.1:3000
 `apps/mock-site/.env.local`：
 
 ```dotenv
-NEXT_PUBLIC_NAVI_EMBED_URL=http://127.0.0.1:5173/embed?mode=demo
+# 主 Demo：嵌入的 NAVI 走 Backend Journey API（dev:all 預設 AI_MODE=demo，不呼叫 Gemini）
+NEXT_PUBLIC_NAVI_EMBED_URL=http://127.0.0.1:5173/embed
+# 備案：API 故障時改成 /embed?mode=demo，完全使用前端本地 Mock，不呼叫 Backend
 ```
 
-重新啟動 `npm run dev:all` 後，在 **http://127.0.0.1:3000/** 點右下角 NAVI，便會開啟獨立 NAVI 網站的 iframe。上述 `mode=demo` 使用本地 Mock Adapter，不呼叫 Backend 或 Gemini。「帶我去」會讓模擬網站切換頁面／分頁、捲動並高亮目標；手機版導覽後會收合助手。獨立 NAVI 的相同動作則開啟模擬網站新分頁。
+修改後需重新啟動 `npm run dev:all`（Next 只在啟動時讀取這個值），再到 **http://127.0.0.1:3000/** 點右下角 NAVI，便會開啟獨立 NAVI 網站的 iframe。「帶我去」會讓模擬網站切換頁面／分頁、捲動並高亮目標；手機版導覽後會收合助手。獨立 NAVI 的相同動作則開啟模擬網站新分頁。
 
 兩站仍各自執行，沒有把模擬官網 routing 搬進 NAVI，也沒有自動讀取官網內容或跨站傳遞案件資料。訊息同時驗證精確 origin、預期 window 與 Zod Schema；請統一使用 `127.0.0.1`，不要與 `localhost` 混用。未啟用嵌入時，可直接在 **http://127.0.0.1:5173/demo** 展示完整本地流程。
 
 ## Demo Flow
 
 1. 開 **3000** 模擬網站 →「理賠程序介紹」(`/services/claims`) → 切換「應備文件」，展示使用者原本需要自行搜尋／閱讀的情境。
-2. 啟用上述嵌入設定後，點右下角 **NAVI** 開啟助手；未設定時，手動切換至 **http://127.0.0.1:5173/demo**。一般模式 **http://127.0.0.1:5173/** 的入口會呼叫 Backend Intent API，與本地示範模式不同。
+2. 啟用上述嵌入設定（`/embed`）後，點右下角 **NAVI** 開啟助手，旅程由 Backend 計算；未設定嵌入時，可開 **http://127.0.0.1:5173/**（同樣走 Backend）。API 故障時的備案是 **http://127.0.0.1:5173/demo**（前端本地 Mock）。
 3. NAVI 輸入「我上週在台中榮總住院五天，要怎麼申請理賠？」→ 開始分析 → 住院醫療理賠旅程 **35%**（辨識臺中榮民總醫院為醫起通合作醫院）。
-4. 上傳診斷書或住院證明（Mock 辨識）→ **70%**；上傳存摺影本（Mock）→ **90%**；確認資料並確認已填妥保險金申請書 → **100%**。各步驟可點「帶我去」查看應備文件、匯款規定與表單位置；前往服務先開啟導引預覽，再可導航至模擬服務入口，不送件。
+4. 上傳診斷書或住院證明 → **70%**；上傳存摺影本 → **90%**（Demo 模式下 Backend 依文件類型回傳合成資料，畫面標示「示範辨識資料，未讀取文件內容」；只有 Live 才是 Gemini 實際辨識）；確認資料並確認已填妥保險金申請書 → **100%**。各步驟可點「帶我去」查看應備文件、匯款規定與表單位置；前往服務先開啟導引預覽，再可導航至模擬服務入口，不送件。
 5. NAVI 右上選單「重新開始示範」可清除本分頁進度。reload 保留 sessionStorage；不同 tab 的案件分開。
 
 住院理賠的應備文件、醫起通合作醫院、理賠聯盟鏈與郵寄規則全部取自 `data/cardif_seed_data.json`（官網公開資料整理）；診斷書與存摺內容為示範資料。一般模式搭配預設開發指令時由 Backend Demo Provider 回應，API metadata 標記 `demo_fallback`；`/demo` 與 `/embed?mode=demo` 不依賴 API。要使用真實 Gemini 入口理解，需先確認下方零成本條件，再人工執行 `npm run dev:live`。若要演示 Backend 斷線時的前端備援，請先按下方方式**明確啟用示範備援**；備援畫面會標記本次未使用 AI。
@@ -149,7 +151,7 @@ npm run test:ai           # 相容舊指令：現在執行 Local evaluation
 
 輸入「我上週在台中榮總住院五天，要怎麼申請理賠？」→ 意圖理解（Gemini 或示範判讀）→ 住院醫療理賠工作區 **35%**（事件資訊 20 + 服務辨識 15）→ 診斷書或住院證明 **70%**（文件 20 + 住院資訊完整 15，住院 5 天）→ 存摺影本 **90%**（匯款給付 20）→ 確認資料並填妥保險金申請書 **100%**（10）→ 依醫院選擇管道：醫起通（合作醫院）、理賠聯盟鏈或郵寄，並提醒醫起通仍需開立診斷書、聯盟鏈 10 日內寄回正本、單次超過新台幣 30 萬元需等正本寄達。
 
-目前前端住院旅程仍由本地 Adapter 計算；Backend `POST /api/journeys` 已可建立 `hospitalization_claim` 的 server-owned Journey（35%），上傳診斷書／住院證明（70%）與存摺（90%），再確認（100%）。Backend 權重與院所／管道資料集中於 `shared/hospitalization.js`，與 A 現有成功路徑一致；A 接入時應直接渲染 API Journey，移除重複計算。班機延誤僅保留 Legacy API／測試，不是法國巴黎人壽展示服務。
+一般模式的前端住院旅程直接渲染 Backend 結果（`apps/web/src/services/apiJourney.js`），不在前端計分；`/demo` 的本地 Adapter 也改用同一份 `shared/hospitalization.js` 規則。正式模式暫不提供手動輸入文件（Backend 尚無對應 API），`/demo` 保留。Backend `POST /api/journeys` 可建立 `hospitalization_claim` 的 server-owned Journey（35%），上傳診斷書／住院證明（70%）與存摺（90%），再確認（100%）。Backend 權重與院所／管道資料集中於 `shared/hospitalization.js`，與前端示範路徑一致。班機延誤僅保留 Legacy API／測試，不是法國巴黎人壽展示服務。
 
 文件齊備時為 `READY_FOR_REVIEW`／90%；確認後為 `READY_TO_PROCEED`／100%。100% 只代表資料完整，不判斷保障、理賠資格、核准或送出申請。移除／替換文件會撤回分數與確認。目前 UI 文件不會讀取或上傳；只有明確啟用 Live 並通過 Free Tier guard 時，自然語言描述才會送到 Gemini。使用 Live Backend 文件 API 時，文件 bytes 會在本次 request 傳送至 Gemini；Demo 只讀指定 fixture，Repository 不儲存 bytes。
 
