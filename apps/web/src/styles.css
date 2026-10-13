@@ -537,3 +537,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 /* Server-flagged documents (formal mode) */
 .doc-status.is-review { color: var(--color-warning); }
 .doc-match.is-review { color: var(--color-warning); }
+
+/* Formal mode: reading a stored journey back from the server */
+.resuming { display: grid; place-items: center; min-height: 60vh; font-size: 12px; color: var(--color-text-muted); }
+.resuming p { display: flex; align-items: center; gap: 8px; }

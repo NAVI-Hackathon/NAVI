@@ -3,6 +3,7 @@ import { DocumentSchema, ServiceJourneySchema, JOURNEY_STATES as STATES } from '
 import { serviceLabel, validateUnderstanding } from '../domain/intelligence.js';
 import { HOSPITAL_WEIGHTS, findHospitalMention, matchPartnerHospital } from '../../../../shared/hospitalization.js';
 import { basicJourneys } from '../mocks/basicJourneys.js';
+import { redactIdentifiers } from '../domain/privacy.js';
 import { documentFixtures, DOCUMENT_TYPES } from '../mocks/hospitalClaim.js';
 import {
   claimApplicationForm, claimByMail, diagnosisRule, hospitalUpload, inpatientDocuments, inpatientDocumentsAnchor, officialSource, passbookRuleAnchor,
@@ -60,7 +61,8 @@ const now = () => new Date().toISOString();
 
 export function createSession(story, understanding, provider = 'demo') {
   const at = now();
-  return { journeyId: uuid(), createdAt: at, updatedAt: at, story: story.trim(), understanding: validateUnderstanding(understanding), provider, documents: [], confirmed: false, handoffRequested: false };
+  // The description is kept in sessionStorage, so identifiers are masked first.
+  return { journeyId: uuid(), createdAt: at, updatedAt: at, story: redactIdentifiers(story.trim()), understanding: validateUnderstanding(understanding), provider, documents: [], confirmed: false, handoffRequested: false };
 }
 
 export function journeyKind(session) {

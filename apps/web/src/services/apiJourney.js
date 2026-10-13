@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ServiceJourneySchema } from '../../../../shared/journey.js';
 import { opensJourney } from './naviService.js';
 import { samplePdfFile } from '../mocks/sampleDocuments.js';
+import { redactIdentifiers } from '../domain/privacy.js';
 
 // Formal mode: the journey is owned by apps/api (readiness, stage, next action, claim context).
 // This client only sends the user's actions and renders what the server returns.
@@ -12,9 +13,14 @@ export class JourneyApiError extends Error {
 export const JOURNEY_EXPIRED_MESSAGE = '這份服務旅程已失效或不存在，請重新開始。';
 
 const kindOf = serviceType => (serviceType === 'hospitalization_claim' ? 'hospital' : serviceType);
+// Privacy: the browser keeps only the journey id and display flags. The description and document
+// fields stay on the server and are read back after a reload.
 const Stored = z.object({
-  v: z.literal(1), journey: ServiceJourneySchema, story: z.string(), source: z.enum(['gemini', 'demo_fallback']), handoffRequested: z.boolean(),
+  v: z.literal(2), journeyId: z.string().uuid(), source: z.enum(['gemini', 'demo_fallback']), handoffRequested: z.boolean(),
 }).strict();
+// The server does not retain the description (it keeps a neutral note instead). Until a reload the
+// user sees their own masked words, held in memory only; afterwards the server's note.
+const storyOf = journey => journey.conversation.find(entry => entry.role === 'user')?.message ?? '';
 const UploadResponse = z.object({ journey: ServiceJourneySchema }).passthrough();
 
 export function createApiJourneyService({
@@ -22,13 +28,16 @@ export function createApiJourneyService({
   baseUrl = import.meta.env?.VITE_API_BASE_URL || '', timeoutMs = 15000, documentTimeoutMs = 45000,
 }) {
   let state = null;
+  let pending = null; // stored journey reference waiting to be read back from the server
   const api = path => `${baseUrl.replace(/\/$/, '')}/api${path}`;
 
   function save() {
-    try { if (state) storage?.setItem(storageKey, JSON.stringify({ v: 1, ...state })); else storage?.removeItem(storageKey); }
-    catch { /* Storage can be unavailable; the journey id then lives in memory only. */ }
+    try {
+      if (state) storage?.setItem(storageKey, JSON.stringify({ v: 2, journeyId: state.journey.id, source: state.source, handoffRequested: state.handoffRequested }));
+      else storage?.removeItem(storageKey);
+    } catch { /* Storage can be unavailable; the journey id then lives in memory only. */ }
   }
-  const snapshot = () => (state ? { journey: state.journey, context: { kind: kindOf(state.journey.serviceType), story: state.story, source: state.source, handoffRequested: state.handoffRequested } } : null);
+  const snapshot = () => (state ? { journey: state.journey, context: { kind: kindOf(state.journey.serviceType), story: state.story ?? storyOf(state.journey), source: state.source, handoffRequested: state.handoffRequested } } : null);
   function commit(journey) { state = { ...state, journey }; save(); return snapshot(); }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
@@ -61,18 +70,31 @@ export function createApiJourneyService({
     mode: 'live',
     // The server keeps documents; manual entry has no backend API yet, so it is off in formal mode.
     capabilities: { manualEntry: false },
+    /** Nothing to show synchronously: the journey itself is only on the server (see resume). */
     restore() {
+      state = null;
       try {
         const parsed = Stored.safeParse(JSON.parse(storage?.getItem(storageKey) ?? 'null'));
-        state = parsed.success ? { journey: parsed.data.journey, story: parsed.data.story, source: parsed.data.source, handoffRequested: parsed.data.handoffRequested } : null;
-      } catch { state = null; }
-      return snapshot();
+        pending = parsed.success ? parsed.data : null;
+        if (!parsed.success) storage?.removeItem(storageKey); // older formats held the raw description
+      } catch { pending = null; }
+      return null;
     },
-    /** Re-read the journey from the server (it may have expired: 1 hour TTL, cleared on restart). */
-    async sync({ signal } = {}) {
-      if (!state) return null;
-      try { return commit(await request(`/journeys/${state.journey.id}`, { signal })); }
-      catch (error) { if (error.code === 'JOURNEY_NOT_FOUND') { state = null; save(); } throw error; }
+    hasStoredJourney: () => Boolean(pending),
+    /** Read a stored journey back from the server (it may have expired: 1 hour TTL, cleared on restart). */
+    async resume({ signal } = {}) {
+      if (!pending) return null;
+      const { journeyId, source, handoffRequested } = pending;
+      try {
+        const journey = await request(`/journeys/${journeyId}`, { signal });
+        pending = null;
+        state = { journey, source, handoffRequested };
+        save();
+        return snapshot();
+      } catch (error) {
+        if (error.code === 'JOURNEY_NOT_FOUND') { pending = null; save(); }
+        throw error;
+      }
     },
     async analyze(message, { signal, openJourney = () => true } = {}) {
       const understanding = await understand(message, { signal });
@@ -82,8 +104,9 @@ export function createApiJourneyService({
       const serviceRequest = understanding.data.intent === 'service_request';
       if (kind !== 'hospital' || !serviceRequest || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
       const journey = await request('/journeys', { method: 'POST', json: { message: message.trim(), intentResult: understanding.data }, signal });
+      pending = null; // a new journey replaces any stored one that was not read back yet
       if (journey.serviceType !== 'hospitalization_claim') return { understanding, kind: kindOf(journey.serviceType), snapshot: null };
-      state = { journey, story: message.trim(), source: understanding.meta.source, handoffRequested: false };
+      state = { journey, story: redactIdentifiers(message.trim()), source: understanding.meta.source, handoffRequested: false };
       save();
       return { understanding, kind, snapshot: snapshot() };
     },

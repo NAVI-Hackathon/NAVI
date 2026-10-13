@@ -56,6 +56,9 @@ export default function App() {
   const [snapshot, setSnapshot] = useState(() => service.restore());
   // Embedded NAVI reopens on the journey in progress (the host page may have reloaded the iframe).
   const [view, setView] = useState(() => ((location.hash === '#workspace' || embedded) && snapshot ? 'workspace' : 'landing'));
+  // Formal mode: a stored journey is read back from the server before anything is shown,
+  // so the page opens straight on the workspace instead of flashing the landing page.
+  const [resuming, setResuming] = useState(() => Boolean(service.hasStoredJourney?.()));
   const [analysisPhase, setAnalysisPhase] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [docStates, setDocStates] = useState({});
@@ -101,13 +104,20 @@ export default function App() {
     setFeedback({ kind: 'expired', title: '這份服務旅程已失效', body: `${JOURNEY_EXPIRED_MESSAGE}描述你的情況，就能建立新的服務旅程。` });
   }, [service]);
 
-  // Formal mode: the journey lives on the server, so re-read it after a reload.
+  // Formal mode keeps only the journey id in the browser; read the journey back after a reload.
   useEffect(() => {
-    if (!service.sync || !snapshotRef.current) return;
+    if (!service.resume) return;
     const ctl = new AbortController();
-    service.sync({ signal: ctl.signal }).then(next => { if (next) setSnapshot(next); }).catch(error => {
+    service.resume({ signal: ctl.signal }).then(next => {
+      if (next && !snapshotRef.current) { // nothing stored, or the user already started a new one
+        setSnapshot(next);
+        if (location.hash === '#workspace' || embedded) setView('workspace');
+      }
+      setResuming(false);
+    }).catch(error => {
       if (ctl.signal.aborted) return;
       if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      setResuming(false);
     });
     return () => ctl.abort();
   }, [service, expire]);
@@ -302,6 +312,11 @@ export default function App() {
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>
         )}
 
+        {resuming ? (
+          <main id="main-content" className="resuming" aria-busy="true">
+            <p role="status"><span className="dots" aria-hidden="true"><i /><i /><i /></span>正在讀取你的服務旅程…</p>
+          </main>
+        ) : (
         <LayoutGroup>
           <AnimatePresence mode="popLayout" initial={false}>
             {view === 'workspace' && snapshot ? (
@@ -318,6 +333,7 @@ export default function App() {
             )}
           </AnimatePresence>
         </LayoutGroup>
+        )}
 
         <AnimatePresence>
           {snapshot && dialog === 'review' && (

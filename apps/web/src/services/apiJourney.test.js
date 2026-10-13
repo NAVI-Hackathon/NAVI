@@ -50,17 +50,49 @@ test('formal mode renders the server-owned 住院 journey: 35 → 70 → 90 → 
   assert.equal(removed.journey.confirmed, false);
 });
 
-test('a reload restores the journey from the server; an expired journey is cleared', async t => {
+test('a reload reads the journey back from the server; an expired journey is cleared', async t => {
   const storage = memoryStorage();
-  const first = client(await backend(t), storage);
+  const baseUrl = await backend(t);
+  const first = client(baseUrl, storage);
   const { snapshot } = await first.analyze(DEMO_STORY);
+  await first.uploadDocument('diagnosis_certificate', { sample: true });
+
+  const reloaded = client(baseUrl, storage);
+  assert.equal(reloaded.restore(), null, 'nothing is rendered from the browser copy');
+  const resumed = await reloaded.resume();
+  assert.equal(resumed.journey.id, snapshot.journey.id);
+  assert.equal(resumed.journey.readiness, 70);
 
   // A restarted server (new in-memory repository) no longer has the journey.
-  const reloaded = client(await backend(t), storage);
-  assert.equal(reloaded.restore().journey.id, snapshot.journey.id);
-  await assert.rejects(reloaded.sync(), { code: 'JOURNEY_NOT_FOUND', message: '這份服務旅程已失效或不存在，請重新開始。' });
+  const restarted = client(await backend(t), storage);
+  restarted.restore();
+  await assert.rejects(restarted.resume(), { code: 'JOURNEY_NOT_FOUND', message: '這份服務旅程已失效或不存在，請重新開始。' });
   assert.equal(storage.getItem('navi.journey'), null);
-  assert.equal(client('http://unused', storage).restore(), null);
+});
+
+test('the browser keeps only the journey id; the description is masked and never stored', async t => {
+  const storage = memoryStorage();
+  const baseUrl = await backend(t);
+  const service = client(baseUrl, storage);
+  const story = '我上週在台中榮總住院五天，我的電話 0912-345-678，身分證 A123456789，要怎麼申請理賠？';
+  const { snapshot } = await service.analyze(story);
+  await service.uploadDocument('diagnosis_certificate', { sample: true });
+
+  const stored = storage.getItem('navi.journey');
+  assert.deepEqual(Object.keys(JSON.parse(stored)).sort(), ['handoffRequested', 'journeyId', 'source', 'v']);
+  for (const secret of ['0912', 'A123456789', '台中榮總', 'NAVI SYNTHETIC PATIENT']) assert.ok(!stored.includes(secret), secret);
+  assert.doesNotMatch(snapshot.context.story, /0912|A123456789/);
+  assert.match(snapshot.context.story, /台中榮總住院五天/);
+  // After a reload only the server's neutral note is available.
+  const reloaded = client(baseUrl, storage);
+  reloaded.restore();
+  assert.doesNotMatch((await reloaded.resume()).context.story, /台中榮總|0912/);
+
+  // A stored copy from the previous format (which held the raw description) is discarded.
+  const legacy = memoryStorage();
+  legacy.setItem('navi.journey', JSON.stringify({ v: 1, story, journey: snapshot.journey, source: 'demo_fallback', handoffRequested: false }));
+  assert.equal(client('http://unused', legacy).restore(), null);
+  assert.equal(legacy.getItem('navi.journey'), null);
 });
 
 test('only 住院醫療理賠 opens a server journey; outpatient-only and other services stay on the landing page', async t => {

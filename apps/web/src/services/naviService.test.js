@@ -48,6 +48,15 @@ test('a non-partner hospital routes to 理賠聯盟鏈 instead of 醫起通', as
   assert.equal(service.confirm().journey.nextAction.target, 'union_chain');
 });
 
+test('the demo session masks identifiers before the description is stored', async () => {
+  const storage = memoryStorage();
+  const { snapshot } = await fast(storage).analyze('我在台中榮總住院五天，電話 0912345678，信箱 me@example.com，要怎麼申請理賠？');
+  const stored = storage.getItem('navi.demo.journey');
+  for (const secret of ['0912345678', 'me@example.com']) assert.ok(!stored.includes(secret), secret);
+  assert.match(snapshot.context.story, /\[已遮蔽電話\].*\[已遮蔽電子郵件\]/);
+  assert.equal(snapshot.journey.claimContext.hospital.matchedName, '臺中榮民總醫院');
+});
+
 test('hospital matching is conservative: 「榮總」 alone is not a partner, named campuses and abbreviations are', async () => {
   const hospitalFor = async story => (await fast(memoryStorage()).analyze(story)).snapshot.journey.claimContext.hospital;
   assert.deepEqual(await hospitalFor('我上週在榮總住院五天，要怎麼申請理賠？'), { mentioned: '榮總', matchedName: null, partner: false });

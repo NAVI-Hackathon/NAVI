@@ -160,18 +160,22 @@ test('Developer A API adapter runs the hospital Golden Path, restores server sta
   assert.equal((await client.uploadDocument('diagnosis_certificate', { sample: true })).journey.readiness, 70);
   assert.equal((await client.uploadDocument('bank_passbook', { sample: true })).journey.readiness, 90);
   assert.equal((await client.confirm()).journey.readiness, 100);
-  const restored = createApiJourneyService(options); assert.equal(restored.restore().journey.id, result.snapshot.journey.id);
-  assert.equal((await restored.sync()).journey.readiness, 100);
+  // A's adapter keeps only the journey id in the browser (no description or document fields) and reads the rest back.
+  const restored = createApiJourneyService(options); assert.equal(restored.restore(), null);
+  const resumed = await restored.resume(); assert.equal(resumed.journey.id, result.snapshot.journey.id); assert.equal(resumed.journey.readiness, 100);
   assert.equal((await restored.removeDocument('bank_passbook')).journey.readiness, 70);
   repository.entries.get(result.snapshot.journey.id).expiresAt = Date.now() - 1;
-  await assert.rejects(restored.sync(), { code: 'JOURNEY_NOT_FOUND' });
-  assert.equal(restored.restore(), null);
+  const reloaded = createApiJourneyService(options); reloaded.restore();
+  await assert.rejects(reloaded.resume(), { code: 'JOURNEY_NOT_FOUND' });
+  assert.equal(values.size, 0);
 });
 
 test('knowledge-only hospitalization intents cannot silently open a scored service workflow through A adapter', async t => {
   const demo = createDemoProvider(); const repository = new InMemoryJourneyRepository();
   const api = await apiFor(t, { repository, provider: { ...demo, understandIntent: async message => ({ ...await demo.understandIntent(message), intent: 'knowledge_query' }) } });
   const client = createApiJourneyService({ baseUrl: api.baseUrl, understand: message => understandIntent(message, { baseUrl: api.baseUrl }) });
-  await assert.rejects(client.analyze('住院理賠需要什麼文件？'), { code: 'SERVICE_NOT_SUPPORTED', status: 409 });
+  // A's adapter answers information questions from official data and never POSTs a journey for them.
+  const result = await client.analyze('住院理賠需要什麼文件？');
+  assert.equal(result.snapshot, null); assert.equal(result.understanding.data.intent, 'knowledge_query');
   assert.equal(repository.entries.size, 0); assert.equal(client.restore(), null);
 });
