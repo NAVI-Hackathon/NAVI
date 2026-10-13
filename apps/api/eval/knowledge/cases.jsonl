@@ -1,0 +1,96 @@
+{"id": "knowledge-001", "kind": "query", "synthetic": true, "query": "我搬家了要改地址", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "frontend_baseline"}
+{"id": "knowledge-002", "kind": "query", "synthetic": true, "query": "我想借錢週轉", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "frontend_baseline"}
+{"id": "knowledge-003", "kind": "query", "synthetic": true, "query": "我想把年繳改月繳", "status": "answered", "expectedTop1": "service:change_payment_frequency", "expectedTop3": ["service:change_payment_frequency"], "group": "frontend_baseline"}
+{"id": "knowledge-004", "kind": "query", "synthetic": true, "query": "換工作要通知你們嗎", "status": "answered", "expectedTop1": "service:change_occupation", "expectedTop3": ["service:change_occupation"], "group": "frontend_baseline"}
+{"id": "knowledge-005", "kind": "query", "synthetic": true, "query": "我想改成信用卡扣款", "status": "answered", "expectedTop1": "service:change_payment_method", "expectedTop3": ["service:change_payment_method"], "group": "frontend_baseline"}
+{"id": "knowledge-006", "kind": "query", "synthetic": true, "query": "要保人可以改成我小孩嗎", "status": "answered", "expectedTop1": "service:change_policyholder", "expectedTop3": ["service:change_policyholder"], "group": "frontend_baseline"}
+{"id": "knowledge-007", "kind": "query", "synthetic": true, "query": "家人過世不知道有沒有保險", "status": "answered", "expectedTop1": "service:claim_household_registration", "expectedTop3": ["service:claim_household_registration"], "group": "frontend_baseline"}
+{"id": "knowledge-008", "kind": "query", "synthetic": true, "query": "受益人變更表單在哪下載", "status": "answered", "expectedTop1": "form:form_beneficiary_change", "expectedTop3": ["form:form_beneficiary_change"], "group": "frontend_baseline"}
+{"id": "knowledge-009", "kind": "query", "synthetic": true, "query": "保險金申請書", "status": "answered", "expectedTop1": "form:claim_1.1.1", "expectedTop3": ["form:claim_1.1.1"], "group": "frontend_baseline"}
+{"id": "knowledge-010", "kind": "query", "synthetic": true, "query": "保單借款多久撥款", "status": "answered", "expectedTop1": "faq:12", "expectedTop3": ["faq:12"], "group": "frontend_baseline"}
+{"id": "knowledge-011", "kind": "query", "synthetic": true, "query": "理賠要多久？", "status": "answered", "expectedTop1": "faq:11", "expectedTop3": ["faq:11"], "group": "frontend_baseline"}
+{"id": "knowledge-012", "kind": "query", "synthetic": true, "query": "密碼輸錯被鎖住了", "status": "answered", "expectedTop1": "faq:7", "expectedTop3": ["faq:7"], "group": "frontend_baseline"}
+{"id": "knowledge-013", "kind": "query", "synthetic": true, "query": "客服電話幾號", "status": "answered", "expectedTop1": "faq:10", "expectedTop3": ["faq:10"], "group": "frontend_baseline"}
+{"id": "knowledge-014", "kind": "query", "synthetic": true, "query": "住院要準備什麼文件", "status": "answered", "expectedTop1": "claim-doc:2", "expectedTop3": ["claim-doc:2"], "group": "frontend_baseline"}
+{"id": "knowledge-015", "kind": "query", "synthetic": true, "query": "癌症理賠需要哪些文件", "status": "answered", "expectedTop1": "claim-doc:3", "expectedTop3": ["claim-doc:3"], "group": "frontend_baseline"}
+{"id": "knowledge-016", "kind": "query", "synthetic": true, "query": "醫起通是什麼？", "status": "answered", "expectedTop1": "service:claim_hospital_upload", "expectedTop3": ["service:claim_hospital_upload"], "group": "frontend_baseline"}
+{"id": "knowledge-017", "kind": "query", "synthetic": true, "query": "線上申請還要寄正本嗎？", "status": "answered", "expectedTop1": "service:claim_union_chain", "expectedTop3": ["service:claim_union_chain"], "group": "frontend_baseline"}
+{"id": "knowledge-018", "kind": "query", "synthetic": true, "query": "我最近搬家了，保單上的地址要怎麼改？", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "frontend_baseline"}
+{"id": "knowledge-019", "kind": "query", "synthetic": true, "query": "我想用保單借錢週轉，要準備什麼？", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "frontend_baseline"}
+{"id": "knowledge-020", "kind": "query", "synthetic": true, "query": "我只有門診開刀，沒有住院，要怎麼申請理賠？", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-021", "kind": "query", "synthetic": true, "query": "我上週門診做了小手術。", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-022", "kind": "query", "synthetic": true, "query": "我只有拿診斷書，沒有住院。", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-023", "kind": "query", "synthetic": true, "query": "醫療門診理賠需要哪些文件？", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-024", "kind": "query", "synthetic": true, "query": "outpatient surgery documents", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-025", "kind": "query", "synthetic": true, "query": "outpatient only, what documents do I need?", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-026", "kind": "query", "synthetic": true, "query": "I wasn't hospitalized. What claim documents are required?", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-027", "kind": "query", "synthetic": true, "query": "門診手術需要收據嗎？", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-028", "kind": "query", "synthetic": true, "query": "沒有住院，要準備哪些文件？", "status": "answered", "expectedTop1": "claim-doc:1", "expectedTop3": ["claim-doc:1"], "group": "new_retrieval"}
+{"id": "knowledge-029", "kind": "query", "synthetic": true, "query": "我住院五天，請問應備文件？", "status": "answered", "expectedTop1": "claim-doc:2", "expectedTop3": ["claim-doc:2"], "group": "new_retrieval"}
+{"id": "knowledge-030", "kind": "query", "synthetic": true, "query": "inpatient claim documents", "status": "answered", "expectedTop1": "claim-doc:2", "expectedTop3": ["claim-doc:2"], "group": "new_retrieval"}
+{"id": "knowledge-031", "kind": "query", "synthetic": true, "query": "hospitalization requirements", "status": "answered", "expectedTop1": "claim-doc:2", "expectedTop3": ["claim-doc:2"], "group": "new_retrieval"}
+{"id": "knowledge-032", "kind": "query", "synthetic": true, "query": "住院五天，但是沒有住院證明，需要哪些文件？", "status": "answered", "expectedTop1": "claim-doc:2", "expectedTop3": ["claim-doc:2"], "group": "new_retrieval"}
+{"id": "knowledge-033", "kind": "query", "synthetic": true, "query": "住院醫療理賠應備文件", "status": "answered", "expectedTop1": "claim-doc:2", "expectedTop3": ["claim-doc:2"], "group": "new_retrieval"}
+{"id": "knowledge-034", "kind": "query", "synthetic": true, "query": "我搬家了，想變更通訊地址", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-035", "kind": "query", "synthetic": true, "query": "改地址", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-036", "kind": "query", "synthetic": true, "query": "變更通訊地址", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-037", "kind": "query", "synthetic": true, "query": "change my address", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-038", "kind": "query", "synthetic": true, "query": "address change", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-039", "kind": "query", "synthetic": true, "query": "搬家，改通訊地止", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-040", "kind": "query", "synthetic": true, "query": "變更地址的生效時間", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "knowledge-041", "kind": "query", "synthetic": true, "query": "想借錢週轉", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "new_retrieval"}
+{"id": "knowledge-042", "kind": "query", "synthetic": true, "query": "policy loan", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "new_retrieval"}
+{"id": "knowledge-043", "kind": "query", "synthetic": true, "query": "保單借貸需要什麼資料", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "new_retrieval"}
+{"id": "knowledge-044", "kind": "query", "synthetic": true, "query": "POLICY LOAN documents", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "new_retrieval"}
+{"id": "knowledge-045", "kind": "query", "synthetic": true, "query": "借錢 policy loan", "status": "answered", "expectedTop1": "service:policy_loan", "expectedTop3": ["service:policy_loan"], "group": "new_retrieval"}
+{"id": "knowledge-046", "kind": "query", "synthetic": true, "query": "受益人表單", "status": "answered", "expectedTop1": "form:form_beneficiary_change", "expectedTop3": ["form:form_beneficiary_change"], "group": "new_retrieval"}
+{"id": "knowledge-047", "kind": "query", "synthetic": true, "query": "beneficiary form", "status": "answered", "expectedTop1": "form:form_beneficiary_change", "expectedTop3": ["form:form_beneficiary_change"], "group": "new_retrieval"}
+{"id": "knowledge-048", "kind": "query", "synthetic": true, "query": "beneficiary change form download", "status": "answered", "expectedTop1": "form:form_beneficiary_change", "expectedTop3": ["form:form_beneficiary_change"], "group": "new_retrieval"}
+{"id": "knowledge-049", "kind": "query", "synthetic": true, "query": "受益人變更申請書", "status": "answered", "expectedTop1": "form:form_beneficiary_change", "expectedTop3": ["form:form_beneficiary_change"], "group": "new_retrieval"}
+{"id": "knowledge-050", "kind": "query", "synthetic": true, "query": "密碼鎖定", "status": "answered", "expectedTop1": "faq:7", "expectedTop3": ["faq:7"], "group": "new_retrieval"}
+{"id": "knowledge-051", "kind": "query", "synthetic": true, "query": "password locked", "status": "answered", "expectedTop1": "faq:7", "expectedTop3": ["faq:7"], "group": "new_retrieval"}
+{"id": "knowledge-052", "kind": "query", "synthetic": true, "query": "密碼锁定", "status": "answered", "expectedTop1": "faq:7", "expectedTop3": ["faq:7"], "group": "new_retrieval"}
+{"id": "knowledge-053", "kind": "query", "synthetic": true, "query": "password 被鎖住了", "status": "answered", "expectedTop1": "faq:7", "expectedTop3": ["faq:7"], "group": "new_retrieval"}
+{"id": "knowledge-054", "kind": "query", "synthetic": true, "query": "customer service hotline", "status": "answered", "expectedTop1": "faq:10", "expectedTop3": ["faq:10"], "group": "new_retrieval"}
+{"id": "knowledge-055", "kind": "query", "synthetic": true, "query": "保險理賠醫起通", "status": "answered", "expectedTop1": "service:claim_hospital_upload", "expectedTop3": ["service:claim_hospital_upload"], "group": "new_retrieval"}
+{"id": "knowledge-056", "kind": "query", "synthetic": true, "query": "理賠聯盟鏈正本", "status": "answered", "expectedTop1": "service:claim_union_chain", "expectedTop3": ["service:claim_union_chain"], "group": "new_retrieval"}
+{"id": "knowledge-057", "kind": "query", "synthetic": true, "query": "存摺影本規定", "status": "answered", "expectedTop1": "claim-rule:7", "expectedTop3": ["claim-rule:7"], "group": "new_retrieval"}
+{"id": "knowledge-058", "kind": "query", "synthetic": true, "query": "診斷證明書要正本嗎", "status": "answered", "expectedTop1": "claim-rule:1", "expectedTop3": ["claim-rule:1"], "group": "new_retrieval"}
+{"id": "knowledge-059", "kind": "query", "synthetic": true, "query": "網路保險服務", "status": "answered", "expectedTop1": "service:online_service_membership", "expectedTop3": ["service:online_service_membership"], "group": "new_retrieval"}
+{"id": "knowledge-060", "kind": "query", "synthetic": true, "query": "今天天氣如何", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-061", "kind": "query", "synthetic": true, "query": "班機延誤要什麼文件", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-062", "kind": "query", "synthetic": true, "query": "車禍申請流程", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-063", "kind": "query", "synthetic": true, "query": "信用卡年費多少", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-064", "kind": "query", "synthetic": true, "query": "火星醫院專屬方案有哪些？", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-065", "kind": "query", "synthetic": true, "query": "保單", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-066", "kind": "query", "synthetic": true, "query": "我想問一下保險", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-067", "kind": "query", "synthetic": true, "query": "帳戶服務", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-068", "kind": "query", "synthetic": true, "query": "", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-069", "kind": "query", "synthetic": true, "query": "你好", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-070", "kind": "query", "synthetic": true, "query": "What documents do I need for an invented medical plan?", "status": "not_found", "expectedTop1": null, "expectedTop3": [], "group": "unsupported"}
+{"id": "knowledge-071", "kind": "query", "synthetic": true, "query": "沒有住院，可以申請醫療理賠嗎？", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-072", "kind": "query", "synthetic": true, "query": "我住院能不能賠", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-073", "kind": "query", "synthetic": true, "query": "住院五天一定核准嗎？", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-074", "kind": "query", "synthetic": true, "query": "醫療门診可以理賠嗎？", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-075", "kind": "query", "synthetic": true, "query": "outpatient surgery can I claim?", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-076", "kind": "query", "synthetic": true, "query": "Am I covered for hospitalization?", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-077", "kind": "query", "synthetic": true, "query": "推薦我買哪張保單", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-078", "kind": "query", "synthetic": true, "query": "which insurance should I buy", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-079", "kind": "query", "synthetic": true, "query": "理賠金額是多少", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-080", "kind": "query", "synthetic": true, "query": "我可以領多少保險金", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-081", "kind": "query", "synthetic": true, "query": "是否符合理賠資格", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-082", "kind": "query", "synthetic": true, "query": "可以申請醫療理賠嗎", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-083", "kind": "query", "synthetic": true, "query": "住院能否理賠", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-084", "kind": "query", "synthetic": true, "query": "I am eligible for inpatient compensation?", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "knowledge-085", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"path": "javascript:alert(1)"}, "accepted": false}
+{"id": "knowledge-086", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"path": "data:text/html,evil"}, "accepted": false}
+{"id": "knowledge-087", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"path": "https://evil.example/"}, "accepted": false}
+{"id": "knowledge-088", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"path": "//evil.example"}, "accepted": false}
+{"id": "knowledge-089", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"path": "/admin"}, "accepted": false}
+{"id": "knowledge-090", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"anchor": "invented-anchor"}, "accepted": false}
+{"id": "knowledge-091", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"sourceUrl": "https://evil.example/"}, "accepted": false}
+{"id": "knowledge-092", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"sourceUrl": "https://life.cardif.com.tw/zh/invented"}, "accepted": false}
+{"id": "knowledge-093", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"retrievedAt": "2026-10-13"}, "accepted": false}
+{"id": "knowledge-094", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"sourceId": "invented-source"}, "accepted": false}
+{"id": "knowledge-095", "kind": "query", "synthetic": true, "query": "what insurance claim documents are required?", "status": "answered", "expectedTop1": "service:claim_by_mail", "expectedTop3": ["service:claim_by_mail"], "group": "new_retrieval"}
+{"id": "knowledge-096", "kind": "query", "synthetic": true, "query": "我住院可以\n理賠嗎", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}

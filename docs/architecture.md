@@ -1,4 +1,4 @@
-# NAVI — 目前架構（Developer B Phase 4B Validation）
+# NAVI — 目前架構（Developer B Phase 4C Shared Knowledge）
 
 **AI interprets. The system decides.** NAVI is a service navigation layer, not an insurer's eligibility or claim submission system. The mock insurance website is a separate application.
 
@@ -8,11 +8,12 @@
 flowchart TD
   HTTP[Express API: bounded inputs / CORS / rate limit] --> Intent[Intent service]
   HTTP --> Journey[JourneyService]
-  HTTP --> Knowledge[Local snapshot / prototype retrieval]
+  HTTP --> Knowledge[Shared Local Knowledge Engine / Snapshot]
   Intent --> AI[AIProvider: Demo default / explicit Live]
   Journey --> Documents[File signature / MIME / size validation]
   Documents --> AI
-  Knowledge --> AI
+  Knowledge --> LocalAnswer[Verified snapshot excerpts / no AI]
+  Knowledge -->|optional knowledge answer route| AI
   AI --> Demo[Offline scripted Demo]
   AI --> Guard[Free Tier attestation / CI block / 12-attempt budget]
   Guard --> Gemini[Gemini Developer API: approved model only]
@@ -62,7 +63,7 @@ Phase 4B 工作期間已 fast-forward 合併 A 的 `663c6e7`、`cc1810a`、`05a3
 
 API 文件會傳到 Backend；預設 Demo 只依 documentType 選 fixture 並標 isMock=true，不是真實文件辨識。Live 才會傳 Gemini，本次沒有呼叫。一般模式的 sessionStorage 快照恢復後再 GET server state，過期會清除；Backend 是短期 InMemory。
 
-Backend main 的住院基礎來自 `c8d00fe`；Phase 4B 加入必要欄位／容器／敏感資料與管道補強、76 個專用 Local cases。另用 A 的實際 Adapter → loopback Express 驗證 Golden Path、移除與恢復／過期契約。Knowledge 搜尋仍是 A 的本地資料層，Backend grounded answer 尚待 4C 對齊。詳見 [Phase 4B 驗證報告](backend-phase-4b.md)；[Phase 4A](backend-phase-4a.md) 是當時的 Review 紀錄，不代表目前所有差距仍存在。
+Backend main 的住院基礎來自 `c8d00fe`；Phase 4B 加入必要欄位／容器／敏感資料與管道補強、76 個專用 Local cases。另用 A 的實際 Adapter → loopback Express 驗證 Golden Path、移除與恢復／過期契約。Phase 4C 已新增 shared/knowledge 純 ESM 引擎並接入 Backend，Frontend 舊 Adapter 尚由 A 切換；來源與原文使用同一 Snapshot。詳見 [Phase 4B 驗證報告](backend-phase-4b.md)；[Phase 4A](backend-phase-4a.md) 是當時的 Review 紀錄，不代表目前所有差距仍存在。
 
 ## Repository layout / independent sites
 
@@ -85,14 +86,14 @@ Backend main 的住院基礎來自 `c8d00fe`；Phase 4B 加入必要欄位／容
 | Server Journey／workflow／scoring／nextAction | 既有 flight + hospitalization 實作；A 一般模式已採用 API Journey |
 | PDF／PNG／JPEG／WebP 文件抽取 | Backend 支援；住院只驗證合成／注入 transport，未跑住院真實 Gemini |
 | 文件缺欄位／矛盾驗證 | Backend 既有 needs_review／人工確認；一般模式採用 Backend 結果；本地備案仍為 Mock |
-| 本地官網 Knowledge／來源／目的地 | 前後端皆已有，回應型別與部分服務欄位尚待 4C 對齊 |
+| 本地官網 Knowledge／來源／目的地 | 共用 Engine + Backend 已對齊，Frontend 尚待 A 切換 import；來源／摘錄／導航均有驗證 |
 | AI handoff wording | 既有可選 known-fact selection；沒有實際專員連線 |
 | Phase 4A | Review／相容性／回歸驗證，見專用報告 |
 | Phase 4B | 76 個住院 Local cases、回歸／HTTP驗收、文件／隱私／管道補強；0 真實 Gemini |
-| Phase 4C | 尚未開始；Knowledge／Navigation 與 A adapter 對齊待確認 |
+| Phase 4C | Shared Local Knowledge、96 題評估、HTTP 契約與安全驗收；0 Gemini，未改 A UI |
 | RAG／Vector DB／MongoDB／Auth／Multi-Agent | 未實作 |
 
-歷史 [Backend AI Phase 2](backend-ai-phase-2.md) 的真實 Gemini 成功紀錄僅屬當時班機情境，不是住院 Live 測試。Phase 4A 與 4B 沒有呼叫 Gemini。phase-2a／Backend Demo Phase 1 保留為歷史報告；最新差距與計畫以 Phase 4B 報告為準。
+歷史 [Backend AI Phase 2](backend-ai-phase-2.md) 的真實 Gemini 成功紀錄僅屬當時班機情境，不是住院 Live 測試。Phase 4A、4B、4C 沒有呼叫 Gemini。phase-2a／Backend Demo Phase 1 保留為歷史報告；最新差距與遷移方式以 [Phase 4C 報告](backend-phase-4c.md) 為準。
 
 ## Phase 3 evaluation boundary
 

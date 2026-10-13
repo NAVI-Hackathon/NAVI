@@ -14,7 +14,8 @@
     "eval:ai:local": "node eval/cli.js --local",
     "eval:ai:live": "node --env-file-if-exists=.env eval/cli.js --live",
     "ai:status": "node --env-file-if-exists=.env scripts/ai-status.js",
-    "eval:hospitalization": "node --import ./test/networkGuard.js eval/hospitalization/cli.js"
+    "eval:hospitalization": "node --import ./test/networkGuard.js eval/hospitalization/cli.js",
+    "eval:knowledge": "node --import ./test/networkGuard.js eval/knowledge/cli.js"
   },
   "engines": {
     "node": ">=22.12"

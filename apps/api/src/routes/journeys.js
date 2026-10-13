@@ -5,7 +5,7 @@ import { RequestSchema } from '../schemas/intent.schema.js';
 import { understandIntent } from '../services/intent.service.js';
 import { createJourneyService } from '../services/journeyService.js';
 import { parseUpload } from '../services/documentService.js';
-import { retrieveKnowledge } from '../services/knowledgeService.js';
+import { retrieveKnowledge, searchPublicKnowledge } from '../services/knowledgeService.js';
 import { answerKnowledge } from '../services/knowledgeAnswerService.js';
 import { enhanceHandoff } from '../services/handoffService.js';
 import { ApiError } from '../middleware/errorHandler.js';
@@ -50,5 +50,6 @@ export function createJourneyRouter({ config, provider, repository }) {
     res.json(await answerKnowledge(question, { provider, config, signal: requestSignal(res) }));
   });
   router.get('/knowledge', (req, res) => res.json(retrieveKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
+  router.get('/knowledge/search', (req, res) => res.json(searchPublicKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
   return router;
 }

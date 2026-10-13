@@ -50,7 +50,8 @@ export function findHospitalMention(story) {
   const candidates = [...partnerHospitals, '台中榮總', '臺中榮總', '台北榮總', '臺北榮總', '高雄榮總', '台大醫院', '台大', '臺大', '北榮', '中榮', '高榮', '三總'];
   // Match a whole branch phrase first; an unmatched branch must not fall back to the main campus.
   const mention = text.match(/(?:[\u4e00-\u9fff]{1,16}?(?:榮總|醫院|醫學中心)(?:[\u4e00-\u9fff]{1,5}分院)?)/)?.[0];
-  if (mention) return mention.replace(/^.*(?:在|到|去|於)/, '').replace(/^(?:我|上週|昨天|前天|今天|之前)+/, '');
+  // Strip narrative prefixes only before the hospital, never the 在 inside 不存在分院.
+  if (mention) return mention.replace(/^.*?(?:在|到|去|於)(?=.*(?:榮總|醫院|醫學中心))/, '').replace(/^(?:我|上週|昨天|前天|今天|之前)+/, '');
   return candidates.filter(name => text.includes(name)).sort((a, b) => b.length - a.length)[0] ?? null;
 }
 export function reportedStayDays(story) {

@@ -33,7 +33,8 @@
     "eval:ai:live": "npm run eval:ai:live --workspace @navi/api --",
     "ai:status": "npm run ai:status --workspace @navi/api",
     "dev:live": "node scripts/dev.js --live",
-    "eval:hospitalization": "npm run eval:hospitalization --workspace @navi/api"
+    "eval:hospitalization": "npm run eval:hospitalization --workspace @navi/api",
+    "eval:knowledge": "npm run eval:knowledge --workspace @navi/api"
   },
   "engines": {
     "node": ">=22.12"

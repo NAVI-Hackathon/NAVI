@@ -4,7 +4,7 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
-**Developer B 最新狀態：Phase 4B 住院 Backend 驗證與可靠性補強。** 已同步 A 的 server-owned Journey 接入與共用住院規則修正；新增住院評估 76 題、零真實 Gemini。文件驗證、敏感資料最小留存、住院證明管道限制及過期行為已補強。Phase 4C 尚未開始。詳見 [Phase 4B 報告](docs/backend-phase-4b.md)；[Phase 4A](docs/backend-phase-4a.md) 保留當時的 Review 與差距盤點。
+**Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 可由 A 後續切換 import。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
 
 ## Project Structure
 
@@ -17,7 +17,7 @@ apps/
     components/site/   模擬站導覽、Tabs、data-tour-id、示意下載
     components/navi/   浮動 NAVI iframe、跨頁導覽與目標高亮
     public/            原有靜態資產
-shared/               NAVI Intent / Journey / 文件 / 嵌入訊息共用 Zod 契約
+shared/               NAVI Zod 契約、住院規則與 Browser / Node 共用 Knowledge Engine
 lib/contracts/         原模擬服務助手契約（保留，未改成 NAVI 契約）
 lib/db/、lib/env.ts     原團隊的資料庫／環境規格骨架，尚未接入現有服務
 data/                  模擬官網本地 seed、爬蟲輸出
@@ -136,7 +136,8 @@ npm run typecheck:mock    # Mock Website TypeScript
 npm run test:sites        # 先啟動 dev:all；雙站路由、資產、API proxy smoke checks
 npm run preview           # 只預覽 build，不會自動提供 API；需另啟 API / 設定部署 proxy
 npm run eval:ai:local     # 保留 120 個 Legacy 合成 fixture / deterministic cases，零 Gemini 請求
-npm run eval:hospitalization # 新增 76 個住院案例、8 項 metrics、loopback HTTP，零 Gemini 請求
+npm run eval:hospitalization # 保留 76 個住院案例、8 項 metrics、loopback HTTP，零 Gemini 請求
+npm run eval:knowledge     # 96 個檢索／安全案例，來源與導航驗證、p50/p95，零 Gemini 請求
 npm run eval:ai:live -- --plan # 只顯示 9 個案例計畫，零請求
 npm run eval:ai:live      # 人工確認 Free Tier 後才可執行，含 retry 最多 12 次
 npm run ai:status        # 本地配置檢查，不驗證帳戶或呼叫 Gemini
@@ -147,6 +148,12 @@ npm run test:ai           # 相容舊指令：現在執行 Local evaluation
 一般測試使用注入的 Mock Provider，驗證中英班機延誤、車禍、信用卡扣款變更、Unknown、驗證／錯誤／超時／CORS／rate limit 與原有 Golden Path。**Mock Provider 測試不代表模型實際理解能力已驗證。** `npm test` 加入外網 fetch 防護，只允許 loopback HTTP 與注入 Mock。Live sample 需明確執行、顯示計畫與上限；不輸出 key 或完整使用者內容。
 
 歷史 Developer B Phase 2 QA（不是本次 Phase 3 Live 結果）：Frontend 10/10、Backend 52/52；真實 Gemini 5 項 Intent 及完整 API Golden Path / grounded knowledge 已通過。測試文件為程式建立的 synthetic PDF，不是實際旅客資料；完整紀錄與已知限制見 [Backend AI Phase 2](docs/backend-ai-phase-2.md)。
+
+## Local Knowledge Search
+
+共用入口：`shared/knowledge/index.js` 的 `searchKnowledge(query)`，保留 `status/results/related/highlights/hotline`、原條目 ID 與 `destination`。來源只讀 `data/cardif_seed_data.json`，不即時爬取。Frontend 現有 Adapter 仍保留，由 A 依遷移指南接入；本次沒有修改 UI。
+
+Backend 本地公共搜尋：`GET /api/knowledge/search?query=門診理賠文件`。`GET /api/knowledge?query=改地址` 同時保留既有 `answer/sources/found/isMock`，公共結果附搜尋欄位；Legacy 班機相容內容仍標示 prototype／isMock，不混入公共搜尋。既有 `POST /api/knowledge/answer` 的可選 Provider 說明能力保留；本地搜尋與評估不會呼叫它或 Gemini。
 
 ## Golden Path
 
