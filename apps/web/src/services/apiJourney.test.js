@@ -72,6 +72,15 @@ test('only 住院醫療理賠 opens a server journey; outpatient-only and other 
   assert.equal(service.restore(), null);
 });
 
+test('a 住院 information question (knowledge_query) never creates a journey', async t => {
+  const baseUrl = await backend(t);
+  const question = { success: true, data: { intent: 'knowledge_query', serviceType: 'hospitalization_claim', confidence: 0.9, summary: '詢問住院理賠文件', extractedData: { origin: null, destination: null, delayMinutes: null, incidentDate: null } }, meta: { source: 'gemini', confidenceThreshold: 0.65, outcome: 'preview' } };
+  const service = createApiJourneyService({ baseUrl, storage: memoryStorage(), understand: async () => question });
+  const result = await service.analyze('住院要準備什麼文件');
+  assert.equal(result.snapshot, null);
+  assert.equal(result.kind, 'hospital');
+});
+
 test('server errors reach the user as written; manual entry is off in formal mode', async t => {
   const service = client(await backend(t));
   await service.analyze(DEMO_STORY);

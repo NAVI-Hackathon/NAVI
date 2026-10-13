@@ -77,8 +77,10 @@ export function createApiJourneyService({
     async analyze(message, { signal, openJourney = () => true } = {}) {
       const understanding = await understand(message, { signal });
       const kind = kindOf(understanding.data.serviceType);
-      // Only 住院醫療理賠 has a server-owned journey; other services stay on the landing page.
-      if (kind !== 'hospital' || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
+      // Only a 住院醫療理賠 service request has a server-owned journey. Information questions
+      // (intent knowledge_query) are answered from official data; the server refuses them with 409.
+      const serviceRequest = understanding.data.intent === 'service_request';
+      if (kind !== 'hospital' || !serviceRequest || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
       const journey = await request('/journeys', { method: 'POST', json: { message: message.trim(), intentResult: understanding.data }, signal });
       if (journey.serviceType !== 'hospitalization_claim') return { understanding, kind: kindOf(journey.serviceType), snapshot: null };
       state = { journey, story: message.trim(), source: understanding.meta.source, handoffRequested: false };
