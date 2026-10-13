@@ -14,6 +14,7 @@ export function normalizeIntent(raw, message = '') {
   }
   if (parsed.intent === 'unknown' || parsed.serviceType === 'unknown') {
     parsed.intent = 'unknown'; parsed.serviceType = 'unknown';
+    parsed.confidence = Math.min(parsed.confidence, 0.4);
     parsed.extractedData = { origin: null, destination: null, delayMinutes: null, incidentDate: null };
   }
   return IntentDataSchema.parse(parsed);

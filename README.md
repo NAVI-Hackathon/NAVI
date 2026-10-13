@@ -4,6 +4,8 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
+**Developer B 最新狀態：Phase 4A Review & Alignment。** 本次只處理相容性、回歸測試與架構盤點；Phase 4B／4C 尚未開始，沒有呼叫 Live Gemini，也沒有修改 A 的 UI／動畫。先前 main 已有的住院 Backend 能力不等於新階段驗收完成。PR #2 Review、前後端落差、Legacy 盤點及後續規劃見 [Phase 4A 報告](docs/backend-phase-4a.md)。
+
 ## Project Structure
 
 ```text
@@ -43,7 +45,7 @@ npm run dev:navi
 
 **Developer B Phase 2 已完成 Backend AI 整合；Phase 3 已加入零成本防護與本地評估**。`dev`／`dev:navi`／`dev:all`／`dev:api` 一律以 Demo 啟動，不受舊 `.env` 的 `AI_MODE=live` 影響，也不送出 Gemini 請求。Free Tier 設定確認後，需人工執行 `npm run dev:live` 才啟用真實 Intent、文件抽取、JSON grounded knowledge 與 server-owned Journey。Live 失敗不會偷偷轉 Demo。
 
-**目前住院工作區仍使用 Mock 文件與瀏覽器 workflow**；一般模式的入口 Intent 使用 Backend API，依明確啟動模式區分 Demo／Live；`/demo` 則完全使用本地 Mock Adapter。Backend 已支援住院 server-owned Journey、診斷書／住院證明、存摺抽取與交叉驗證；A 的工作區尚未接入這些 API。本次只使用注入 transport 與合成文件測試，沒有真實 Gemini 請求。[住院 Backend 與 PR Review](docs/backend-hospitalization.md)記錄最新契約與限制；[歷史 Backend Phase 2](docs/backend-ai-phase-2.md)保留班機延誤整合紀錄。
+**目前住院工作區仍使用 Mock 文件與瀏覽器 workflow**；一般模式的入口 Intent 使用 Backend API，依明確啟動模式區分 Demo／Live；`/demo` 則完全使用本地 Mock Adapter。Backend 已支援住院 server-owned Journey、診斷書／住院證明、存摺抽取與交叉驗證；A 的工作區尚未接入這些 API。本次只使用注入 transport 與合成文件測試，沒有真實 Gemini 請求。[住院 Backend 與 PR Review](docs/backend-hospitalization.md)記錄先前住院實作的契約與限制；[歷史 Backend Phase 2](docs/backend-ai-phase-2.md)保留班機延誤整合紀錄。
 
 Backend 設定集中於 `apps/api/src/config/env.js`，範例在 `apps/api/.env.example`；預設 `gemini-3.5-flash-lite` / minimal thinking，整體 AI deadline 10 秒。`.env` 只在本機，不能 commit。Live 未設定 Key 或未確認 Free Tier 時不允許外部請求；Demo 不需要 Key。health 的配置欄位僅表示 Key 存在，不代表供應商連線成功或 Billing 狀態。
 

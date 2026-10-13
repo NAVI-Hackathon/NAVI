@@ -17,8 +17,8 @@ export function createAIRequestBudget(limit = DEFAULT_LIVE_REQUEST_LIMIT) {
   let used = 0; let stopped = null;
   return {
     consume() {
-      if (stopped) throw new ApiError(stopped, 'Live AI requests stopped. Do not continue automatically.', stopped === 'AI_RATE_LIMITED' ? 429 : 503, false);
-      if (used >= limit) { stopped = 'AI_REQUEST_BUDGET_REACHED'; throw new ApiError(stopped, 'Live AI request budget reached. Do not continue automatically.', 429, false); }
+      if (stopped) throw new ApiError(stopped, '分析服務已暫停，請稍後再試或使用示範模式。', stopped === 'AI_RATE_LIMITED' ? 429 : 503, false);
+      if (used >= limit) { stopped = 'AI_REQUEST_BUDGET_REACHED'; throw new ApiError(stopped, '已達本次分析服務使用上限，請使用示範模式。', 429, false); }
       used++;
     },
     stop(code = 'AI_RATE_LIMITED') { stopped = code; },

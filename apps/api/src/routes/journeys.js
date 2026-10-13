@@ -23,7 +23,6 @@ function requestSignal(res) {
 export function createJourneyRouter({ config, provider, repository }) {
   const router = express.Router();
   const service = createJourneyService({ config, provider, repository });
-  router.use((req, res, next) => { res.set('X-NAVI-AI-Mode', provider.mode === 'demo' ? 'demo' : 'live'); next(); });
   router.post('/analyze-intent', async (req, res) => {
     const { message } = validate(RequestSchema, req.body);
     const result = await understandIntent(message, { config, provider, signal: requestSignal(res) });

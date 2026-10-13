@@ -15,6 +15,7 @@ export function createApp(config, provider = createAIProvider(config), repositor
     origin(origin, callback) { callback(config.origins.includes(origin) || !origin ? null : new ApiError('ORIGIN_NOT_ALLOWED', '此來源無法存取服務。', 403), true); },
     methods: ['POST', 'GET', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,
   }));
+  app.use('/api', (req, res, next) => { res.set('X-NAVI-AI-Mode', provider.mode === 'demo' ? 'demo' : 'live'); next(); });
   app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey) }));
   // ponytail: in-memory limit is per process; use a shared store only when deploying multiple instances.
   const limiter = rateLimit({ windowMs: 60000, limit: config.rateLimit, standardHeaders: 'draft-8', legacyHeaders: false, handler: (req, res) => res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: '操作次數較多，請稍後再試。', retryable: true } }) });
