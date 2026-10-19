@@ -38,7 +38,7 @@ def build(revision, output, web_origin='http://127.0.0.1:18171', mock_origin='ht
     run(['npm','ci','--no-audit','--no-fund'], source, env)
     run(['npm','run','build:all'], source, env)
     payload = output / 'payload'; payload.mkdir()
-    for name, origin in [('web','apps/web/dist'), ('mock','apps/mock-site/out')]: shutil.copytree(source/origin, payload/name)
+    for name, source_path in [('web','apps/web/dist'), ('mock','apps/mock-site/out')]: shutil.copytree(source/source_path, payload/name)
     if not (payload/'mock/services/claims.html').is_file(): raise ValueError('Missing exported claims page')
     for name in ['shared','knowledge','apps/api/src']:
         shutil.copytree(source/name, payload/name)
