@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { createMockAdapter } from './adapters.js';
 import { DEMO_STORY } from '../mocks/hospitalClaim.js';
 import { NavigationTargetSchema } from '../../../../shared/journey.js';
-import { knowledgeEntries } from '../domain/knowledge.js';
+import { knowledgeEntries } from '../../../../shared/knowledge/index.js';
 import raw from '../../../../data/cardif_seed_data.json' with { type: 'json' };
 
 // Paths that exist in apps/mock-site, derived from its app/ directory: route groups "(…)" and private "_…" folders add no segment.

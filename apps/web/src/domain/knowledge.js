@@ -1,3 +1,6 @@
+// DEPRECATED — NAVI now uses shared/knowledge (Developer B, Phase 4C). This copy is no longer
+// imported by the app; it stays only for apps/api/test/sharedKnowledge.test.js, which checks that
+// the shared module kept the old IDs, destinations and answers. Delete it once that check is removed.
 import { NavigationTargetSchema } from '../../../../shared/journey.js';
 import {
   FORMS_PAGE_URL, claimByMail, hotline, officialSource, seedClaimDocuments, seedClaimRules, seedFaq, seedForms, seedServices, sitePathFor,

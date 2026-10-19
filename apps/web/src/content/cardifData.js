@@ -33,7 +33,7 @@ const pick = (list, text) => {
 };
 
 export const retrievedAt = seed.meta.crawled;
-/** Read-only views of the validated data file, for the knowledge index (domain/knowledge.js). */
+/** Read-only views of the validated data file, for the deprecated domain/knowledge.js (kept for B's migration check). */
 export const seedServices = seed.services;
 export const seedForms = seed.forms;
 export const seedFaq = seed.faq;

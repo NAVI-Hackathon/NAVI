@@ -1,5 +1,5 @@
 import Icon from '../Icon.jsx';
-import { typeLabels } from '../../domain/knowledge.js';
+import { typeLabels } from '../../../../../shared/knowledge/index.js';
 
 /** "依據" line: the official page this answer is quoted from (opens the real site in a new tab). */
 export function SourceLine({ source }) {

@@ -10,7 +10,7 @@ import { useHostBridge } from './hooks/useHostBridge.js';
 import { naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
-import { searchKnowledge } from './domain/knowledge.js';
+import { searchKnowledge } from '../../../shared/knowledge/index.js';
 import { JOURNEY_EXPIRED_MESSAGE } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 

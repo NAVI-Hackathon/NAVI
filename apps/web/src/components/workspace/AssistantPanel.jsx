@@ -4,7 +4,7 @@ import Icon from '../Icon.jsx';
 import AnswerCard from '../knowledge/AnswerCard.jsx';
 import { assistantQuestions } from '../../mocks/hospitalClaim.js';
 import { retrievedAt } from '../../content/cardifData.js';
-import { searchKnowledge } from '../../domain/knowledge.js';
+import { searchKnowledge } from '../../../../../shared/knowledge/index.js';
 import { crossfade, fadeUp, staggerChildren, transition } from '../../motion/tokens.js';
 
 function suggestionFor(snapshot) {
@@ -18,7 +18,7 @@ function suggestionFor(snapshot) {
   return journey.nextAction.description;
 }
 
-// Answers are quoted from data/cardif_seed_data.json (domain/knowledge.js); NAVI never writes its own policy text.
+// Answers are quoted from data/cardif_seed_data.json (shared/knowledge); NAVI never writes its own policy text.
 function answerFor(question) {
   const result = searchKnowledge(question, { limit: 2 });
   if (result.status === 'answered') return { entries: result.results, highlights: result.highlights };
