@@ -122,3 +122,20 @@ test('a tampered stored session is discarded', () => {
   storage.setItem('navi.demo.journey', JSON.stringify({ v: 3, journeyId: 'x', story: 'x', understanding: { hacked: true }, documents: [], confirmed: true, handoffRequested: false }));
   assert.equal(fast(storage).restore(), null);
 });
+
+
+test('HTTP demo Golden Path works without secure-context randomUUID', async t => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  const realCrypto = globalThis.crypto;
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { getRandomValues: realCrypto.getRandomValues.bind(realCrypto) } });
+  t.after(() => Object.defineProperty(globalThis, 'crypto', descriptor));
+  const storage = memoryStorage();
+  const service = fast(storage);
+  assert.equal((await service.analyze(DEMO_STORY)).snapshot.journey.readiness, 35);
+  assert.equal((await service.uploadDocument('diagnosis_certificate', { sample: true })).journey.readiness, 70);
+  assert.equal((await service.uploadDocument('bank_passbook', { sample: true })).journey.readiness, 90);
+  const done = service.confirm();
+  assert.equal(done.journey.readiness, 100);
+  ServiceJourneySchema.parse(done.journey);
+  assert.equal(fast(storage).restore().journey.readiness, 100);
+});

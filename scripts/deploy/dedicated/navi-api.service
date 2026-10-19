@@ -1,0 +1,41 @@
+[Unit]
+Description=NAVI Dedicated Demo API
+After=network.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=navi-hackathon
+Group=navi-hackathon
+WorkingDirectory=/opt/navi-hackathon/current
+EnvironmentFile=/opt/navi-hackathon/config/api.env
+ExecStart=/opt/navi-hackathon/runtime/node/bin/node --max-old-space-size=192 /opt/navi-hackathon/current/apps/api/src/server.js --demo
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+KillMode=control-group
+MemoryAccounting=yes
+CPUAccounting=yes
+MemoryHigh=384M
+MemoryMax=512M
+TasksMax=64
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+ReadWritePaths=/opt/navi-hackathon/run
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

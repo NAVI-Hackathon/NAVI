@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build platform-independent UI assets off-VPS; never package local node_modules."""
 import argparse, hashlib, json, os, pathlib, platform, re, shutil, subprocess, tarfile
+from urllib.parse import urlsplit
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -8,7 +9,14 @@ REPO = HERE.parent.parent
 def run(args, cwd, env):
     subprocess.run(args, cwd=cwd, env=env, check=True)
 
-def build(revision, output):
+def origin(value):
+    url = urlsplit(value)
+    if url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password or url.path or url.query or url.fragment:
+        raise ValueError('Use an exact HTTP(S) origin without credentials or path')
+    return value
+
+def build(revision, output, web_origin='http://127.0.0.1:18171', mock_origin='http://127.0.0.1:18173'):
+    web_origin, mock_origin = origin(web_origin), origin(mock_origin)
     sha = subprocess.check_output(['git', 'rev-parse', revision + '^{commit}'], cwd=REPO, text=True).strip()
     if not re.fullmatch(r'[a-f0-9]{40}', sha): raise ValueError('Invalid revision')
     output = pathlib.Path(output).resolve()
@@ -25,8 +33,8 @@ def build(revision, output):
     config.write_text(text.replace(needle, needle + '\n  output: "export",'))
     env = {k:v for k,v in os.environ.items() if not k.startswith(('GEMINI_', 'OPENAI_', 'VITE_', 'NEXT_PUBLIC_'))}
     env.update({'CI':'true', 'NEXT_TELEMETRY_DISABLED':'1', 'AI_MODE':'demo', 'ALLOW_PAID_AI':'false',
-        'VITE_API_BASE_URL':'', 'VITE_EMBED_ALLOWED_ORIGINS':'http://127.0.0.1:18173',
-        'VITE_MOCK_SITE_URL':'http://127.0.0.1:18173', 'NEXT_PUBLIC_NAVI_EMBED_URL':'http://127.0.0.1:18171/embed'})
+        'VITE_API_BASE_URL':'', 'VITE_EMBED_ALLOWED_ORIGINS':mock_origin,
+        'VITE_MOCK_SITE_URL':mock_origin, 'NEXT_PUBLIC_NAVI_EMBED_URL':web_origin+'/embed'})
     run(['npm','ci','--no-audit','--no-fund'], source, env)
     run(['npm','run','build:all'], source, env)
     payload = output / 'payload'; payload.mkdir()
@@ -40,7 +48,7 @@ def build(revision, output):
     shutil.copy2(HERE/'runtime-server.mjs',payload/'runtime-server.mjs')
     metadata={'schema':1,'sourceCommit':sha,'buildNode':subprocess.check_output(['node','--version'],text=True).strip(),'buildPlatform':platform.system()+'-'+platform.machine(),'buildOverlay':'next.config.ts output=export; source repo unchanged',
         'staticArtifacts':'HTML/CSS/browser JS; no native runtime modules', 'apiDependencies':'Installed on Ubuntu from root lockfile, API workspace only',
-        'origins':{'web':'http://127.0.0.1:18171','mock':'http://127.0.0.1:18173'},
+        'origins':{'web':web_origin,'mock':mock_origin},
         'toolHashes':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in HERE.iterdir() if p.is_file() and p.suffix in ['.py','.mjs','.sh']}}
     (payload/'release.json').write_text(json.dumps(metadata,indent=2)+'\n')
     assert not list(payload.rglob('node_modules')), 'Never ship macOS node_modules'
@@ -53,4 +61,5 @@ def build(revision, output):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--revision',required=True);p.add_argument('--output',required=True)
-    args=p.parse_args();build(args.revision,args.output)
+    p.add_argument('--web-origin',default='http://127.0.0.1:18171');p.add_argument('--mock-origin',default='http://127.0.0.1:18173')
+    args=p.parse_args();build(args.revision,args.output,args.web_origin,args.mock_origin)

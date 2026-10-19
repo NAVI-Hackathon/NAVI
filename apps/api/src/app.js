@@ -11,6 +11,7 @@ import { ApiError, errorHandler } from './middleware/errorHandler.js';
 export function createApp(config, provider = createAIProvider(config), repository = new InMemoryJourneyRepository()) {
   const app = express();
   app.disable('x-powered-by');
+  if (config.trustProxyLoopback) app.set('trust proxy', 'loopback');
   app.use(cors({
     origin(origin, callback) { callback(config.origins.includes(origin) || !origin ? null : new ApiError('ORIGIN_NOT_ALLOWED', '此來源無法存取服務。', 403), true); },
     methods: ['POST', 'GET', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,

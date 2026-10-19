@@ -25,6 +25,7 @@ export function loadConfig(env = process.env) {
     liveRequestLimit: requestLimit,
     rateLimitBackoffMs: 1000,
     port: numeric(env, 'PORT', 3001, 1, 65535), host: env.HOST || '127.0.0.1',
+    trustProxyLoopback: env.TRUST_PROXY_LOOPBACK === 'true',
     origins: (env.WEB_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173').split(',').map(s => s.trim()).filter(Boolean),
     confidenceThreshold: numeric(env, 'INTENT_CONFIDENCE_THRESHOLD', DEFAULT_CONFIDENCE_THRESHOLD, 0, 1),
     journeyConfidenceThreshold: numeric(env, 'JOURNEY_CONFIDENCE_THRESHOLD', 0.75, 0.55, 1),
