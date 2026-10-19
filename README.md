@@ -8,6 +8,8 @@ NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
 ## Project Structure
 
+VPS 隔離部署與操作方式見 [部署紀錄](docs/vps-isolated-deployment.md)。本次已準備產物並驗證嵌入導航，但資源守門觸發後維持安全停止，尚未通過 VPS 完整驗收；不自動啟動或公開服務。
+
 ```text
 apps/
   web/                 NAVI：React / Vite，Premium UI、工作區、Golden Path
