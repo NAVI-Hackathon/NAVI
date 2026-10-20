@@ -137,6 +137,8 @@ A 顯示 **這份 summary**，讓使用者確認，再送：
 
 ## 可重現驗證與 Demo Evidence
 
+本次實測結果見 [Evidence 摘要](competition-evidence-results.md) 與 [機器可讀結果](evidence/competition-6dc74c6.json)。
+
 ```bash
 npm ci
 npm run evidence:demo

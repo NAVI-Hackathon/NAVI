@@ -270,3 +270,5 @@ Free Tier 價格與配額由供應商決定，請核對 [Google pricing](https:/
 新增相容的多步導航、Journey 計分理由、資料快照證據及確認後取得交接摘要的 API。A 的 UI 與原有 postMessage 不變。[契約、接入與安全界線](docs/competition-readiness.md)。
 
 `npm run evidence:demo` 可重現測試、Build、三組本地 Evaluation、合成 HTTP E2E 與延遲量測；輸出在 `artifacts/demo-evidence/`。不呼叫 Live Gemini，不代表真實文件辨識或真人效益測試。
+
+本次 Competition 驗證：Frontend 33／33、Backend 151／151，Legacy 120／120、Hospitalization 76／76、Knowledge 111／111；[可追溯 Evidence](docs/competition-evidence-results.md)。新契約 UI 仍由 A 接入，本次未部署新版。

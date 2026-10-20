@@ -1,0 +1,305 @@
+{
+  "generatedAt": "2026-10-20T16:54:12.965Z",
+  "complete": true,
+  "provenance": {
+    "commit": "6dc74c644bd9ef77cf341aa4678fea8c697d7788",
+    "workingTreeDirty": false,
+    "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runtime": "v22.23.3",
+    "os": "darwin/arm64",
+    "inputs": {
+      "data/cardif_seed_data.json": "ac7f2ee6fdc05ca38b5c2ebd826b46d6df94e2e5646141b8e2e272611c90a92a",
+      "apps/api/eval/cases.jsonl": "a7fb4354fbfc7032624608883ba18e559bd0faa499a41ba80e5b9c0e0ea84030",
+      "apps/api/eval/hospitalization/cases.jsonl": "b658159d703bce2d2e810bc0de073d6331c1a60dd82c1cba7abab35f1573af11",
+      "apps/api/eval/knowledge/cases.jsonl": "9f9bf28355b290c8460e9c37364f585012b7236abf8da5b4e7d910c66c6a2fcc"
+    }
+  },
+  "jobs": [
+    {
+      "id": "tests",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 2421.924125,
+      "logSha256": "f38f696ed724110223834e14fa45af18e1d100528d30e36d043ce31f459865c6"
+    },
+    {
+      "id": "lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 2255.9307080000003,
+      "logSha256": "175f844d2f68f6f4c30881cdfaf6f0905ee44aa3c0d40278e20355c9a63a82a5"
+    },
+    {
+      "id": "build",
+      "command": [
+        "npm",
+        "run",
+        "build:all"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 4558.864041999999,
+      "logSha256": "4e4f45b2c0e3e599da994e4b7f56d6e5941d3f84d32d0a35780a6c7861b87bc2"
+    },
+    {
+      "id": "legacy",
+      "command": [
+        "npm",
+        "run",
+        "eval:ai:local"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 519.3817500000005,
+      "logSha256": "350812c5513f20a2c993270a7e1ccfad66baa40473d8c2b82c352b528b086907"
+    },
+    {
+      "id": "hospitalization",
+      "command": [
+        "npm",
+        "run",
+        "eval:hospitalization"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 654.5500830000001,
+      "logSha256": "c70371e98f7e603baf9339baaabd3f49a4ecffb7bfe18c10049c7111006c1ee4"
+    },
+    {
+      "id": "knowledge",
+      "command": [
+        "npm",
+        "run",
+        "eval:knowledge"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 388.16233400000056,
+      "logSha256": "c8c0378419a58c28c69f7e38f4131f633f46569ab65949256238198de794033d"
+    },
+    {
+      "id": "shared-browser",
+      "command": [
+        "npm",
+        "run",
+        "test:shared:browser"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 317.33408299999974,
+      "logSha256": "9abdcfedfbebdfdabf2e83a2f45b72a73b469e31aed468384f52932a5c2c0500"
+    },
+    {
+      "id": "competition-e2e",
+      "command": [
+        "node",
+        "--import",
+        "./apps/api/test/networkGuard.js",
+        "scripts/evidence/competition-e2e.js"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 282.68308400000024,
+      "logSha256": "5b1dbed1c1203f0fcf1fa82d50a6531893c1f94fa01b4d2157d6356ba67991c7"
+    }
+  ],
+  "latencyMs": {
+    "samples": 50,
+    "p50": 1.2739589999999907,
+    "p95": 7.454791
+  },
+  "businessEvidence": {
+    "measured": [
+      "本地檢索題組正確率",
+      "合成案件 Backend API 延遲",
+      "導航目標與建置錨點驗證"
+    ],
+    "notMeasured": [
+      "真人任務完成時間",
+      "客服轉接率下降",
+      "補件率下降",
+      "營收或成本節省"
+    ],
+    "hypothesesOnly": true
+  },
+  "limitations": [
+    "非 Gemini 模型準確率",
+    "非正式客戶資料驗收",
+    "未驗證 A 尚未接入的新 UI 操作",
+    "HTTP 展示不得接受真實敏感文件"
+  ],
+  "fullReportSha256": "afcd05ae6a79f6b355a50e94a334d95bd6907f0dca6f741fe4d81c8daa4a5417",
+  "unitTests": [
+    {
+      "scope": "web",
+      "passed": 33,
+      "total": 33
+    },
+    {
+      "scope": "api",
+      "passed": 151,
+      "total": 151
+    }
+  ],
+  "evaluation": {
+    "legacy": {
+      "total": 120,
+      "passed": 120,
+      "failed": 0,
+      "requests": 0,
+      "interpretation": "Deterministic / scripted-demo fixtures only; not Gemini model accuracy.",
+      "goldenPath": [
+        35,
+        70,
+        90,
+        100
+      ]
+    },
+    "hospitalization": {
+      "total": 76,
+      "passed": 76,
+      "failed": 0,
+      "requests": 0,
+      "interpretation": "Deterministic / scripted-demo fixtures only; not Gemini model accuracy.",
+      "metrics": {
+        "intentClassification": {
+          "passed": 15,
+          "total": 15,
+          "passRate": 1
+        },
+        "negationDetection": {
+          "passed": 5,
+          "total": 5,
+          "passRate": 1
+        },
+        "hospitalMatching": {
+          "passed": 12,
+          "total": 12,
+          "passRate": 1
+        },
+        "documentValidation": {
+          "passed": 20,
+          "total": 20,
+          "passRate": 1
+        },
+        "consistencyDetection": {
+          "passed": 12,
+          "total": 12,
+          "passRate": 1
+        },
+        "workflowBoundary": {
+          "passed": 17,
+          "total": 17,
+          "passRate": 1
+        },
+        "unsupportedHandling": {
+          "passed": 10,
+          "total": 10,
+          "passRate": 1
+        },
+        "mockLiveBoundary": {
+          "passed": 4,
+          "total": 4,
+          "passRate": 1
+        }
+      },
+      "geminiRequests": 0,
+      "paidApiCalls": 0,
+      "blockedExternalAttempts": 0,
+      "goldenPath": [
+        35,
+        70,
+        90,
+        100
+      ]
+    },
+    "knowledge": {
+      "total": 111,
+      "passed": 111,
+      "failed": 0,
+      "metrics": {
+        "top1Accuracy": {
+          "passed": 75,
+          "total": 75,
+          "rate": 1
+        },
+        "top3Recall": {
+          "passed": 75,
+          "total": 75,
+          "rate": 1
+        },
+        "unsupportedQueryRejection": {
+          "passed": 11,
+          "total": 11,
+          "rate": 1
+        },
+        "outOfScopeDetection": {
+          "passed": 15,
+          "total": 15,
+          "rate": 1
+        },
+        "navigationAccuracy": {
+          "passed": 85,
+          "total": 85,
+          "rate": 1
+        },
+        "invalidSourceRate": {
+          "invalid": 0,
+          "total": 195,
+          "rate": 0
+        },
+        "invalidRouteRate": {
+          "invalid": 0,
+          "total": 195,
+          "rate": 0
+        },
+        "latencyMs": {
+          "p50": 0.216,
+          "p95": 0.535,
+          "samples": 101,
+          "scope": "warm local shared retrieval; excludes HTTP and module initialization"
+        }
+      },
+      "geminiRequests": 0,
+      "paidApiCalls": 0,
+      "blockedExternalAttempts": 0,
+      "interpretation": "本地 Snapshot 檢索測試；不是 Gemini 準確率，也不代表理賠資格或結果。"
+    }
+  },
+  "competition": {
+    "scope": "local_backend_http_and_built_site_anchors",
+    "assertions": [
+      {
+        "name": "navigation_sources_excerpts_built_page_anchors",
+        "passed": true,
+        "queries": 5,
+        "checkedPlans": 97,
+        "checkedAnchors": 199
+      },
+      {
+        "name": "hospitalization_explanation_handoff_and_removal",
+        "passed": true,
+        "runs": 5
+      }
+    ],
+    "network": {
+      "blockedExternalAttempts": 0,
+      "externalRequests": 0
+    },
+    "liveGeminiRequests": 0,
+    "limitations": [
+      "不含瀏覽器點擊與視覺驗收",
+      "不含真實文件辨識",
+      "延遲為本機合成資料 API 測試，不代表 VPS、Gemini 或使用者完成時間"
+    ]
+  }
+}
