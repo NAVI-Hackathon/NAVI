@@ -6,9 +6,13 @@ NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
 **Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 可由 A 後續切換 import。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
 
+## Public VPS Demo
+
+專用 VPS 已公開展示：**[模擬官網／嵌入 NAVI](http://207.148.113.119/)**、**[NAVI Web](http://207.148.113.119:8080/)**、[API Health](http://207.148.113.119:8080/api/health)、[本地備援](http://207.148.113.119:8080/demo)。使用 production build + Demo Provider，HTTP 僅限合成資料。已驗證桌面／390px住院35→70→90→100、導航與API離線備援；部署及維護指令見[專用VPS指南](docs/vps-dedicated-deployment.md)。舊隔離部署報告保留作歷史紀錄，不代表目前服務狀態。
+
 ## Project Structure
 
-VPS 隔離部署與操作方式見 [部署紀錄](docs/vps-isolated-deployment.md)。本次已準備產物並驗證嵌入導航，但資源守門觸發後維持安全停止，尚未通過 VPS 完整驗收；不自動啟動或公開服務。
+舊共享 VPS 的隔離部署紀錄見 [歷史報告](docs/vps-isolated-deployment.md)；該次因資源守門維持停止。現在的專用 VPS 公開部署以[最新指南](docs/vps-dedicated-deployment.md)為準。
 
 ```text
 apps/

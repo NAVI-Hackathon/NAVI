@@ -9,6 +9,12 @@ class Tests(unittest.TestCase):
    with self.assertRaises(RuntimeError):m.release('/etc')
    (root/'current').symlink_to('/etc')
    with self.assertRaises(RuntimeError):m.release(root/'current')
+ def test_writable_or_symlinked_ready_marker_is_refused(self):
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   p=m.ROOT/'releases'/('a'*12+'-1');p.mkdir(parents=True);ready=p/'ready.json';ready.write_text('{}');ready.chmod(0o666)
+   with self.assertRaises(RuntimeError):m.release(p)
+   ready.unlink();other=m.ROOT/'other.json';other.write_text('{}');ready.symlink_to(other)
+   with self.assertRaises(RuntimeError):m.release(p)
  def test_failed_activation_restores_previous_release(self):
   with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
    root=m.ROOT

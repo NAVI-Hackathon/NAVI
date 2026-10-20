@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Manage only the marker-verified dedicated NAVI deployment; no OS installation."""
-import argparse, hashlib, json, os, pathlib, pwd, re, shutil, subprocess, tarfile, time, urllib.request
+import argparse, hashlib, json, os, pathlib, pwd, re, subprocess, tarfile, time, urllib.request
 ROOT = pathlib.Path('/opt/navi-hackathon')
 NODE = ROOT / 'runtime/node/bin/node'
 UNIT = 'navi-api.service'
@@ -11,6 +11,7 @@ def save(path, value):
     temp.write_text(json.dumps(value, indent=2) + '\n'); temp.chmod(0o600); temp.replace(path)
 def load():
     if os.geteuid() != 0 or ROOT.is_symlink() or ROOT.resolve() != ROOT: raise RuntimeError('Unsafe deployment root/user')
+    if ROOT.stat().st_uid != 0 or ROOT.stat().st_mode & 0o022: raise RuntimeError('Unsafe deployment ownership')
     marker = ROOT / '.dedicated-marker.json'
     if marker.is_symlink() or marker.stat().st_uid != 0 or marker.stat().st_mode & 0o077: raise RuntimeError('Unsafe marker')
     m = json.loads(marker.read_text())
@@ -22,6 +23,8 @@ def load():
 def release(path):
     path = pathlib.Path(path).resolve()
     if path.parent != ROOT / 'releases' or not re.fullmatch(r'[a-f0-9]{12}-\d+', path.name) or not (path / 'ready.json').is_file(): raise RuntimeError('Unvalidated release')
+    ready = path / 'ready.json'
+    if ready.is_symlink() or ready.stat().st_uid != ROOT.stat().st_uid or ready.stat().st_mode & 0o022: raise RuntimeError('Unsealed release')
     return path
 
 def install(m, artifact, checksum):
@@ -40,7 +43,7 @@ def install(m, artifact, checksum):
     for directory, dirs, files in os.walk(target):
         for p in [pathlib.Path(directory)] + [pathlib.Path(directory) / f for f in files]: os.chown(p, m['uid'], m['gid'])
     env = {'PATH': str(NODE.parent) + ':/usr/bin:/bin', 'HOME': str(ROOT / 'run'), 'TMPDIR': str(ROOT / 'run'), 'NPM_CONFIG_CACHE': str(ROOT / 'run/npm-cache'), 'NODE_ENV': 'production'}
-    run(['runuser', '-u', 'navi-hackathon', '--', str(NODE), '--max-old-space-size=128', str(ROOT / 'runtime/node/lib/node_modules/npm/bin/npm-cli.js'), 'ci', '--workspace', '@navi/api', '--include-workspace-root', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], cwd=target, env=env)
+    run(['/usr/sbin/runuser', '-u', 'navi-hackathon', '--', str(NODE), '--max-old-space-size=128', str(ROOT / 'runtime/node/lib/node_modules/npm/bin/npm-cli.js'), 'ci', '--workspace', '@navi/api', '--include-workspace-root', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], cwd=target, env=env)
     if list(target.rglob('*.node')) or (target / 'node_modules/next').exists(): raise RuntimeError('Unexpected native/Next runtime module')
     for directory, dirs, files in os.walk(target, followlinks=False):
         for p in [pathlib.Path(directory)] + [pathlib.Path(directory) / f for f in dirs + files]:
