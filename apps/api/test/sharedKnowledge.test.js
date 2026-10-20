@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import raw from '../../../data/cardif_seed_data.json' with { type: 'json' };
 import { knowledgeEntries, searchKnowledge, getKnowledgeEntry, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, verifyEvidenceSnippet, verifyNavigationDestination } from '../../../shared/knowledge/index.js';
-import { knowledgeEntries as legacyEntries, searchKnowledge as legacySearch } from '../../web/src/domain/knowledge.js';
 import { searchPublicKnowledge, retrieveKnowledge } from '../src/services/knowledgeService.js';
 import { validateGroundedAnswer } from '../src/services/knowledgeAnswerService.js';
 import { findHospitalMention, matchPartnerHospital } from '../../../shared/hospitalization.js';
@@ -22,15 +21,14 @@ function snapshotLines(entry) {
   return [raw.claim_general_rules[Number(id) - 1]];
 }
 
-test('all shared sources and evidence derive from the snapshot; legacy IDs and destinations stay compatible', () => {
-  assert.deepEqual(knowledgeEntries.map(e => e.id), legacyEntries.map(e => e.id));
+// The frontend now imports shared/knowledge directly (A 38934f4), so the migration comparison
+// against the deleted apps/web/src/domain/knowledge.js is replaced by checks on the shared index itself.
+test('all shared sources and evidence derive from the snapshot; IDs and destinations stay consistent', () => {
+  assert.equal(new Set(knowledgeEntries.map(e => e.id)).size, knowledgeEntries.length);
   for (const entry of knowledgeEntries) {
-    const old = legacyEntries.find(e => e.id === entry.id);
-    assert.equal(entry.sourceId, old.id);
-    assert.equal(entry.sourceUrl, old.destination.source.url);
+    assert.equal(entry.sourceId, entry.id);
+    assert.equal(entry.sourceUrl, entry.destination.source.url);
     assert.equal(entry.retrievedAt, raw.meta.crawled);
-    assert.deepEqual(entry.destination, old.destination);
-    assert.deepEqual(entry.details, old.details);
     for (const line of entry.content.split('\n')) assert.ok(snapshotLines(entry).includes(line), `${entry.id}: not a snapshot quote`);
     assert.equal(verifyKnowledgeSource(knowledgeSource(entry)), true);
     NavigationTargetSchema.parse(entry.destination);
@@ -120,9 +118,9 @@ test('all public HTTP queries match shared results and preserve Backend answer c
   assert.equal((await api.request('/knowledge/search?query=' + 'a'.repeat(501))).status, 400);
 });
 
-test('legacy migration preserves common source identity and evidence while narrowing claim-type matches', () => {
+test('frontend (shared searchKnowledge) and backend search agree on sources, destinations and evidence', () => {
   for (const query of ['改地址', '保單借款', '受益人變更表單在哪下載', '密碼輸錯被鎖住了', '住院要準備什麼文件', '線上申請還要寄正本嗎？']) {
-    const frontend = legacySearch(query), backend = searchPublicKnowledge(query);
+    const frontend = searchKnowledge(query), backend = searchPublicKnowledge(query);
     assert.equal(frontend.status, backend.status);
     assert.equal(frontend.results[0]?.id, backend.results[0]?.id);
     assert.ok(backend.results.every(r => frontend.results.some(e => e.id === r.id)));

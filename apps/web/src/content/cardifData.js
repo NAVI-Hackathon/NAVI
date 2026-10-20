@@ -33,12 +33,6 @@ const pick = (list, text) => {
 };
 
 export const retrievedAt = seed.meta.crawled;
-/** Read-only views of the validated data file, for the deprecated domain/knowledge.js (kept for B's migration check). */
-export const seedServices = seed.services;
-export const seedForms = seed.forms;
-export const seedFaq = seed.faq;
-export const seedClaimDocuments = seed.claim_document_requirements;
-export const seedClaimRules = seed.claim_general_rules;
 export const hotline = seed.contacts.hotline;
 export const claimByMail = service('claim_by_mail');
 export const hospitalUpload = service('claim_hospital_upload');
@@ -65,25 +59,13 @@ export const reminders = {
 export const claimApplicationForm = seed.forms.find(f => f.id === 'claim_1.1.1');
 export const claimFaq = seed.faq.filter(f => f.source === claimByMail.url);
 
-export const FORMS_PAGE_URL = 'https://life.cardif.com.tw/zh/a311';
-
-export const pageTitles = {
+const pageTitles = {
   [claimByMail.url]: '理賠程序介紹',
-  [FORMS_PAGE_URL]: '常用表單下載',
+  'https://life.cardif.com.tw/zh/a311': '常用表單下載',
   [paymentChange.url]: '保單變更',
   'https://life.cardif.com.tw/zh/a313': '保單借款',
   'https://life.cardif.com.tw/zh/f8': '網路保險服務',
 };
-
-// Official page → mock-site page (same mapping as apps/mock-site/components/site/routes.ts).
-const SITE_PATHS = {
-  'https://life.cardif.com.tw/zh/a311': '/services/forms',
-  'https://life.cardif.com.tw/zh/a312': '/services/policy-change',
-  'https://life.cardif.com.tw/zh/a313': '/services/policy-loan',
-  'https://life.cardif.com.tw/zh/a314': '/services/claims',
-  'https://life.cardif.com.tw/zh/f8': '/services/online',
-};
-export const sitePathFor = officialUrl => SITE_PATHS[officialUrl] ?? null;
 
 export function officialSource(url) {
   return { url, title: pageTitles[url] ?? '法國巴黎人壽官網', retrievedAt };
