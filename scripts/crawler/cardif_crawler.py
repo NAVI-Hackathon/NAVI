@@ -22,6 +22,8 @@
 """
 
 import argparse
+import hashlib
+from datetime import datetime, timezone
 import json
 import re
 import time
@@ -38,7 +40,7 @@ BASE = "https://life.cardif.com.tw"
 START_URLS = [f"{BASE}/zh/", f"{BASE}/zh/a3", f"{BASE}/zh/a311",
               f"{BASE}/insurancedictionary", f"{BASE}/zh/app", f"{BASE}/zh/a325", f"{BASE}/zh/a319"]
 ALLOWED_HOST = "life.cardif.com.tw"
-UA = "Mozilla/5.0 (InsurHack student project crawler; contact: your-email@example.com)"
+UA = "NAVI-InsurHack/1.0 (public information review; low-frequency local crawler)"
 
 # Liferay 每頁都會重複出現的導覽/頁尾 portlet，抽內文時排除
 BOILERPLATE_TITLE = re.compile(
@@ -131,27 +133,60 @@ def safe_name(url: str) -> str:
     return name if name.lower().endswith(".pdf") else name + ".pdf"
 
 
+def public_get(session, url, rp, delay):
+    """Check every redirect against the host and robots before making the next request."""
+    for _ in range(4):
+        if not norm(url) or not rp.can_fetch(UA, url):
+            raise ValueError("非允許的公開來源或 robots 禁止")
+        try:
+            response = session.get(url, timeout=(5, 15), allow_redirects=False, stream=True)
+            if response.is_redirect:
+                url = urljoin(url, response.headers.get("Location", ""))
+                response.close()
+                continue
+            chunks, size = [], 0
+            for chunk in response.iter_content(65536):
+                size += len(chunk)
+                if size > 2 * 1024 * 1024:
+                    response.close()
+                    raise ValueError("頁面超過 2 MiB 限制")
+                chunks.append(chunk)
+            response._content = b"".join(chunks)
+            response.close()
+            return response
+        finally:
+            time.sleep(delay)
+    raise ValueError("重新導向次數超過限制")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-pages", type=int, default=400)
     ap.add_argument("--delay", type=float, default=1.5)
     ap.add_argument("--download-pdfs", action="store_true")
     ap.add_argument("--out", default="data/crawl")
+    ap.add_argument("--start-url", action="append", help="只從明確指定的公開來源開始")
+    ap.add_argument("--no-follow-links", action="store_true")
     args = ap.parse_args()
+    if args.delay < 1.5 or not 1 <= args.max_pages <= 400:
+        ap.error("請保留至少 1.5 秒間隔、1–400 頁上限")
 
     out = Path(args.out)
+    if out.exists() and any(out.iterdir()):
+        ap.error("輸出目錄必須為全新或空目錄，避免覆蓋既有 Snapshot")
     out.mkdir(parents=True, exist_ok=True)
     session = requests.Session()
     session.headers["User-Agent"] = UA
 
+    robots_url = f"{BASE}/robots.txt"
+    robots = session.get(robots_url, timeout=(5, 15), allow_redirects=False)
+    if robots.status_code != 200:
+        raise RuntimeError("無法驗證 robots.txt；停止擷取")
     rp = robotparser.RobotFileParser()
-    rp.set_url(f"{BASE}/robots.txt")
-    try:
-        rp.read()
-    except Exception:
-        print("讀不到 robots.txt，以保守方式繼續（仍會限速）")
-
-    queue = deque(filter(None, map(norm, START_URLS)))
+    rp.parse(robots.text.splitlines())
+    (out / "robots.txt").write_text(robots.text, encoding="utf-8")
+    time.sleep(args.delay)
+    queue = deque(filter(None, map(norm, args.start_url or START_URLS)))
     seen = set(queue)
     documents: dict[str, dict] = {}
     count = 0
@@ -163,16 +198,17 @@ def main():
                 print(f"[robots 禁止] {url}")
                 continue
             try:
-                r = session.get(url, timeout=20)
-            except requests.RequestException as e:
+                r = public_get(session, url, rp, args.delay)
+            except (requests.RequestException, ValueError) as e:
                 print(f"[錯誤] {url} {e}")
                 continue
-            time.sleep(args.delay)
             if r.status_code != 200 or "text/html" not in r.headers.get("Content-Type", ""):
                 print(f"[略過 {r.status_code}] {url}")
                 continue
 
+            r.encoding = "utf-8"
             page = extract(r.text, url)
+            page.update({"retrievedAt": datetime.now(timezone.utc).date().isoformat(), "sourceType": "public_site_snapshot", "reviewStatus": "pending", "sha256": hashlib.sha256(r.content).hexdigest(), "content_text": BeautifulSoup(r.text, "html.parser").get_text(" ", strip=True)})
             f.write(json.dumps(page, ensure_ascii=False) + "\n")
             count += 1
             print(f"[{count}] {page['title']}  {url}")
@@ -181,7 +217,7 @@ def main():
                 doc = documents.setdefault(d["url"], {"title": d["title"], "url": d["url"], "found_on": []})
                 if url not in doc["found_on"]:
                     doc["found_on"].append(url)
-            for l in page["links"]:
+            for l in ([] if args.no_follow_links else page["links"]):
                 n = norm(l["url"])
                 if n and n not in seen:
                     seen.add(n)
@@ -198,11 +234,11 @@ def main():
             if not rp.can_fetch(UA, doc["url"]):
                 continue
             try:
-                r = session.get(doc["url"], timeout=60)
+                r = public_get(session, doc["url"], rp, args.delay)
                 if r.status_code == 200:
                     (pdf_dir / safe_name(doc["url"])).write_bytes(r.content)
                     print(f"[PDF {i}/{len(documents)}] {doc['title']}")
-            except requests.RequestException as e:
+            except (requests.RequestException, ValueError) as e:
                 print(f"[PDF 錯誤] {doc['url']} {e}")
             time.sleep(args.delay)
 

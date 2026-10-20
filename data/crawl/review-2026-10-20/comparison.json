@@ -1,0 +1,244 @@
+{
+  "status": "candidate_not_bulk_imported",
+  "topics": [
+    {
+      "topic": "門診／住院文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-20",
+      "checks": [
+        {
+          "text": "診斷書或住院證明",
+          "present": true
+        },
+        {
+          "text": "門診收據正本",
+          "present": true
+        },
+        {
+          "text": "住院醫療",
+          "present": true
+        },
+        {
+          "text": "理賠金直接匯入帳戶者，請提供存摺影本。",
+          "present": true
+        }
+      ]
+    },
+    {
+      "topic": "地址／受益人",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-20",
+      "checks": [
+        {
+          "text": "變更戶籍地址 / 收費地址",
+          "present": true
+        },
+        {
+          "text": "變更受益人",
+          "present": true
+        },
+        {
+          "text": "保險契約內容變更申請書",
+          "present": true
+        },
+        {
+          "text": "通訊地址",
+          "present": true
+        }
+      ]
+    },
+    {
+      "topic": "保單借款",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-20",
+      "checks": [
+        {
+          "text": "保單借款",
+          "present": true
+        },
+        {
+          "text": "保險單借款合約書",
+          "present": true
+        }
+      ]
+    },
+    {
+      "topic": "表單下載",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-20",
+      "checks": [
+        {
+          "text": "受益人",
+          "present": true
+        },
+        {
+          "text": "申請書",
+          "present": true
+        }
+      ]
+    },
+    {
+      "topic": "網路服務／FAQ",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-20",
+      "checks": [
+        {
+          "text": "密碼",
+          "present": true
+        },
+        {
+          "text": "巴黎線上",
+          "present": true
+        }
+      ]
+    },
+    {
+      "topic": "名詞解釋",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "checks": [
+        {
+          "text": "被保險人",
+          "present": true
+        },
+        {
+          "text": "要保人",
+          "present": true
+        },
+        {
+          "text": "受益人",
+          "present": true
+        }
+      ]
+    }
+  ],
+  "faqLimitation": "常見問題導向外部 LINE／maac.io；未擷取第三方或登入內容。現有 FAQ 保留原擷取日期，不宣稱本次已完整更新。",
+  "comparison": [
+    {
+      "serviceId": "change_address",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 7,
+      "totalCompared": 7,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_name",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 1,
+      "totalCompared": 3,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_policyholder",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 3,
+      "totalCompared": 6,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_insured_id",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 1,
+      "totalCompared": 3,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_beneficiary",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 2,
+      "totalCompared": 7,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_dividend_option",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 3,
+      "totalCompared": 4,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_payment_method",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 2,
+      "totalCompared": 4,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_payment_frequency",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 2,
+      "totalCompared": 3,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "change_occupation",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 2,
+      "totalCompared": 5,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "supplementary_health_disclosure",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 2,
+      "totalCompared": 4,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "contact_info_chain",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "literalMatches": 0,
+      "totalCompared": 5,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "policy_loan",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "literalMatches": 2,
+      "totalCompared": 10,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "loan_repayment",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "literalMatches": 2,
+      "totalCompared": 8,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "claim_by_mail",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "literalMatches": 0,
+      "totalCompared": 5,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "claim_union_chain",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "literalMatches": 1,
+      "totalCompared": 8,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "claim_hospital_upload",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "literalMatches": 1,
+      "totalCompared": 6,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "claim_household_registration",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "literalMatches": 1,
+      "totalCompared": 3,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    },
+    {
+      "serviceId": "online_service_membership",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "literalMatches": 0,
+      "totalCompared": 9,
+      "note": "字面差異不等同業務規則改變；舊資料含整理摘要，未自動覆蓋。"
+    }
+  ]
+}

@@ -14,7 +14,7 @@ export async function withProviderDeadline(task, { config, signal }) {
     });
     return await Promise.race([task(combined), cancelled]);
   } catch (error) {
-    if (deadline.aborted) throw new ApiError('AI_TIMEOUT', '分析時間較長，請重新嘗試。', 504);
+    if (deadline.aborted) throw new ApiError('AI_TIMEOUT', '分析已逾時，請重新嘗試；若持續無法完成，請使用示範模式或由專員協助。', 504);
     if (signal?.aborted) throw new ApiError('REQUEST_CANCELLED', '分析已取消。', 499, false);
     throw error;
   } finally {

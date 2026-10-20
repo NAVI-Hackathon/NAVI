@@ -227,7 +227,7 @@ test('hospital knowledge and navigation come from valid local sources; fake IDs 
     assert.equal(answer.supported, true); assert.equal(answer.answerMode, 'demo');
     for (const source of answer.sources) {
       assert.equal(source.type, 'public_site_snapshot'); assert.equal(source.sourceId, source.id);
-      assert.ok(getCardifRecord(source.id)); assert.equal(source.retrievedAt, '2026-10-06');
+      assert.ok(getCardifRecord(source.id)); assert.equal(source.retrievedAt, source.id === 'service:change_address' ? '2026-10-20' : '2026-10-06');
       NavigationTargetSchema.parse(source.navigationDestination);
     }
     for (const line of answer.answer.split('\n')) assert.ok(context.sources.some(source => source.content.split('\n').includes(line)), line);

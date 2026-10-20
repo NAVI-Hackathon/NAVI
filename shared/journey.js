@@ -43,10 +43,22 @@ export const ClaimContextSchema = z.object({
   channels: z.array(ClaimChannelSchema),
   reminders: z.array(z.string()),
 }).strict();
+// Manual statements are stored separately from evidence; no confidence or verified status accepted.
+const manualText = z.string().trim().min(1).max(120).nullable().optional();
+const manualDate = z.iso.date().nullable().optional();
+export const ManualDocumentInformationRequestSchema = z.discriminatedUnion('documentType', [
+  z.object({ documentType: z.literal('diagnosis_certificate'), fields: z.object({ hospitalName: manualText, admissionDate: manualDate, dischargeDate: manualDate, reportedInpatientDays: z.number().int().min(1).max(3660).nullable().optional() }).strict() }).strict(),
+  z.object({ documentType: z.literal('bank_passbook'), fields: z.object({ bankName: manualText, accountLast4: z.string().regex(/^\d{4}$/).nullable().optional() }).strict() }).strict(),
+]).refine(value => Object.values(value.fields).some(v => v !== null && v !== undefined), { message: '請至少填寫一項文件資訊。' });
+export const ManualDocumentInformationSchema = z.object({
+  documentType: z.enum(['diagnosis_certificate', 'bank_passbook']), source: z.literal('manual'), status: z.literal('needs_review'),
+  fields: z.record(z.string(), z.union([z.string(), z.number(), z.null()])), updatedAt: z.iso.datetime(),
+}).strict().refine(value => ManualDocumentInformationRequestSchema.safeParse({ documentType: value.documentType, fields: value.fields }).success);
 export const ServiceJourneySchema = z.object({
   id: z.string().uuid(), serviceType: z.enum(serviceTypes), title: z.string(), summary: z.string().max(300), confidence: z.number().min(0).max(1), currentStage: z.enum(Object.values(JOURNEY_STATES)), readiness: z.number().int().min(0).max(100),
   extractedData: IntentDataSchema.shape.extractedData, requirements: z.array(RequirementSchema), documents: z.array(DocumentSchema), conversation: z.array(ConversationSchema), nextAction: NextActionSchema, sources: z.array(KnowledgeSourceSchema),
   consistencyIssues: z.array(ConsistencyIssueSchema).optional(), confirmed: z.boolean(), supported: z.boolean(), provider: z.enum(['demo', 'live', 'provided']), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(), disclaimer: z.string(),
+  manualDocumentInformation: z.array(ManualDocumentInformationSchema).max(2).optional(),
   claimContext: ClaimContextSchema.optional(), officialSources: z.array(OfficialSourceSchema).optional(),
 }).strict();
 export const CreateJourneyRequestSchema = z.object({ message: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH), intentResult: IntentDataSchema.optional() }).strict();

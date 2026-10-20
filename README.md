@@ -24,6 +24,10 @@ NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
 現在的部署與維護以[專用VPS指南](docs/vps-dedicated-deployment.md)為準。舊共享 VPS 的[隔離部署報告](docs/vps-isolated-deployment.md)僅作歷史紀錄，不代表目前服務狀態。
 
+## Latest Main Readiness
+
+最新修正（待 PR review）：地址變更移除內部筆記、名詞頁採用7個已核對官網短定義；保留本地待審Snapshot。Backend新增待確認手動文件資訊API（不計文件分數，正式UI由A接入），沿用10秒整體AI deadline與零成本護欄。整合方式及未完成限制見[本次報告](docs/production-readiness-2026-10-21.md)。
+
 ## Project Structure
 
 ```text

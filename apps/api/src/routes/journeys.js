@@ -1,6 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
-import { CreateJourneyRequestSchema, ReviewRequestSchema, MAX_DOCUMENT_BYTES } from '../../../../shared/journey.js';
+import { CreateJourneyRequestSchema, ReviewRequestSchema, ManualDocumentInformationRequestSchema, MAX_DOCUMENT_BYTES } from '../../../../shared/journey.js';
 import { RequestSchema } from '../schemas/intent.schema.js';
 import { understandIntent } from '../services/intent.service.js';
 import { createJourneyService } from '../services/journeyService.js';
@@ -30,6 +30,12 @@ export function createJourneyRouter({ config, provider, repository }) {
   });
   router.post('/journeys', async (req, res) => {
     res.status(201).json(await service.create(validate(CreateJourneyRequestSchema, req.body), requestSignal(res)));
+  });
+  router.post('/journeys/:id/manual-document-information', (req, res) => {
+    res.json(service.addManualDocumentInformation(req.params.id, validate(ManualDocumentInformationRequestSchema, req.body)));
+  });
+  router.delete('/journeys/:id/manual-document-information/:documentType', (req, res) => {
+    res.json(service.removeManualDocumentInformation(req.params.id, validate(z.enum(['diagnosis_certificate', 'bank_passbook']), req.params.documentType)));
   });
   router.get('/journeys/:id', (req, res) => res.json(service.get(req.params.id)));
   router.post('/journeys/:id/documents', express.raw({ type: 'multipart/form-data', limit: MAX_DOCUMENT_BYTES + 64 * 1024, inflate: false }), async (req, res) => {
