@@ -145,7 +145,7 @@ Nginx／API的Stop與Release演練是刻意的驗收操作，不計作非預期�
 
 - HTTP、無登入與案件授權，不接受真實醫療、銀行或個人敏感資料；只使用範例或明確合成文件。尚未配置 HTTPS，不能作為安全的正式理賠入口。
 - Demo Provider 的 Intent／文件辨識為可重現的合成結果，**不是 Gemini 真實辨識**。Knowledge 是本地 Snapshot；沒有即時爬蟲、RAG 或付費搜尋。
-- Journey 仍為 InMemory，重啟／更新後舊案件會失效；100%只代表原型資料準備完成，沒有送件或核賠。廣泛長期公開前需要案件容量／保留期限與實際安全設計。
+- Journey 仍為 InMemory（上限100案、更新後1小時過期），重啟／更新服務後舊案件會失效；100%只代表原型資料準備完成，沒有送件或核賠。廣泛長期公開前需要重新評估容量／保留期限與實際安全設計。
 - `/demo` 的本地資料與 Backend Demo 日期／顯示欄位略有差異，分數與主要旅程相同；保留現有前端備援，未重做 A 的 UI。
 - 少數共用 footer 仍沿用本地模式「文件不會被上傳」文案；一般模式實際會將合成檔案傳至 API，文件區已有正確提醒。後續應由 A 對齊此文案；不得據此上傳真實文件。
 - 修正 HTTP 的 UUID 相容性時使用 getRandomValues，沒有取消 Origin 驗證或變更瀏覽器安全設定；依據 [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)。

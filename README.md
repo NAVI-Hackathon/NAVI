@@ -4,15 +4,27 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
-**Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 可由 A 後續切換 import。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
+**Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 首頁答案與助手面板也已改用（`38934f4`）。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
 
-## Public VPS Demo
+## 線上 Demo
 
-專用 VPS 已公開展示：**[模擬官網／嵌入 NAVI](http://207.148.113.119/)**、**[NAVI Web](http://207.148.113.119:8080/)**、[API Health](http://207.148.113.119:8080/api/health)、[本地備援](http://207.148.113.119:8080/demo)。使用 production build + Demo Provider，HTTP 僅限合成資料。已驗證桌面／390px住院35→70→90→100、導航與API離線備援；部署及維護指令見[專用VPS指南](docs/vps-dedicated-deployment.md)。舊隔離部署報告保留作歷史紀錄，不代表目前服務狀態。
+| 網站 | 網址 | 說明 |
+| --- | --- | --- |
+| 模擬官網 | **http://207.148.113.119/** | 從這裡開始：右下角 **NAVI** 開啟嵌入式助手 |
+| NAVI | http://207.148.113.119:8080/ | 獨立頁面；走 Backend Journey API |
+| NAVI 離線備案 | http://207.148.113.119:8080/demo | 前端本地 Mock，不依賴 API |
+| Backend 健康檢查 | http://207.148.113.119:8080/api/health | |
+
+- Backend 以 `AI_MODE=demo` 執行，未設定 Gemini Key：意圖判讀與文件辨識都是示範資料，畫面標示「示範辨識資料，未讀取文件內容」。
+- 2026-10-20 實測（Developer A）：官網開啟 NAVI → 住院醫療理賠 35% → 範例診斷書 70% → 「帶我去」使模擬官網捲動並高亮匯款給付規定，部署版本含 `38934f4`。
+- 目前使用 HTTP，尚未配置 HTTPS；瀏覽器網址列會顯示「不安全」。案件只存在記憶體：服務重啟即清空、1 小時後過期，之後會顯示「這份服務旅程已失效」。
+- 請勿輸入真實病歷、姓名、身分證或帳號。線上服務無法使用時，以本機 `npm run dev:all` 作為展示備案。
+
+- Developer B 已完成桌面／390px住院35→70→90→100、嵌入導航、檔案刪除／重傳、API離線時的 `/demo` 備援及少量並行驗收；詳細資源與測試數據見[專用VPS指南](docs/vps-dedicated-deployment.md)。
+
+現在的部署與維護以[專用VPS指南](docs/vps-dedicated-deployment.md)為準。舊共享 VPS 的[隔離部署報告](docs/vps-isolated-deployment.md)僅作歷史紀錄，不代表目前服務狀態。
 
 ## Project Structure
-
-舊共享 VPS 的隔離部署紀錄見 [歷史報告](docs/vps-isolated-deployment.md)；該次因資源守門維持停止。現在的專用 VPS 公開部署以[最新指南](docs/vps-dedicated-deployment.md)為準。
 
 ```text
 apps/
