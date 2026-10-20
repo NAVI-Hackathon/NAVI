@@ -264,3 +264,9 @@ npm run dev:live               # 人工啟動 Live NAVI；每個 API process 也
 Phase 3 本地結果：120/120 合成案例通過，Golden Path 35→70→90→100；**本次未執行 Live Gemini，新增 Gemini 請求 0 次**。Local fixtures 與 cached replay 均不計為本次模型能力驗證；Live 僅報小樣本 passed count 與 fresh-call p50/p95，不宣稱完整 AI accuracy。詳見 [零成本評估文件](docs/backend-ai-phase-3.md)。
 
 Free Tier 價格與配額由供應商決定，請核對 [Google pricing](https://ai.google.dev/gemini-api/docs/pricing)、[billing](https://ai.google.dev/gemini-api/docs/billing) 與 [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)。若不能確認零成本，使用 Demo／Local；程式中的人工確認 flag 不是帳戶帳務驗證，也無法阻止帳戶日後被他人啟用 Billing。
+
+## Competition Readiness
+
+新增相容的多步導航、Journey 計分理由、資料快照證據及確認後取得交接摘要的 API。A 的 UI 與原有 postMessage 不變。[契約、接入與安全界線](docs/competition-readiness.md)。
+
+`npm run evidence:demo` 可重現測試、Build、三組本地 Evaluation、合成 HTTP E2E 與延遲量測；輸出在 `artifacts/demo-evidence/`。不呼叫 Live Gemini，不代表真實文件辨識或真人效益測試。

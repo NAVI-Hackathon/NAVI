@@ -1,4 +1,8 @@
 import express from 'express';
+import { NavigationPlanRequestSchema, HandoffConfirmRequestSchema } from '../../../../shared/competition.js';
+import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
+import { searchVerifiedKnowledge } from '../../../../shared/knowledge/evidence.js';
+import { explainJourney, createHandoffConfirmationService } from '../services/competitionService.js';
 import { z } from 'zod';
 import { CreateJourneyRequestSchema, ReviewRequestSchema, ManualDocumentInformationRequestSchema, MAX_DOCUMENT_BYTES } from '../../../../shared/journey.js';
 import { RequestSchema } from '../schemas/intent.schema.js';
@@ -23,6 +27,15 @@ function requestSignal(res) {
 export function createJourneyRouter({ config, provider, repository }) {
   const router = express.Router();
   const service = createJourneyService({ config, provider, repository });
+  const handoff = createHandoffConfirmationService({ getJourney: service.get });
+  router.post('/navigation/plans', (req, res) => res.json(planNavigation(validate(NavigationPlanRequestSchema, req.body))));
+  router.get('/knowledge/evidence', (req, res) => res.json(searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
+  router.get('/journeys/:id/explanation', (req, res) => res.json(explainJourney(service.get(req.params.id))));
+  router.post('/journeys/:id/handoff/preview', (req, res) => {
+    validate(z.object({}).strict(), req.body);
+    res.status(201).json(handoff.preview(req.params.id));
+  });
+  router.post('/journeys/:id/handoff/confirm', (req, res) => res.json(handoff.confirm(req.params.id, validate(HandoffConfirmRequestSchema, req.body))));
   router.post('/analyze-intent', async (req, res) => {
     const { message } = validate(RequestSchema, req.body);
     const result = await understandIntent(message, { config, provider, signal: requestSignal(res) });
