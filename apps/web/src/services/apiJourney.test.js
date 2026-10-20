@@ -113,11 +113,28 @@ test('a 住院 information question (knowledge_query) never creates a journey', 
   assert.equal(result.kind, 'hospital');
 });
 
-test('server errors reach the user as written; manual entry is off in formal mode', async t => {
+test('server errors reach the user as written', async t => {
   const service = client(await backend(t));
   await service.analyze(DEMO_STORY);
   const text = new File(['hello'], 'note.txt', { type: 'text/plain' });
   await assert.rejects(service.uploadDocument('diagnosis_certificate', { file: text }), error => error.code === 'UNSUPPORTED_FILE_TYPE' && /PDF/.test(error.message));
-  assert.equal(service.capabilities.manualEntry, false);
-  assert.throws(() => service.submitManual('diagnosis_certificate', {}), { code: 'MANUAL_ENTRY_UNAVAILABLE' });
+  await assert.rejects(service.submitManual('bank_passbook', { bankName: null, accountLast4: null }), { code: 'INVALID_INPUT' });
+});
+
+test('formal-mode manual information is stored as 待確認: no readiness, no document, no review; a verified upload replaces it', async t => {
+  const service = client(await backend(t));
+  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true });
+  await service.analyze(DEMO_STORY);
+  const typed = await service.submitManual('diagnosis_certificate', { hospitalName: '臺中榮民總醫院', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', reportedInpatientDays: 5 });
+  assert.equal(typed.journey.readiness, 35, 'manual information adds no readiness');
+  assert.equal(typed.journey.documents.length, 0, 'it is not a document');
+  assert.deepEqual(typed.journey.manualDocumentInformation.map(m => [m.documentType, m.source, m.status]), [['diagnosis_certificate', 'manual', 'needs_review']]);
+  await service.submitManual('bank_passbook', { bankName: '示範銀行', accountLast4: '1234' });
+  await assert.rejects(service.confirm(), { status: 409 }, 'manual information cannot unlock review');
+
+  const removed = await service.removeManual('bank_passbook');
+  assert.deepEqual(removed.journey.manualDocumentInformation.map(m => m.documentType), ['diagnosis_certificate']);
+  const uploaded = await service.uploadDocument('diagnosis_certificate', { sample: true });
+  assert.equal(uploaded.journey.readiness, 70);
+  assert.ok(!(uploaded.journey.manualDocumentInformation ?? []).some(m => m.documentType === 'diagnosis_certificate'), 'the verified upload clears the typed information');
 });

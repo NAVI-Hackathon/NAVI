@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Icon from '../Icon.jsx';
-import ManualEntryForm from './ManualEntryForm.jsx';
+import ManualEntryForm, { unverifiedForms } from './ManualEntryForm.jsx';
 import { validateFile } from '../../domain/files.js';
 import { documentSpecs } from '../../mocks/hospitalClaim.js';
 import { maskAccount, stayDays, stayText } from '../../content/format.js';
@@ -66,6 +66,32 @@ function Result({ type, document }) {
   );
 }
 
+/** Formal mode: information the user typed. Stored as 待確認 — never shown as a recognised document. */
+function PendingInformation({ type, information, disabled, onUpload, onSample, onEdit, onRemove }) {
+  const rows = unverifiedForms[type].filter(f => information.fields[f.name] != null);
+  const spec = documentSpecs[type];
+  return (
+    <motion.div className="doc-pending" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
+      <div className="doc-result-head">
+        <span className="doc-status is-review"><Icon name="info" size={12} />待確認資訊・尚未驗證</span>
+        <span className="doc-confidence">你手動提供</span>
+      </div>
+      <dl className="doc-fields">
+        {rows.map(f => (
+          <div key={f.name}><dt>{f.label}</dt><dd>{f.name === 'accountLast4' ? `末四碼 ${information.fields[f.name]}` : f.name === 'reportedInpatientDays' ? `${information.fields[f.name]} 天` : information.fields[f.name]}</dd></div>
+        ))}
+      </dl>
+      <p className="doc-match is-review"><Icon name="info" size={14} />不計入準備完成度。請上傳{spec.title}由系統驗證，或由專員確認。</p>
+      <div className="doc-pending-actions">
+        <button type="button" className="button button-secondary button-small" disabled={disabled} onClick={onUpload}>上傳文件<Icon name="upload" size={15} /></button>
+        <button type="button" className="link-button" disabled={disabled} onClick={onSample}>使用範例{spec.title}</button>
+        <button type="button" className="link-button" disabled={disabled} onClick={onEdit}>編輯資訊</button>
+        <button type="button" className="link-button" disabled={disabled} onClick={onRemove}>移除</button>
+      </div>
+    </motion.div>
+  );
+}
+
 function Analyzing() {
   return (
     <motion.div className="doc-analyzing" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: transition.fast }} exit={{ opacity: 0, transition: transition.exit }}>
@@ -77,7 +103,7 @@ function Analyzing() {
   );
 }
 
-export default function DocumentCard({ type, document, uiState, busy, onUpload, onRemove, onManual, onRetry, registerInput }) {
+export default function DocumentCard({ type, document, manualInformation, manualVerifies = true, uiState, busy, onUpload, onRemove, onManual, onRemoveManual, onRetry, registerInput }) {
   const spec = documentSpecs[type];
   const input = useRef(null);
   const depth = useRef(0);
@@ -98,7 +124,10 @@ export default function DocumentCard({ type, document, uiState, busy, onUpload, 
   }
   function bindInput(el) { input.current = el; registerInput?.(type, el); }
 
-  const state = processing ? 'analyzing' : manual ? 'manual' : document ? 'result' : failed ? 'failed' : 'empty';
+  const pending = !document && Boolean(manualInformation);
+  const state = processing ? 'analyzing' : manual ? 'manual' : document ? 'result' : failed ? 'failed' : pending ? 'pending' : 'empty';
+  // Formal mode offers manual entry up front, clearly as unverified information.
+  const manualLabel = manualVerifies ? '手動輸入' : '先提供資訊（尚未驗證）';
 
   return (
     <motion.article
@@ -139,7 +168,7 @@ export default function DocumentCard({ type, document, uiState, busy, onUpload, 
               <p>{uiState?.message ?? (onManual ? '你可以重新上傳較清楚的照片，或手動確認文件內容。' : '你可以重新上傳較清楚的照片或 PDF。')}</p>
               <div className="doc-failed-actions">
                 <button type="button" className="button button-secondary button-small" onClick={() => { onRetry(type); input.current?.click(); }}>重新上傳<Icon name="upload" size={15} /></button>
-                {onManual && <button type="button" className="button button-ghost button-small" onClick={() => onManual(type, null)}>手動輸入<Icon name="edit" size={15} /></button>}
+                {onManual && <button type="button" className="button button-ghost button-small" onClick={() => onManual(type, null)}>{manualLabel}<Icon name="edit" size={15} /></button>}
               </div>
             </div>
           </motion.div>
@@ -147,8 +176,14 @@ export default function DocumentCard({ type, document, uiState, busy, onUpload, 
 
         {state === 'manual' && (
           <motion.div key="manual" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
-            <ManualEntryForm type={type} onSubmit={fields => onManual(type, fields)} onCancel={() => onRetry(type)} />
+            <ManualEntryForm type={type} verifies={manualVerifies} initial={manualInformation?.fields} onSubmit={fields => onManual(type, fields)} onCancel={() => onRetry(type)} />
           </motion.div>
+        )}
+
+        {state === 'pending' && (
+          <PendingInformation key="pending" type={type} information={manualInformation} disabled={disabled}
+            onUpload={() => input.current?.click()} onSample={() => onUpload(type, { sample: true })}
+            onEdit={() => onManual(type, null)} onRemove={() => onRemoveManual?.(type)} />
         )}
 
         {state === 'empty' && (
@@ -159,6 +194,7 @@ export default function DocumentCard({ type, document, uiState, busy, onUpload, 
             <div className="dropzone-actions">
               <button type="button" className="button button-secondary button-small" disabled={disabled} onClick={() => input.current?.click()}>選擇文件</button>
               <button type="button" className="link-button" disabled={disabled} onClick={() => { setError(''); onUpload(type, { sample: true }); }}>使用範例{spec.title}</button>
+              {!manualVerifies && onManual && <button type="button" className="link-button" disabled={disabled} onClick={() => onManual(type, null)}>{manualLabel}</button>}
             </div>
           </motion.div>
         )}

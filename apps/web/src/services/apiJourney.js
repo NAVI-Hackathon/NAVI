@@ -68,8 +68,9 @@ export function createApiJourneyService({
 
   return {
     mode: 'live',
-    // The server keeps documents; manual entry has no backend API yet, so it is off in formal mode.
-    capabilities: { manualEntry: false },
+    // Manual information is accepted but never verified: it is stored as「待確認」 next to the
+    // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
+    capabilities: { manualEntry: false, manualInformation: true },
     /** Nothing to show synchronously: the journey itself is only on the server (see resume). */
     restore() {
       state = null;
@@ -118,7 +119,15 @@ export function createApiJourneyService({
       const result = await request(`/journeys/${journey.id}/documents`, { method: 'POST', body: form, signal, timeout: documentTimeoutMs, schema: UploadResponse });
       return commit(result.journey);
     },
-    submitManual() { throw new JourneyApiError('MANUAL_ENTRY_UNAVAILABLE', '正式模式目前不支援手動輸入文件內容，請上傳文件。'); },
+    async submitManual(type, fields) {
+      const { journey } = requireState();
+      const result = await request(`/journeys/${journey.id}/manual-document-information`, { method: 'POST', json: { documentType: type, fields }, schema: UploadResponse });
+      return commit(result.journey);
+    },
+    async removeManual(type) {
+      const { journey } = requireState();
+      return commit(await request(`/journeys/${journey.id}/manual-document-information/${type}`, { method: 'DELETE' }));
+    },
     async removeDocument(type) {
       const { journey } = requireState();
       const document = journey.documents.find(d => d.documentType === type);

@@ -41,7 +41,8 @@ export function createJourneyService({ mode, understand, storage, storageKey, do
 
   return {
     mode,
-    capabilities: { manualEntry: true },
+    // /demo computes the journey locally; manual entries there count as confirmed demo data.
+    capabilities: { manualEntry: true, manualInformation: false },
     restore() {
       try { session = restoreSession(storage?.getItem(storageKey) ?? 'null'); } catch { session = null; }
       return session ? toSnapshot(session) : null;

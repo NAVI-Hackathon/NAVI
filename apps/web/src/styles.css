@@ -541,3 +541,9 @@ button:active:not(:disabled) { transform: scale(0.98); }
 /* Formal mode: reading a stored journey back from the server */
 .resuming { display: grid; place-items: center; min-height: 60vh; font-size: 12px; color: var(--color-text-muted); }
 .resuming p { display: flex; align-items: center; gap: 8px; }
+
+/* Formal mode: manual information is shown as 待確認, never as a recognised document */
+.doc-pending { padding: 14px 0 2px; }
+.doc-pending .doc-fields { margin-top: 10px; }
+.doc-pending-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 14px; }
+.field-optional { margin-left: 6px; font-size: 10px; color: var(--color-text-muted); }

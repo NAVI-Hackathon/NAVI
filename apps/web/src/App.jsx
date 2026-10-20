@@ -226,6 +226,10 @@ export default function App() {
     documentNotice: service.capabilities.manualEntry
       ? '文件辨識使用示範資料；你的檔案不會被讀取或上傳。'
       : '文件會傳送到 NAVI 服務辨識，不會保存檔案本身；這是示範原型，請勿上傳真實病歷或銀行資料。',
+    footerNotice: service.capabilities.manualEntry
+      ? '進度只保留在這個分頁；文件不會被上傳。'
+      : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
+    manualVerifies: service.capabilities.manualEntry,
     upload,
     navigate,
     async remove(type) {
@@ -235,13 +239,24 @@ export default function App() {
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       notify('文件已移除，準備完成度已更新。');
     },
-    // Manual entry exists only where the journey is computed locally (/demo).
-    manual: service.capabilities.manualEntry ? (type, fields) => {
+    // /demo: manual contents count as confirmed demo data. Formal mode: the server stores them as
+    // 待確認 information that adds no readiness; only a verified upload changes the score.
+    async manual(type, fields) {
       if (!fields) { setDocStates(s => ({ ...s, [type]: { status: 'manual' } })); return; }
-      setSnapshot(service.submitManual(type, fields));
+      const next = await attempt(() => service.submitManual(type, fields));
+      if (!next) return;
+      setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
-      notify(`${documentSpecs[type].title}內容已確認，準備完成度已更新。`);
-    } : null,
+      notify(service.capabilities.manualEntry
+        ? `${documentSpecs[type].title}內容已確認，準備完成度已更新。`
+        : `已記下${documentSpecs[type].title}資訊（待確認），不會計入準備完成度；請上傳文件或由專員確認。`);
+    },
+    async removeManual(type) {
+      const next = await attempt(() => service.removeManual(type));
+      if (!next) return;
+      setSnapshot(next);
+      notify('已移除待確認資訊。');
+    },
     resetDocument(type) { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); },
     review() { setDialog('review'); },
     proceed() { setDialog('proceed'); },

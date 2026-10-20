@@ -33,8 +33,10 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
         <DocumentCard
           key={type} type={type}
           document={snapshot.journey.documents.find(d => d.documentType === type)}
+          manualInformation={snapshot.journey.manualDocumentInformation?.find(m => m.documentType === type)}
+          manualVerifies={actions.manualVerifies}
           uiState={docStates[type]} busy={busy}
-          onUpload={actions.upload} onRemove={actions.remove} onManual={actions.manual} onRetry={actions.resetDocument}
+          onUpload={actions.upload} onRemove={actions.remove} onManual={actions.manual} onRemoveManual={actions.removeManual} onRetry={actions.resetDocument}
           registerInput={registerInput}
         />
       ))}
@@ -138,7 +140,7 @@ export default function Workspace({ snapshot, docStates, busy, tab, onTab, assis
       )}
 
       <footer className="workspace-footer">
-        <span><Icon name="lock" size={13} />進度只保留在這個分頁；文件不會被上傳。</span>
+        <span><Icon name="lock" size={13} />{actions.footerNotice}</span>
         <span>NAVI · 智慧服務導航</span>
       </footer>
     </motion.main>
