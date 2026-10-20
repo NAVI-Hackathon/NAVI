@@ -4,11 +4,25 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
-**Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 可由 A 後續切換 import。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
+**Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 首頁答案與助手面板也已改用（`38934f4`）。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
+
+## 線上 Demo
+
+| 網站 | 網址 | 說明 |
+| --- | --- | --- |
+| 模擬官網 | **http://207.148.113.119/** | 從這裡開始：右下角 **NAVI** 開啟嵌入式助手 |
+| NAVI | http://207.148.113.119:8080/ | 獨立頁面；走 Backend Journey API |
+| NAVI 離線備案 | http://207.148.113.119:8080/demo | 前端本地 Mock，不依賴 API |
+| Backend 健康檢查 | http://207.148.113.119:8080/api/health | |
+
+- Backend 以 `AI_MODE=demo` 執行，未設定 Gemini Key：意圖判讀與文件辨識都是示範資料，畫面標示「示範辨識資料，未讀取文件內容」。
+- 2026-10-20 實測（Developer A）：官網開啟 NAVI → 住院醫療理賠 35% → 範例診斷書 70% → 「帶我去」使模擬官網捲動並高亮匯款給付規定，部署版本含 `38934f4`。
+- 只有 HTTP（無網域名稱，無法申請 HTTPS 憑證），瀏覽器網址列會顯示「不安全」。案件只存在記憶體：服務重啟即清空、1 小時後過期，之後會顯示「這份服務旅程已失效」。
+- 請勿輸入真實病歷、姓名、身分證或帳號。線上服務無法使用時，以本機 `npm run dev:all` 作為展示備案。
+
+VPS 部署架構、資源保護與操作方式見 [部署紀錄](docs/vps-isolated-deployment.md)。
 
 ## Project Structure
-
-VPS 隔離部署與操作方式見 [部署紀錄](docs/vps-isolated-deployment.md)。本次已準備產物並驗證嵌入導航，但資源守門觸發後維持安全停止，尚未通過 VPS 完整驗收；不自動啟動或公開服務。
 
 ```text
 apps/
