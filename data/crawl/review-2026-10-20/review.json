@@ -1,0 +1,51 @@
+{
+  "status": "partial_review",
+  "retrievedAt": "2026-10-20",
+  "crawler": "scripts/crawler/cardif_crawler.py",
+  "pages": [
+    {
+      "url": "https://life.cardif.com.tw/zh/a312",
+      "sha256": "577b07173cc59f659899a066700a090b3115a98856c00f885ed38c736c0857e6",
+      "status": "selected_fields_promoted"
+    },
+    {
+      "url": "https://life.cardif.com.tw/zh/a314",
+      "sha256": "cb5b7050a6eedcb3216778fff99d531b96898e00d735d5bc299bd390b2e9df60",
+      "status": "pending_review"
+    },
+    {
+      "url": "https://life.cardif.com.tw/zh/a313",
+      "sha256": "801e5ceb0532128f1d9a4031769122b8fe1f1939538fe9ab478d561956b503ad",
+      "status": "pending_review"
+    },
+    {
+      "url": "https://life.cardif.com.tw/zh/a311",
+      "sha256": "3752a2ebf90ac171a8bac22f5c280ddca0475be96b344d516ae00eddce7b2bad",
+      "status": "pending_review"
+    },
+    {
+      "url": "https://life.cardif.com.tw/zh/f8",
+      "sha256": "c068a4747da3c79c41b3c359c23fa81ccc2a051dc08092bbc8000795a4f131d5",
+      "status": "pending_review"
+    },
+    {
+      "url": "https://life.cardif.com.tw/insurancedictionary",
+      "sha256": "53b8d3b0a4a1fa6127725131a107a5ddd2f306a590b7b656d785609d5f7fc2e9",
+      "status": "selected_fields_promoted"
+    },
+    {
+      "url": "https://life.cardif.com.tw/zh/a3",
+      "sha256": "662bd27e5a0bc954ad5da2685c40c128ec98e8f5a5b65def538127fb5353aad4",
+      "status": "pending_review"
+    }
+  ],
+  "promoted": [
+    "services.change_address (public text only; source ID unchanged)",
+    "glossary (7 short definitions)"
+  ],
+  "not_promoted": [
+    "Other services, FAQ, forms, medical requirements, partner list and rules retain their previous reviewed snapshot and date.",
+    "PDF contents not downloaded or parsed.",
+    "No runtime requests to official websites."
+  ]
+}

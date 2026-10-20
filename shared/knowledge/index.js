@@ -12,10 +12,10 @@ const sitePathFor = url => sitePaths[url] ?? null;
 
 const LABEL_MAX = 40;
 const clip = (text, max = LABEL_MAX) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
-export const typeLabels = { service: '服務說明', form: '表單', faq: '常見問題', claim_documents: '理賠應備文件', claim_rule: '理賠規定' };
+export const typeLabels = { service: '服務說明', form: '表單', faq: '常見問題', claim_documents: '理賠應備文件', claim_rule: '理賠規定', glossary: '名詞解釋' };
 
-function destination(kind, path, anchor, label, sourceUrl) {
-  return NavigationTargetSchema.parse({ kind, path, anchor, label: clip(label), source: officialSource(sourceUrl) });
+function destination(kind, path, anchor, label, sourceUrl, retrievedAt) {
+  return NavigationTargetSchema.parse({ kind, path, anchor, label: clip(label), source: officialSource(sourceUrl, retrievedAt) });
 }
 
 function serviceEntry(service) {
@@ -28,12 +28,13 @@ function serviceEntry(service) {
     ['應備文件', service.documents],
     ['注意事項', service.notes],
     ['線上辦理', service.online_available ? [service.online_available] : []],
+    ['線上服務條件', service.online_requirements ?? []],
   ].filter(([, items]) => items.length > 0).map(([label, items]) => ({ label, items }));
   return {
     id: `service:${service.id}`, type: 'service', title: service.name, category: service.category,
     summary: '', // the detail lists (辦理方式、應備文件…) are the answer
     details, requiresLogin: Boolean(service.requires_login), precheckQuestions: service.precheck_questions ?? [],
-    destination: destination('page', path, `service-${kebab(service.id)}`, `查看${service.name}`, service.url),
+    destination: destination('page', path, `service-${kebab(service.id)}`, `查看${service.name}`, service.url, service.retrievedAt),
     relatedIds: (service.related_forms ?? []).map(id => `form:${id}`),
     search: { title: service.name, keywords: [...(service.keywords ?? []), service.category], body: [...details.flatMap(d => [d.label, ...d.items]), ...(service.precheck_questions ?? [])].join(' ') },
   };
@@ -78,7 +79,17 @@ function claimRuleEntry(rule, index) {
   };
 }
 
+function glossaryEntry(term) {
+  return {
+    id: `glossary:${term.id}`, type: 'glossary', title: term.term, category: term.category, summary: term.definition,
+    details: [], requiresLogin: false, relatedIds: [],
+    destination: destination('page', '/glossary', `glossary-term-${term.id}`, `查看${term.term}`, term.sourceUrl, term.retrievedAt),
+    search: { title: term.term, keywords: term.keywords, body: term.definition },
+  };
+}
+
 const entries = [
+  ...cardif.glossary.map(glossaryEntry),
   ...seedServices.map(serviceEntry),
   ...seedForms.map(formEntry),
   ...seedFaq.map(faqEntry),

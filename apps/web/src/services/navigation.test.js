@@ -71,6 +71,11 @@ test('every knowledge answer leads to a page and anchor the mock site renders', 
     } else if (entry.type === 'form') {
       if (id.startsWith('claim_')) assert.ok(claimSections.some(prefix => id.startsWith(prefix)), `${entry.id} has no section`);
       assert.equal(anchor.endsWith('-investment'), versionedForms.has(id), entry.id);
+    } else if (entry.type === 'glossary') {
+      assert.ok(page.includes('cardif.glossary'));
+      assert.ok(page.includes('`glossary-term-${item.id}`'));
+      assert.equal(anchor, `glossary-term-${id}`);
+      assert.ok(raw.glossary.some(term => term.id === id));
     } else {
       const template = { faq: 'faqTourId', claim_documents: '`claim-doc-${index + 1}`', claim_rule: '`claim-rule-${index + 1}`' }[entry.type];
       assert.ok(page.includes(template), `${entry.id}: ${path} does not render ${template}`);

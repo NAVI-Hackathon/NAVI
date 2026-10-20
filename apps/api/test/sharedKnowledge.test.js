@@ -14,7 +14,8 @@ import { loadKnowledgeDataset, evaluateKnowledge } from '../eval/knowledge/runne
 
 function snapshotLines(entry) {
   const [kind, id] = entry.id.split(/:(.*)/);
-  if (kind === 'service') { const s = raw.services.find(s => s.id === id); return [s.name, ...s.channels, ...s.documents, ...s.notes, ...(s.precheck_questions ?? []), s.apply_time, s.effective_time, s.online_available].filter(Boolean); }
+  if (kind === 'glossary') return [raw.glossary.find(t => t.id === id).definition];
+  if (kind === 'service') { const s = raw.services.find(s => s.id === id); return [s.name, ...s.channels, ...s.documents, ...s.notes, ...(s.online_requirements ?? []), ...(s.precheck_questions ?? []), s.apply_time, s.effective_time, s.online_available].filter(Boolean); }
   if (kind === 'form') { const f = raw.forms.find(f => f.id === id); return [f.name, f.note].filter(Boolean); }
   if (kind === 'faq') return [raw.faq[Number(id) - 1].a];
   if (kind === 'claim-doc') return Object.values(raw.claim_document_requirements)[Number(id) - 1];
@@ -28,7 +29,7 @@ test('all shared sources and evidence derive from the snapshot; IDs and destinat
   for (const entry of knowledgeEntries) {
     assert.equal(entry.sourceId, entry.id);
     assert.equal(entry.sourceUrl, entry.destination.source.url);
-    assert.equal(entry.retrievedAt, raw.meta.crawled);
+    assert.equal(entry.retrievedAt, entry.type === 'glossary' ? raw.glossary.find(t => `glossary:${t.id}` === entry.id).retrievedAt : raw.services.find(s => `service:${s.id}` === entry.id)?.retrievedAt ?? raw.meta.crawled);
     for (const line of entry.content.split('\n')) assert.ok(snapshotLines(entry).includes(line), `${entry.id}: not a snapshot quote`);
     assert.equal(verifyKnowledgeSource(knowledgeSource(entry)), true);
     NavigationTargetSchema.parse(entry.destination);
@@ -156,6 +157,7 @@ test('every shared destination maps to existing mock-site routes and rendered an
     const id = entry.id.split(/:(.*)/)[1];
     if (entry.type === 'service') { const s = raw.services.find(s => s.id === id); assert.ok(page.includes(`getService("${id}")`) || page.includes(`servicesByCategory("${s.category}")`)); }
     else if (entry.type === 'form') { assert.equal(anchor.endsWith('-investment'), versions.has(id)); if (id.startsWith('claim_')) assert.ok(claimPrefixes.some(p => id.startsWith(p))); }
+    else if (entry.type === 'glossary') { assert.ok(page.includes('cardif.glossary')); assert.ok(page.includes('`glossary-term-${item.id}`')); assert.equal(anchor, `glossary-term-${id}`); }
     else assert.ok(page.includes({ faq: 'faqTourId', claim_documents: '`claim-doc-${index + 1}`', claim_rule: '`claim-rule-${index + 1}`' }[entry.type]));
   }
 });

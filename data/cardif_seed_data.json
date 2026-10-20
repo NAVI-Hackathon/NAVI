@@ -328,24 +328,21 @@
   "services": [
     {
       "id": "change_address",
-      "name": "變更戶籍地址／收費地址",
+      "name": "變更戶籍地址 / 收費地址",
       "category": "保單變更",
       "url": "https://life.cardif.com.tw/zh/a312",
       "channels": [
-        "郵寄",
-        "聯絡我們留資料由專人聯繫",
-        "巴黎線上My Cardif（通訊地址可線上改）"
+        "郵寄"
       ],
       "requires_login": false,
-      "apply_time": "週一至週五 09:00–18:00",
+      "apply_time": "週一~ 週五AM09:00~PM18:00",
       "effective_time": "收到變更資料翌日零時",
       "documents": [
         "保險契約內容變更申請書"
       ],
       "notes": [
-        "要保人及被保險人皆須簽名",
-        "同一要/被保險人僅接受一個地址",
-        "可透過保全聯盟鏈一次通知其他保險公司"
+        "「要保人」及「被保險人」皆須簽名",
+        "同一要/被保險人僅接受一個地址"
       ],
       "related_forms": [
         "form_contract_change"
@@ -356,10 +353,16 @@
         "住址",
         "通訊地址"
       ],
-      "online_available": "部分：通訊地址/Email/電話可經 My Cardif（保全聯盟鏈、保單基本資料變更）；戶籍/收費地址頁面寫紙本",
-      "precheck_questions": [
-        "要改的是通訊地址，還是戶籍地址/收費地址？",
-        "是否已是 My Cardif 會員並開通線上變更？"
+      "online_available": "巴黎線上My Cardif申請【通訊地址、電子郵件信箱、行動電話、住家電話】變更",
+      "precheck_questions": [],
+      "internal_notes": {
+        "previous_online_note": "部分：通訊地址/Email/電話可經 My Cardif（保全聯盟鏈、保單基本資料變更）；戶籍/收費地址頁面寫紙本",
+        "review": "通訊地址與戶籍／收費地址的管道應分別確認；不得將此內部筆記提供為官網原文。"
+      },
+      "retrievedAt": "2026-10-20",
+      "online_requirements": [
+        "需先註冊為法巴人壽保戶專區有效會員，且已申請並開通網路變更保單資料功能。",
+        "須在本公司仍持有有效保單之要保人"
       ]
     },
     {
@@ -1313,5 +1316,103 @@
     "理賠聯盟鏈/醫起通Q&A /zh/a319",
     "電子單據 /zh/a316、海外急難救援 /zh/a315",
     "App/My Cardif 操作手冊 PDF"
+  ],
+  "glossary": [
+    {
+      "id": "insured",
+      "term": "被保險人",
+      "definition": "被保險公司作為保障對象的人",
+      "category": "契約關係",
+      "keywords": [
+        "被保險人",
+        "insured"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "id": "policyholder",
+      "term": "要保人",
+      "definition": "跟保險公司簽約並繳交保險費的人",
+      "category": "契約關係",
+      "keywords": [
+        "要保人",
+        "policyholder"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "id": "beneficiary",
+      "term": "受益人",
+      "definition": "領取保險金的人",
+      "category": "契約關係",
+      "keywords": [
+        "受益人",
+        "beneficiary"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "id": "insurance-age",
+      "term": "保險年齡",
+      "definition": "以「足歲」來計算年齡，但超過六個月且未滿一歲時，加一歲計算。",
+      "category": "契約用語",
+      "keywords": [
+        "保險年齡"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "id": "premium",
+      "term": "保險費",
+      "definition": "要保人每次繳交至保險公司之金額，用以提供被保險人身故、完全失能保障…等需求",
+      "category": "費用相關",
+      "keywords": [
+        "保費",
+        "保險費",
+        "premium"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "id": "management-fee",
+      "term": "保單管理費",
+      "definition": "為維持保險契約每月管理所產生且自保單帳戶價值中扣除之費用",
+      "category": "費用相關",
+      "keywords": [
+        "保單管理費"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "id": "account-value",
+      "term": "保單帳戶價值",
+      "definition": "契約所有投資標的之投資標的價值總和加上尚未投入投資標的之金額",
+      "category": "投資型保險",
+      "keywords": [
+        "保單帳戶價值"
+      ],
+      "sourceType": "public_site_snapshot",
+      "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    }
   ]
 }

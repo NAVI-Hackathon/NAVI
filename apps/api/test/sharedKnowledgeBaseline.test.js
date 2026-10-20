@@ -22,7 +22,7 @@ test('answers are quoted from the data file, never written by NAVI', () => {
   }
   for (const entry of knowledgeEntries.filter(e => e.type === 'service')) {
     const service = raw.services.find(s => s.name === entry.title);
-    const quoted = [...service.channels, ...service.documents, ...service.notes, service.apply_time, service.effective_time, service.online_available];
+    const quoted = [...service.channels, ...service.documents, ...service.notes, ...(service.online_requirements ?? []), service.apply_time, service.effective_time, service.online_available];
     for (const detail of entry.details) for (const item of detail.items) assert.ok(quoted.includes(item), `${entry.id}: ${item}`);
   }
 });

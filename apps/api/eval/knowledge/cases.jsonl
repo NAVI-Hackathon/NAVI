@@ -94,3 +94,14 @@
 {"id": "knowledge-094", "kind": "navigation", "synthetic": true, "sourceId": "claim-doc:1", "patch": {"sourceId": "invented-source"}, "accepted": false}
 {"id": "knowledge-095", "kind": "query", "synthetic": true, "query": "what insurance claim documents are required?", "status": "answered", "expectedTop1": "service:claim_by_mail", "expectedTop3": ["service:claim_by_mail"], "group": "new_retrieval"}
 {"id": "knowledge-096", "kind": "query", "synthetic": true, "query": "我住院可以\n理賠嗎", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}
+{"id": "readiness-001", "synthetic": true, "kind": "query", "query": "我要變更地址", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "readiness-002", "synthetic": true, "kind": "query", "query": "我搬家了", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "readiness-003", "synthetic": true, "kind": "query", "query": "如何修改通訊地址", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "readiness-004", "synthetic": true, "kind": "query", "query": "保單的地址要去哪裡修改", "status": "answered", "expectedTop1": "service:change_address", "expectedTop3": ["service:change_address"], "group": "new_retrieval"}
+{"id": "readiness-005", "synthetic": true, "kind": "query", "query": "被保險人是什麼", "status": "answered", "expectedTop1": "glossary:insured", "expectedTop3": ["glossary:insured"], "group": "new_retrieval"}
+{"id": "readiness-006", "synthetic": true, "kind": "query", "query": "要保人是什麼", "status": "answered", "expectedTop1": "glossary:policyholder", "expectedTop3": ["glossary:policyholder"], "group": "new_retrieval"}
+{"id": "readiness-007", "synthetic": true, "kind": "query", "query": "受益人是什麼", "status": "answered", "expectedTop1": "glossary:beneficiary", "expectedTop3": ["glossary:beneficiary"], "group": "new_retrieval"}
+{"id": "readiness-008", "synthetic": true, "kind": "query", "query": "保險年齡是什麼", "status": "answered", "expectedTop1": "glossary:insurance-age", "expectedTop3": ["glossary:insurance-age"], "group": "new_retrieval"}
+{"id": "readiness-009", "synthetic": true, "kind": "query", "query": "保險費是什麼", "status": "answered", "expectedTop1": "glossary:premium", "expectedTop3": ["glossary:premium"], "group": "new_retrieval"}
+{"id": "readiness-010", "synthetic": true, "kind": "query", "query": "保單管理費是什麼", "status": "answered", "expectedTop1": "glossary:management-fee", "expectedTop3": ["glossary:management-fee"], "group": "new_retrieval"}
+{"id": "readiness-011", "synthetic": true, "kind": "query", "query": "保單帳戶價值是什麼", "status": "answered", "expectedTop1": "glossary:account-value", "expectedTop3": ["glossary:account-value"], "group": "new_retrieval"}

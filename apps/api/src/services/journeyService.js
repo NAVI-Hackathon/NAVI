@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ServiceJourneySchema } from '../../../../shared/journey.js';
+import { ServiceJourneySchema, ManualDocumentInformationRequestSchema } from '../../../../shared/journey.js';
 import { MAX_MESSAGE_LENGTH } from '../../../../shared/intelligence.js';
 import { understandIntent } from './intent.service.js';
 import { normalizeIntent, HOSPITAL_SUMMARY } from '../schemas/intent.schema.js';
@@ -7,6 +7,7 @@ import { getJourneyDefinition, getSources } from './knowledgeService.js';
 import { deriveJourney } from '../workflow/journeyStateMachine.js';
 import { analyzeDocument } from './documentService.js';
 import { ApiError } from '../middleware/errorHandler.js';
+import { redactIdentifiers } from '../utils/privacy.js';
 import { findHospitalMention, reportedStayDays } from '../../../../shared/hospitalization.js';
 
 const titles = { hospitalization_claim: '住院醫療理賠', vehicle_accident: '車輛事故', payment_method_change: '更改繳費方式', policy_change: '保單變更', policy_information: '保單資訊', unknown: '需要補充說明' };
@@ -40,6 +41,24 @@ export function createJourneyService({ repository, provider, config }) {
       const conversation = hospital ? '使用者詢問住院醫療理賠；原始描述不留存。' : '使用者描述服務需求；原始描述不留存。';
       return save({ id: randomUUID(), serviceType: data.serviceType, title: definition?.title ?? titles[data.serviceType], summary: summary.slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: conversation.slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: intentResult ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
     },
+    addManualDocumentInformation(id, input) {
+      const current = get(id);
+      editable(current);
+      if (current.serviceType !== 'hospitalization_claim') throw new ApiError('SERVICE_NOT_SUPPORTED', '目前僅支援住院服務的手動文件資訊。', 409, false);
+      const parsed = ManualDocumentInformationRequestSchema.safeParse(input);
+      if (!parsed.success) throw new ApiError('INVALID_INPUT', '請提供有效的待確認文件資訊，請勿輸入完整帳號或醫療內容。', 400, false);
+      const { documentType, fields } = parsed.data;
+      const information = { documentType, fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, typeof value === 'string' && key !== 'accountLast4' ? redactIdentifiers(value) : value])), source: 'manual', status: 'needs_review', updatedAt: new Date().toISOString() };
+      const manualDocumentInformation = [...(current.manualDocumentInformation ?? []).filter(item => item.documentType !== documentType), information];
+      // Do not write to documents or extractedData: only verified uploads can affect readiness.
+      const journey = save({ ...current, manualDocumentInformation, confirmed: false });
+      return { information, journey, readinessChange: { before: current.readiness, after: journey.readiness } };
+    },
+    removeManualDocumentInformation(id, documentType) {
+      const current = get(id);
+      if (!(current.manualDocumentInformation ?? []).some(item => item.documentType === documentType)) throw new ApiError('MANUAL_INFORMATION_NOT_FOUND', '找不到這份手動資訊。', 404, false);
+      return save({ ...current, manualDocumentInformation: current.manualDocumentInformation.filter(item => item.documentType !== documentType) });
+    },
     async addDocument(id, upload, signal) {
       editable(get(id));
       const document = await analyzeDocument(upload, { provider, config, signal });
@@ -50,6 +69,11 @@ export function createJourneyService({ repository, provider, config }) {
       if (!allowed.includes(document.documentType)) throw new ApiError('DOCUMENT_SERVICE_MISMATCH', '文件類型與目前服務需求不同，請重新選擇。', 422, true);
       const documents = [...current.documents.filter(doc => doc.documentType !== document.documentType), document];
       const journey = save({ ...current, documents, confirmed: false });
+      const verified = journey.documents.find(doc => doc.id === document.id)?.status === 'verified';
+      if (verified && journey.manualDocumentInformation?.some(item => item.documentType === document.documentType)) {
+        journey.manualDocumentInformation = journey.manualDocumentInformation.filter(item => item.documentType !== document.documentType);
+        repository.save(ServiceJourneySchema.parse(journey));
+      }
       return { document: journey.documents.find(doc => doc.id === document.id), journey, readinessChange: { before: current.readiness, after: journey.readiness } };
     },
     removeDocument(id, documentId) {
