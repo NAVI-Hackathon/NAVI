@@ -16,6 +16,11 @@ body {
   color: var(--color-ink);
 }
 
+/* NAVI navigation targets: keep the scrolled-to block (and its spotlight label) below the sticky header. */
+[data-tour-id] {
+  scroll-margin-top: 8rem;
+}
+
 /* NAVI navigation spotlight (data-tour-id target) */
 .navi-spotlight {
   position: relative;
