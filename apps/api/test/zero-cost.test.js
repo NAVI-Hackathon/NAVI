@@ -169,7 +169,7 @@ test('Status and live plan are offline; CI and unconfirmed live commands fail cl
   assert.equal(status.requestsSent, 0); assert.equal(status.paidFallback, 'disabled'); assert.equal(status.externalPaidProviders, 0); assert.equal(status.liveAllowed, false);
   const plan = await run(process.execPath, ['eval/cli.js', '--live', '--plan'], { env: childEnv(), timeout: 30000 });
   assert.ok(plan.stdout.includes('Requests planned (before cache): 9')); assert.ok(plan.stdout.includes('"requestsSent": 0'));
-  for (const [env, code] of [[childEnv(), 'FREE_TIER_NOT_CONFIRMED'], [childEnv({ CI: 'true', GEMINI_FREE_TIER_CONFIRMED: 'true', GEMINI_API_KEY: 'synthetic-test-key' }), 'LIVE_AI_DISABLED_IN_CI']]) {
+  for (const [env, code] of [[childEnv({ CI: 'false' }), 'FREE_TIER_NOT_CONFIRMED'], [childEnv({ CI: 'true', GEMINI_FREE_TIER_CONFIRMED: 'true', GEMINI_API_KEY: 'synthetic-test-key' }), 'LIVE_AI_DISABLED_IN_CI']]) {
     await assert.rejects(run(process.execPath, ['--import', './test/networkGuard.js', 'eval/cli.js', '--live'], { env, timeout: 30000 }), error => error.code === 1 && error.stderr.includes(code));
   }
 });

@@ -33,7 +33,7 @@ export const TYPE_CUES = [
   { pattern: /多久|幾天|幾次|收不到|鎖住|密碼|條件|password/i, type: 'faq', boost: 1.3 },
   { pattern: /文件|準備|證明|資料|documents?|requirements?/i, type: 'claim_documents', boost: 1.2 },
 ];
-export const SERVICE_CUES = [{ pattern: /官網.*(?:入口|服務)|網路保險服務|online service|website service/i, id: 'service:online_service_membership' }];
+export const SERVICE_CUES = [{ pattern: /變更.*受益人|受益人.*變更|change.*beneficiary|beneficiary.*change/i, exclude: /表單|申請書|下載|form|download/i, id: 'service:change_beneficiary' }, { pattern: /官網.*(?:入口|服務)|網路保險服務|online service|website service/i, id: 'service:online_service_membership' }];
 export const RANKING = Object.freeze({ title: 3, keyword: 2.5, body: 1, exactTitle: 8, partialTitle: 3, phrase: 6, phraseCoverage: .8, minCoverage: .45, minScore: 2.5, minDistinctive: 2.2, resultRatio: .6, contextPhrase: 24, outpatientBoost: 1.8, inpatientBoost: 1.4 });
 export const isDecisionQuestion = query => /買.{0,6}(險|保單)|推薦|划算|該買|買哪|要不要買|適合.*(保單|保險)|(?:能|可|會)不(?:能|可|會)?(?:以)?(?:理)?賠|能否.*(?:理賠|獲賠)|可否.*理賠|(?:能|可以|會|是否).{0,8}(?:理賠|獲賠|給付|賠)(?!表單|申請書|文件|流程|服務|方式|入口).{0,3}[嗎?？]|賠不賠|賠多少|(?:領|賠).{0,5}多少|保險金額|給付日數|給付金額|理賠金額|核准|拒賠|保障適用|符合理賠|是否.*保障|am i covered|eligible|compensation amount|will.*pay|can (?:i|we) (?:claim|get compensation|receive compensation)(?! forms?| documents?)|recommend.*insurance|(?:which|what) insurance.*(?:buy|best|choose)|should.*buy.*insurance|best.*insurance|insurance.*recommendation/i.test(String(query ?? '').normalize('NFKC').replace(/\s+/g, ' '));
 export function queryProfile(text) {

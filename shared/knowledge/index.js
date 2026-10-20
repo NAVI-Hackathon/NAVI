@@ -188,7 +188,7 @@ export function searchKnowledge(query, { limit = 3 } = {}) {
     .filter(doc => doc.entry.type !== 'claim_documents' || (!outpatient && !profile.inpatient) || doc.entry.id === (outpatient ? 'claim-doc:1' : 'claim-doc:2'))
     .map(doc => {
       const scored = scoreEntry(doc, text, queryTokens);
-      for (const cue of SERVICE_CUES) if (cue.id === doc.entry.id && cue.pattern.test(text)) scored.score += RANKING.contextPhrase;
+      for (const cue of SERVICE_CUES) if (cue.id === doc.entry.id && cue.pattern.test(text) && !cue.exclude?.test(text)) scored.score += RANKING.contextPhrase;
       if (outpatient && doc.entry.id === 'claim-doc:1') {
         scored.score = scored.score * RANKING.outpatientBoost + RANKING.contextPhrase;
         scored.coverage = Math.max(scored.coverage, RANKING.phraseCoverage);
