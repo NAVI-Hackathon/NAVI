@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ServiceJourneySchema } from '../../../../shared/journey.js';
+import { HandoffConfirmationSchema, HandoffPreviewSchema, JourneyExplanationSchema } from '../../../../shared/competition.js';
 import { opensJourney } from './naviService.js';
 import { samplePdfFile } from '../mocks/sampleDocuments.js';
 import { redactIdentifiers } from '../domain/privacy.js';
@@ -137,6 +138,20 @@ export function createApiJourneyService({
     async confirm() {
       const { journey } = requireState();
       return commit(await request(`/journeys/${journey.id}/review`, { method: 'POST', json: { confirmed: true } }));
+    },
+    /** Why each requirement is (not) counted: GET /journeys/:id/explanation (reason codes, earned points). */
+    async explain({ signal } = {}) {
+      const { journey } = requireState();
+      return request(`/journeys/${journey.id}/explanation`, { signal, schema: JourneyExplanationSchema });
+    },
+    /** Consent-based handoff: a redacted preview bound to this journey version, then the user's confirmation. Nothing is sent. */
+    async handoffPreview({ signal } = {}) {
+      const { journey } = requireState();
+      return request(`/journeys/${journey.id}/handoff/preview`, { method: 'POST', json: {}, signal, schema: HandoffPreviewSchema });
+    },
+    async confirmHandoff(previewId, { signal } = {}) {
+      const { journey } = requireState();
+      return request(`/journeys/${journey.id}/handoff/confirm`, { method: 'POST', json: { previewId, confirmed: true }, signal, schema: HandoffConfirmationSchema });
     },
     requestHandoff() { requireState(); state = { ...state, handoffRequested: true }; save(); return snapshot(); },
     reset() { state = null; save(); },

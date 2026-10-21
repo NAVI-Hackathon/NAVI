@@ -65,6 +65,7 @@ export default function App() {
   const [dialog, setDialog] = useState(null);
   const [toast, setToast] = useState(null);
   const [tab, setTab] = useState('journey');
+  const [explanation, setExplanation] = useState(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
@@ -90,6 +91,15 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => { window.removeEventListener('popstate', onPop); analysisCtl.current?.abort(); };
   }, []);
+
+  // Formal mode: the server explains each requirement (reason code, earned points) for the Preflight board.
+  // Until it arrives — and always in /demo — the board uses the local mirror of the same rules.
+  useEffect(() => {
+    if (snapshot?.context.kind !== 'hospital') return undefined;
+    const ctl = new AbortController();
+    service.explain({ signal: ctl.signal }).then(setExplanation).catch(() => { /* the board falls back to local rules */ });
+    return () => ctl.abort();
+  }, [service, snapshot]);
 
   /** The server no longer has this journey (expired or restarted): start over cleanly. */
   const expire = useCallback(() => {
@@ -336,7 +346,7 @@ export default function App() {
           <AnimatePresence mode="popLayout" initial={false}>
             {view === 'workspace' && snapshot ? (
               <Workspace
-                key="workspace" snapshot={snapshot} docStates={docStates} busy={busyType}
+                key="workspace" snapshot={snapshot} explanation={explanation} docStates={docStates} busy={busyType}
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
               />
@@ -365,7 +375,7 @@ export default function App() {
               onDone={() => { setDialog(null); notify('服務導引已完成，案件資料保留在這個分頁。'); }} />
           )}
           {snapshot && dialog === 'handoff' && (
-            <HandoffDialog key="handoff" snapshot={snapshot} onClose={closeDialog} onPrepared={() => setSnapshot(service.requestHandoff())} />
+            <HandoffDialog key="handoff" snapshot={snapshot} service={service} onClose={closeDialog} onConfirmed={() => setSnapshot(service.requestHandoff())} />
           )}
           {snapshot && dialog === 'service' && (
             <ServiceDialog key="service" snapshot={snapshot} onClose={closeDialog} onHandoff={() => setDialog('handoff')} />

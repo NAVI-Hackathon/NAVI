@@ -6,6 +6,7 @@ import JourneyTimeline from './JourneyTimeline.jsx';
 import ReadinessPanel, { ReadinessRing } from './ReadinessPanel.jsx';
 import NextActionCard from './NextActionCard.jsx';
 import DocumentCard from './DocumentCard.jsx';
+import PreflightBoard from './PreflightBoard.jsx';
 import { useBreakpoint } from '../../hooks/useBreakpoint.js';
 import { DOCUMENT_TYPES } from '../../mocks/hospitalClaim.js';
 import { transition } from '../../motion/tokens.js';
@@ -45,7 +46,7 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
   );
 }
 
-export default function Workspace({ snapshot, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, ref }) {
+export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, ref }) {
   const breakpoint = useBreakpoint();
   const { journey, context } = snapshot;
   const hasDocuments = context.kind === 'hospital' && journey.currentStage !== 'HUMAN_REVIEW';
@@ -57,8 +58,14 @@ export default function Workspace({ snapshot, docStates, busy, tab, onTab, assis
     <JourneyTimeline snapshot={snapshot} documentsSlot={withDocuments ? documents : null}
       onReview={actions.review} onProceed={actions.proceed} onViewService={() => actions.next(journey.nextAction)} onNavigate={actions.navigate} />
   );
+  // Preflight buttons reuse the journey actions: upload opens the picker (and the documents tab on phones).
+  const preflight = {
+    explanation,
+    onAction: action => (action.type === 'upload' ? actions.next({ type: 'UPLOAD_DOCUMENT', target: action.target })
+      : action.type === 'review' ? actions.review() : actions.handoff()),
+  };
   const readiness = (props = {}) => (
-    <ReadinessPanel snapshot={snapshot} busy={busy} onAction={actions.next} onSample={type => actions.upload(type, { sample: true })} onHandoff={actions.handoff} onNavigate={actions.navigate} {...props} />
+    <ReadinessPanel snapshot={snapshot} busy={busy} onAction={actions.next} onSample={type => actions.upload(type, { sample: true })} onHandoff={actions.handoff} onNavigate={actions.navigate} preflight={preflight} {...props} />
   );
   const assistant = <AssistantPanel snapshot={snapshot} onHandoff={actions.handoff} onNavigate={actions.navigate} />;
 
@@ -126,6 +133,11 @@ export default function Workspace({ snapshot, docStates, busy, tab, onTab, assis
                     <section className="panel mobile-readiness" aria-label="準備完成度">
                       <ReadinessRing value={journey.readiness} size={96} compact />
                       <NextActionCard action={journey.nextAction} complete={journey.currentStage === 'READY_TO_PROCEED'} busy={busy} onAction={actions.next} onSample={type => actions.upload(type, { sample: true })} onNavigate={actions.navigate} />
+                    </section>
+                  )}
+                  {hasDocuments && (
+                    <section className="panel mobile-preflight">
+                      <PreflightBoard journey={journey} explanation={preflight.explanation} busy={busy} onAction={preflight.onAction} />
                     </section>
                   )}
                   {!hasDocuments && readiness()}

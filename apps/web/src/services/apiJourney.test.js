@@ -138,3 +138,25 @@ test('formal-mode manual information is stored as 待確認: no readiness, no do
   assert.equal(uploaded.journey.readiness, 70);
   assert.ok(!(uploaded.journey.manualDocumentInformation ?? []).some(m => m.documentType === 'diagnosis_certificate'), 'the verified upload clears the typed information');
 });
+
+test('formal mode: explanation reason codes and the consent-based handoff (preview → confirm, nothing sent)', async t => {
+  const service = client(await backend(t));
+  await service.analyze(DEMO_STORY);
+  const { journey } = await service.uploadDocument('diagnosis_certificate', { sample: true });
+  const explanation = await service.explain();
+  assert.equal(explanation.journeyUpdatedAt, journey.updatedAt);
+  assert.equal(explanation.criteria.find(c => c.id === 'diagnosis_certificate').reasonCode, 'VERIFIED');
+  assert.equal(explanation.criteria.find(c => c.id === 'bank_passbook').reasonCode, 'DOCUMENT_MISSING');
+
+  const preview = await service.handoffPreview();
+  assert.equal(preview.status, 'awaiting_confirmation');
+  assert.equal(preview.summary.redacted, true);
+  assert.ok(!JSON.stringify(preview.summary).includes('臺中榮民總醫院'), 'no hospital value in the summary');
+  const confirmed = await service.confirmHandoff(preview.previewId);
+  assert.equal(confirmed.delivery, 'not_sent');
+
+  // A preview of an older journey version cannot be confirmed.
+  const old = await service.handoffPreview();
+  await service.uploadDocument('bank_passbook', { sample: true });
+  await assert.rejects(service.confirmHandoff(old.previewId), { code: 'HANDOFF_PREVIEW_STALE' });
+});

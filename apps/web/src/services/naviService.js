@@ -2,6 +2,7 @@ import {
   createSession, toSnapshot, journeyKind, supportsDocuments, applySampleDocument, applyManualDocument,
   removeDocument, confirmSession, requestHandoff, serializeSession, restoreSession,
 } from './journeyEngine.js';
+import { localHandoffSummary } from '../domain/preflight.js';
 
 export class DocumentRecognitionError extends Error {
   constructor() { super('DOCUMENT_RECOGNITION_FAILED'); this.code = 'DOCUMENT_RECOGNITION_FAILED'; }
@@ -66,6 +67,16 @@ export function createJourneyService({ mode, understand, storage, storageKey, do
     submitManual(type, fields) { return commit(applyManualDocument(requireSession(), type, fields)); },
     removeDocument(type) { return commit(removeDocument(requireSession(), type)); },
     confirm() { return commit(confirmSession(requireSession())); },
+    // /demo has no server: the Preflight board uses the local mirror of the reason codes (explain → null),
+    // and the handoff preview/confirmation are built locally in the same shape as the server's.
+    async explain() { return null; },
+    async handoffPreview() {
+      requireSession();
+      return { previewId: crypto.randomUUID?.() ?? String(Date.now()), status: 'awaiting_confirmation', summary: localHandoffSummary(toSnapshot(session).journey) };
+    },
+    async confirmHandoff(previewId) {
+      return { previewId, status: 'confirmed', delivery: 'not_sent', confirmedAt: new Date().toISOString(), summary: localHandoffSummary(toSnapshot(requireSession()).journey) };
+    },
     requestHandoff() { return commit(requestHandoff(requireSession())); },
     reset() { session = null; save(); },
     setFailNextDocument(value) { failNextDocument = Boolean(value); },

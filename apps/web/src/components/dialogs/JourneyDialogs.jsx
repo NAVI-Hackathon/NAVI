@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import Icon from '../Icon.jsx';
 import Modal from './Modal.jsx';
@@ -89,46 +89,166 @@ export function ProceedDialog({ snapshot, onClose, onDone, onNavigate }) {
   );
 }
 
-export function HandoffDialog({ snapshot, onPrepared, onClose }) {
-  const [prepared, setPrepared] = useState(snapshot.context.handoffRequested);
-  const { journey, context } = snapshot;
-  const collected = journey.documents.map(d => documentSpecs[d.documentType]?.title ?? d.documentType);
-  const missing = journey.requirements.filter(r => r.required && r.status !== 'verified').map(r => r.name);
-  const summary = [
-    'NAVI 服務摘要',
-    `服務：${journey.title}`,
-    `你的描述：${context.story}`,
-    ...(journey.claimContext?.hospital ? [`住院醫院：${journey.claimContext.hospital.matchedName ?? journey.claimContext.hospital.mentioned}`] : []),
-    `已提供：${collected.join('、') || '尚未提供文件'}`,
-    `尚待確認：${missing.join('、') || '保單保障條件'}`,
-    '此為示範摘要，尚未送交專員。',
+function summaryText(summary) {
+  return [
+    'NAVI 交接摘要（使用者已確認；示範，尚未傳送給專員）',
+    `需求：${summary.issue}`,
+    `已取得：${summary.collected.join('、') || '尚未取得'}`,
+    `尚待補齊：${summary.missing.join('、') || '無'}`,
+    ...summary.concerns.map(concern => `需要確認：${concern}`),
+    `需要專員協助的原因：${summary.reason}`,
+    ...summary.sources.filter(source => source.url).map(source => `依據：${source.title}（擷取 ${source.retrievedAt}）${source.url}`),
+    summary.disclaimer,
   ].join('\n');
+}
 
-  function download() {
-    const url = URL.createObjectURL(new Blob([summary], { type: 'text/plain;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = 'NAVI-服務摘要.txt'; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+function HandoffSkeleton() {
+  return (
+    <div className="handoff-skeleton" role="status" aria-label="正在整理交接摘要">
+      <span className="shimmer w-40" /><span className="shimmer w-70" /><span className="shimmer w-55" /><span className="shimmer w-65" />
+    </div>
+  );
+}
+
+function HandoffSummaryCard({ summary }) {
+  const sources = summary.sources.filter(source => source.url);
+  return (
+    <motion.div className="handoff-card" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: transition.enter }}>
+      <section>
+        <h3>需求</h3>
+        <p className="handoff-issue">{summary.issue}</p>
+      </section>
+      <section className="handoff-split">
+        <div>
+          <h3>已取得 <span>{summary.collected.length}</span></h3>
+          {summary.collected.length
+            ? <ul className="handoff-chips">{summary.collected.map(name => <li key={name}><Icon name="check" size={11} strokeWidth={2.2} />{name}</li>)}</ul>
+            : <p className="handoff-empty">尚未取得資料</p>}
+        </div>
+        <div>
+          <h3>尚待補齊 <span>{summary.missing.length}</span></h3>
+          {summary.missing.length
+            ? <ul className="handoff-chips is-missing">{summary.missing.map(name => <li key={name}>{name}</li>)}</ul>
+            : <p className="handoff-empty">必要資料都已備齊</p>}
+        </div>
+      </section>
+      <section>
+        <h3>需要專員協助的原因</h3>
+        <p>{summary.reason}</p>
+        {summary.concerns.length > 0 && (
+          <ul className="handoff-issues">{summary.concerns.map(concern => <li key={concern}><Icon name="alert" size={13} />{concern}</li>)}</ul>
+        )}
+      </section>
+      {sources.length > 0 && (
+        <section>
+          <h3>依據來源 <span>{sources.length}</span></h3>
+          <ul className="handoff-sources">
+            {sources.map(source => (
+              <li key={source.id}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a><span>擷取 {source.retrievedAt}</span></li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </motion.div>
+  );
+}
+
+/**
+ * Handoff with consent: the server builds a redacted preview bound to this journey version
+ * (POST …/handoff/preview); the user reads it and confirms (POST …/handoff/confirm) to obtain the summary.
+ * Nothing is sent to a specialist — the copy says 取得交接摘要, never 已轉交. /demo builds the same shapes locally.
+ */
+export function HandoffDialog({ snapshot, service, onConfirmed, onClose }) {
+  const [phase, setPhase] = useState('loading'); // loading | preview | confirming | confirmed | error
+  const [preview, setPreview] = useState(null);
+  const [error, setError] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const confirmedOnce = useRef(snapshot.context.handoffRequested);
+
+  useEffect(() => {
+    const ctl = new AbortController();
+    setPhase('loading'); setAgreed(false); setError('');
+    service.handoffPreview({ signal: ctl.signal })
+      .then(next => { setPreview(next); setPhase('preview'); })
+      .catch(err => { if (!ctl.signal.aborted) { setError(err?.code && err.message ? err.message : '目前無法整理摘要，請稍後再試。'); setPhase('error'); } });
+    return () => ctl.abort();
+  }, [service, attempt]);
+
+  async function confirm() {
+    setPhase('confirming');
+    try {
+      const result = await service.confirmHandoff(preview.previewId);
+      setPreview(current => ({ ...current, summary: result.summary }));
+      setPhase('confirmed');
+      onConfirmed();
+    } catch (err) {
+      // Stale (journey changed) or expired previews must be reviewed again before confirming.
+      setError(err?.code && err.message ? err.message : '確認失敗，請重新查看摘要。');
+      setPhase('error');
+    }
   }
 
+  const summary = preview?.summary;
+  const text = summary ? summaryText(summary) : '';
+  function download() {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'NAVI-交接摘要.txt'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async function copy() {
+    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { download(); }
+  }
+
+  const confirmed = phase === 'confirmed';
   return (
     <Modal title="轉由專員協助" onClose={onClose}>
-      <p className="modal-lead">NAVI 已整理好你的情況，專員接手時不需要你重新說明。</p>
-      <dl className="review-list">
-        <div><dt>服務</dt><dd>{journey.title}</dd></div>
-        <div><dt>你的描述</dt><dd>{context.story}</dd></div>
-        <div><dt>已提供</dt><dd>{collected.join('、') || '尚未提供文件'}</dd></div>
-        <div><dt>尚待確認</dt><dd>{missing.join('、') || '保單保障條件'}</dd></div>
-      </dl>
-      {prepared && (
+      <div className="handoff-lead">
+        <p className="modal-lead">NAVI 把你的情況整理成交接摘要。請先確認內容，專員接手時就不需要你重新說明。</p>
+        <span className={`handoff-status ${confirmed ? 'is-ready' : ''}`}>{confirmed ? '已取得摘要・尚未送出' : '待你確認'}</span>
+      </div>
+      <p className="handoff-redacted"><Icon name="lock" size={13} />摘要只列項目名稱，已省略你的描述、姓名、醫院、日期與帳號。</p>
+
+      {phase === 'loading' && <HandoffSkeleton />}
+      {phase === 'error' && (
+        <div className="doc-failed handoff-error" role="alert">
+          <Icon name="alert" size={18} />
+          <div>
+            <strong>{error}</strong>
+            <div className="doc-failed-actions">
+              <button type="button" className="button button-secondary button-small" onClick={() => setAttempt(n => n + 1)}>重新整理摘要<Icon name="reset" size={15} /></button>
+            </div>
+          </div>
+        </div>
+      )}
+      {summary && phase !== 'loading' && phase !== 'error' && <HandoffSummaryCard summary={summary} />}
+
+      {confirmed ? (
         <motion.div className="success-note" role="status" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: transition.enter }}>
           <CheckDraw size={16} strokeWidth={2.4} />
-          <div><strong>服務摘要已準備完成</strong><p>本示範不會實際聯繫專員，你可以下載摘要。</p></div>
+          <div><strong>已取得交接摘要</strong><p>{summary.disclaimer}</p></div>
         </motion.div>
+      ) : (phase === 'preview' || phase === 'confirming') && (
+        <label className="check-row">
+          <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
+          <span>我已確認摘要內容{confirmedOnce.current ? '（之前已取得過，這是最新版本）' : ''}，同意取得交接摘要。</span>
+        </label>
       )}
+
       <div className="modal-actions">
-        <button type="button" className="button button-secondary" onClick={download}><Icon name="download" size={16} />下載摘要</button>
-        {!prepared && <button type="button" className="button button-primary" onClick={() => { setPrepared(true); onPrepared(); }}>準備轉交<Icon name="arrow" size={16} /></button>}
+        <p className="modal-footnote"><Icon name="shield" size={14} />示範原型不會聯繫專員、建立案件或送出申請。</p>
+        {confirmed ? (
+          <>
+            <button type="button" className="button button-secondary" onClick={download}><Icon name="download" size={16} />下載摘要</button>
+            <button type="button" className="button button-primary" onClick={copy}>{copied ? '已複製' : '複製摘要'}<Icon name={copied ? 'check' : 'document'} size={16} /></button>
+          </>
+        ) : (
+          <button type="button" className="button button-primary" disabled={phase !== 'preview' || !agreed} onClick={confirm}>
+            {phase === 'confirming' ? '確認中…' : '確認並取得摘要'}<Icon name="arrow" size={16} />
+          </button>
+        )}
       </div>
     </Modal>
   );

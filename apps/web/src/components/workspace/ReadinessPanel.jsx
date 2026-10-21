@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Icon from '../Icon.jsx';
 import NextActionCard from './NextActionCard.jsx';
+import PreflightBoard from './PreflightBoard.jsx';
 import { CheckDraw, useCountUp } from '../../motion/primitives.jsx';
 import { duration, ease, transition } from '../../motion/tokens.js';
 
@@ -93,7 +94,7 @@ function RequirementList({ requirements }) {
   );
 }
 
-export default function ReadinessPanel({ snapshot, busy, onAction, onSample, onHandoff, onNavigate, showNextAction = true }) {
+export default function ReadinessPanel({ snapshot, busy, onAction, onSample, onHandoff, onNavigate, preflight, showNextAction = true }) {
   const { journey } = snapshot;
   const isHospital = snapshot.context.kind === 'hospital' && journey.currentStage !== 'HUMAN_REVIEW';
   const delta = useReadinessDelta(journey.readiness);
@@ -131,9 +132,11 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, onH
         <p className="readiness-basic">{journey.currentStage === 'HUMAN_REVIEW' ? '這個情況需要專員確認，NAVI 已先整理好你的描述。' : '這項服務目前提供辦理導引。先備妥以下資料，再前往服務入口。'}</p>
       )}
 
-      {journey.requirements.length > 0 && <RequirementList requirements={journey.requirements} />}
-
       {showNextAction && <NextActionCard action={journey.nextAction} complete={complete} busy={busy} onAction={onAction} onSample={onSample} onNavigate={onNavigate} />}
+
+      {isHospital && preflight
+        ? <PreflightBoard journey={journey} explanation={preflight.explanation} busy={busy} onAction={preflight.onAction} />
+        : journey.requirements.length > 0 && <RequirementList requirements={journey.requirements} />}
 
       <p className="readiness-note"><Icon name="shield" size={14} />準備完成度代表資料完整度，不代表理賠核准或保障判斷。</p>
       {journey.nextAction.type !== 'CONTACT_SPECIALIST' && (
