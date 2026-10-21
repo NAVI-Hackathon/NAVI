@@ -37,12 +37,15 @@ def build(revision, output, web_origin='http://127.0.0.1:18171', mock_origin='ht
         'VITE_MOCK_SITE_URL':mock_origin, 'NEXT_PUBLIC_NAVI_EMBED_URL':web_origin+'/embed'})
     run(['npm','ci','--no-audit','--no-fund'], source, env)
     run(['npm','run','build:all'], source, env)
+    run(['node','scripts/security/public-artifacts.js','apps/web/dist','apps/mock-site/out'], source, env)
     payload = output / 'payload'; payload.mkdir()
     for name, source_path in [('web','apps/web/dist'), ('mock','apps/mock-site/out')]: shutil.copytree(source/source_path, payload/name)
     if not (payload/'mock/services/claims.html').is_file(): raise ValueError('Missing exported claims page')
     for name in ['shared','knowledge','apps/api/src']:
         shutil.copytree(source/name, payload/name)
-    (payload/'data').mkdir(); shutil.copy2(source/'data/cardif_seed_data.json',payload/'data/cardif_seed_data.json')
+    (payload/'data').mkdir()
+    for data_file in ['cardif_seed_data.json', 'cardif_public_data.json']:
+        shutil.copy2(source/'data'/data_file, payload/'data'/data_file)
     for name in ['package.json','package-lock.json','apps/api/package.json','apps/web/package.json','apps/mock-site/package.json']:
         target=payload/name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(source/name,target)
     shutil.copy2(HERE/'runtime-server.mjs',payload/'runtime-server.mjs')

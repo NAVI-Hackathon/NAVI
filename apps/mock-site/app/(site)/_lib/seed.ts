@@ -4,7 +4,7 @@
  * 只描述網站頁面用得到的欄位，其餘欄位會被略過。
  */
 import { z } from "zod";
-import raw from "@/data/cardif_seed_data.json";
+import raw from "@/data/cardif_public_data.json";
 
 const StringList = z.array(z.string());
 
@@ -24,8 +24,6 @@ const ServiceSchema = z.object({
   online_available: z.string(),
   precheck_questions: StringList.default([]),
   partner_hospitals: StringList.optional(),
-  partner_hospitals_note: z.string().optional(),
-  transfer_companies_note: z.string().optional(),
 });
 export type SeedService = z.infer<typeof ServiceSchema>;
 

@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "node scripts/dev.js",
-    "build": "npm run build --workspace @navi/web",
+    "build": "npm run knowledge:check && npm run build --workspace @navi/web && node scripts/security/public-artifacts.js apps/web/dist",
     "preview": "npm run preview --workspace @navi/web",
     "test": "npm run test:web && npm run test:api",
     "dev:web": "npm run dev --workspace @navi/web",
@@ -21,8 +21,8 @@
     "dev:navi": "node scripts/dev.js",
     "dev:mock": "npm run dev --workspace @navi/mock-site",
     "dev:all": "node scripts/dev.js --all",
-    "build:navi": "npm run build --workspace @navi/web",
-    "build:mock": "npm run build --workspace @navi/mock-site",
+    "build:navi": "npm run build",
+    "build:mock": "npm run knowledge:check && npm run build --workspace @navi/mock-site && node scripts/security/public-artifacts.js apps/mock-site/.next/static apps/mock-site/.next/server/app",
     "build:all": "npm run build:navi && npm run build:mock",
     "lint": "npm run lint --workspace @navi/mock-site",
     "typecheck:mock": "npm run typecheck --workspace @navi/mock-site",
@@ -37,7 +37,10 @@
     "eval:knowledge": "npm run eval:knowledge --workspace @navi/api",
     "evidence:demo": "node scripts/evidence-pack.js",
     "test:competition:e2e": "node --import ./apps/api/test/networkGuard.js scripts/evidence/competition-e2e.js",
-    "test:shared:browser": "node scripts/evidence/browser-build.js"
+    "test:shared:browser": "node scripts/evidence/browser-build.js",
+    "knowledge:project": "node scripts/knowledge/project-public.js",
+    "knowledge:check": "node scripts/knowledge/project-public.js --check",
+    "security:public": "node scripts/security/public-artifacts.js apps/web/dist apps/mock-site/.next/static apps/mock-site/.next/server/app"
   },
   "engines": {
     "node": ">=22.12"

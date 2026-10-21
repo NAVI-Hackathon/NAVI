@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "baseline": "f5692beaddac747df131b716805cc29c019bdb56",
+  "description": "SHA-256 of unique normalized 32-codepoint fragments; no private note plaintext.",
+  "removed": [
+    {
+      "path": "/meta/note",
+      "sha256": "686215752a7c5c46529a4867aca281eff547e0fb3de3950505096ac6477df1b2"
+    },
+    {
+      "path": "/meta/version",
+      "sha256": "f08291543074dbbf5017da42ed6b65bc81425e2ea17a70c844e68ef358c3ac0a"
+    },
+    {
+      "path": "/services/0/internal_notes",
+      "sha256": "8cf65a2a151c8c711ced51fb64259d24902e5f22b4d0b8d6519a7ec39cb81694"
+    },
+    {
+      "path": "/services/14/transfer_companies_note",
+      "sha256": "3f38ccca7d60ba9cc91c51ead21f2a5c5bc3b06bf38e3e88d20d3b4c4c519013"
+    },
+    {
+      "path": "/services/15/partner_hospitals_note",
+      "sha256": "cbae45a5822de595eb0e821c6b946398e637849b5f07b9a01c985a8e77383f7c"
+    },
+    {
+      "path": "/known_inconsistencies",
+      "sha256": "b856a4e7e6ae59d9aa6277d88693081c5e0b9f39ee1fa3d79c42a965f9a685f8"
+    },
+    {
+      "path": "/data_gaps",
+      "sha256": "f03e7fbc1737f1ac097e13599fd03d15980ac18953943a3ede02be5fea19d5fa"
+    }
+  ],
+  "fingerprints": [
+    {
+      "length": 32,
+      "sha256": "cd01e3d21dbe1f3bcf0eede93de35e11a3ccc2da52cc484714e791cc972ba218"
+    },
+    {
+      "length": 32,
+      "sha256": "46ab329643f511e4b93956badd0850e4d6bb9ff2cfc1cb48415eb4ccddbdd23d"
+    },
+    {
+      "length": 32,
+      "sha256": "ad409b30df74a5154a99172630e3ba610a643e16ee3f5e3ad946747e70baed62"
+    },
+    {
+      "length": 32,
+      "sha256": "4699f34e85572710b365612cd8c6b403c35cc6aab5b32b75545b7dadbceb5d20"
+    },
+    {
+      "length": 32,
+      "sha256": "8d65d30af32eb781b76aabbc422d2e38700c14233becba4a3ea43809e5c7a09f"
+    },
+    {
+      "length": 32,
+      "sha256": "c5bb28825123e9d0e9495a35b6379626b10e68979022ff9f28cec3a42e417c08"
+    },
+    {
+      "length": 32,
+      "sha256": "dd13b9d0e128a05507aab604f0a1c2c36783e40c16c93c1b9100816ee88901fb"
+    },
+    {
+      "length": 32,
+      "sha256": "626d117d7319d18c86468bd1c0eb707fcc42556b21f8a9b4dec19df06dfeea43"
+    },
+    {
+      "length": 32,
+      "sha256": "145f8db9622064e4bb1f79abab09cf8d0b0dc2d0fc684e4147aeffdfb5a6e2a2"
+    },
+    {
+      "length": 32,
+      "sha256": "a9d9eebeafd0da44e2c737cacf1a823233de67e3ea6b7da032b1aabc1d13523a"
+    },
+    {
+      "length": 32,
+      "sha256": "830b827568c1777a8410248ccdf94628630e87d2c1e059dba6a7eb77f43044a3"
+    },
+    {
+      "length": 32,
+      "sha256": "13348246ad17609348da7756f6152289743a35d728ebbc9e57d305552d014e2e"
+    },
+    {
+      "length": 32,
+      "sha256": "45b36a3f72effce0f38e8f0d7c8ca0218686f4979c8c8eb76edd37640bd77aca"
+    },
+    {
+      "length": 32,
+      "sha256": "abdedcc313936e6d20095af909fc03a1cd09e6df86654ed9180540dc657580d9"
+    }
+  ]
+}

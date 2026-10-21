@@ -1,9 +1,7 @@
 {
   "meta": {
     "source": "https://life.cardif.com.tw",
-    "crawled": "2026-10-06",
-    "note": "手動擷取官網保戶服務核心頁面（首頁、a311、a312、a313、a314、f8）整理成結構化資料；完整全文請用 cardif_crawler.py 在本機爬取。內容以官網為準。",
-    "version": "v2：合併官網實地分析（cardif_官網分析_Theme2-2.md）"
+    "crawled": "2026-10-06"
   },
   "sitemap": [
     {
@@ -246,7 +244,8 @@
     },
     {
       "name": "公開資訊",
-      "url": "https://life.cardif.com.tw/zh/a5"
+      "url": "https://life.cardif.com.tw/zh/a5",
+      "children": []
     },
     {
       "name": "其他專區",
@@ -355,15 +354,11 @@
       ],
       "online_available": "巴黎線上My Cardif申請【通訊地址、電子郵件信箱、行動電話、住家電話】變更",
       "precheck_questions": [],
-      "internal_notes": {
-        "previous_online_note": "部分：通訊地址/Email/電話可經 My Cardif（保全聯盟鏈、保單基本資料變更）；戶籍/收費地址頁面寫紙本",
-        "review": "通訊地址與戶籍／收費地址的管道應分別確認；不得將此內部筆記提供為官網原文。"
-      },
-      "retrievedAt": "2026-10-20",
       "online_requirements": [
         "需先註冊為法巴人壽保戶專區有效會員，且已申請並開通網路變更保單資料功能。",
         "須在本公司仍持有有效保單之要保人"
-      ]
+      ],
+      "retrievedAt": "2026-10-20"
     },
     {
       "id": "change_name",
@@ -389,7 +384,8 @@
         "改名",
         "更名"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "change_policyholder",
@@ -420,7 +416,8 @@
         "保單過戶",
         "轉給小孩"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "change_insured_id",
@@ -446,7 +443,8 @@
         "身分證字號錯誤",
         "生日錯誤"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "change_beneficiary",
@@ -511,7 +509,8 @@
         "紅利",
         "增額繳清"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "change_payment_method",
@@ -572,7 +571,8 @@
         "月繳",
         "季繳"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "change_occupation",
@@ -599,7 +599,8 @@
         "職業等級",
         "職業類別"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "supplementary_health_disclosure",
@@ -626,7 +627,8 @@
         "健康告知",
         "漏告知"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "contact_info_chain",
@@ -652,7 +654,8 @@
         "換手機號碼",
         "換email"
       ],
-      "online_available": "可：僅限 My Cardif"
+      "online_available": "可：僅限 My Cardif",
+      "precheck_questions": []
     },
     {
       "id": "policy_loan",
@@ -691,7 +694,8 @@
         "可借金額",
         "借款利率"
       ],
-      "online_available": "可：My Cardif/App 線上借款（限要被保同一人台幣保單、單筆≤50萬）"
+      "online_available": "可：My Cardif/App 線上借款（限要被保同一人台幣保單、單筆≤50萬）",
+      "precheck_questions": []
     },
     {
       "id": "loan_repayment",
@@ -721,7 +725,8 @@
         "償還借款",
         "墊繳"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "claim_by_mail",
@@ -752,7 +757,8 @@
         "怎麼理賠",
         "寄理賠文件"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "claim_union_chain",
@@ -788,7 +794,7 @@
         "拍照理賠"
       ],
       "online_available": "可（線上服務）",
-      "transfer_companies_note": "理賠聯盟鏈（自行上傳）與醫起通（醫院上傳）可轉送的保險公司清單本來就不同，是兩個服務各自的清單，不是資料矛盾"
+      "precheck_questions": []
     },
     {
       "id": "claim_hospital_upload",
@@ -819,6 +825,7 @@
         "醫起通"
       ],
       "online_available": "可（線上服務）",
+      "precheck_questions": [],
       "partner_hospitals": [
         "三軍總醫院附設民眾診療服務處",
         "臺北市立萬芳醫院",
@@ -870,8 +877,7 @@
         "臺北榮民總醫院鳳林分院",
         "臺北榮民總醫院臺東分院",
         "三軍總醫院澎湖分院"
-      ],
-      "partner_hospitals_note": "簡稱別名需另建對照（例：台中榮總→臺中榮民總醫院、台大→臺大醫院）；台/臺異體字要正規化"
+      ]
     },
     {
       "id": "claim_household_registration",
@@ -894,7 +900,8 @@
         "不知道有沒有保險",
         "死亡登記"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     },
     {
       "id": "online_service_membership",
@@ -930,7 +937,8 @@
         "帳號鎖住",
         "APP"
       ],
-      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄"
+      "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+      "precheck_questions": []
     }
   ],
   "online_service_features": {
@@ -1302,21 +1310,6 @@
     "address": "110615 台北市信義區信義路五段7號79樓",
     "outbound_call_number": "0982-947-912"
   },
-  "known_inconsistencies": [
-    {
-      "topic": "客服時間",
-      "detail": "理賠程序頁寫上班時間09:00–18:00；網路保險服務FAQ寫週一至五09:00–20:00、週六09:00–12:00",
-      "status": "待實際致電或查最新公告確認"
-    }
-  ],
-  "data_gaps": [
-    "秒懂保險專有名詞子站 /insurancedictionary",
-    "App介紹頁 /app 的FAQ",
-    "保險法107條問答集 /zh/a325",
-    "理賠聯盟鏈/醫起通Q&A /zh/a319",
-    "電子單據 /zh/a316、海外急難救援 /zh/a315",
-    "App/My Cardif 操作手冊 PDF"
-  ],
   "glossary": [
     {
       "id": "insured",

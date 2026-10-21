@@ -272,3 +272,7 @@ Free Tier 價格與配額由供應商決定，請核對 [Google pricing](https:/
 `npm run evidence:demo` 可重現測試、Build、三組本地 Evaluation、合成 HTTP E2E 與延遲量測；輸出在 `artifacts/demo-evidence/`。不呼叫 Live Gemini，不代表真實文件辨識或真人效益測試。
 
 本次 Competition 驗證：Frontend 33／33、Backend 151／151，Legacy 120／120、Hospitalization 76／76、Knowledge 111／111；[可追溯 Evidence](docs/competition-evidence-results.md)。新契約 UI 仍由 A 接入，本次未部署新版。
+
+## Public Knowledge Build Boundary
+
+Browser／Mock Site 只讀生成的 `data/cardif_public_data.json`。資料更新後執行 `npm run knowledge:project`；Build 自動驗證公開欄位白名單與掃描產物，拒絕 internal metadata 或已排除筆記。`data/private/` 僅本地受控備份，禁止提交／匯入／部署。詳見 [Release 與 Knowledge Refresh 安全記錄](docs/release-knowledge-refresh-2026-10-21.md)。新擷取資料須逐筆人工批准，不能自動覆蓋正式 Knowledge。
