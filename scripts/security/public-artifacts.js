@@ -11,9 +11,10 @@ export function fingerprint(text) {
   return { length: Array.from(normalized).length, sha256: digest(normalized) };
 }
 export function decodedViews(text) {
-  let decoded = text;
+  const decode = value => {
+  let decoded = value;
   for (let round = 0; round < 3; round++) {
-    decoded = decoded.replace(/\\u\{([a-f0-9]{1,6})\}|\\u([a-f0-9]{4})|\\x([a-f0-9]{2})/gi, (match,a,b,c) => {
+    decoded = decoded.replace(/\\\\/g, '\\').replace(/\\u\{([a-f0-9]{1,6})\}|\\u([a-f0-9]{4})|\\x([a-f0-9]{2})/gi, (match,a,b,c) => {
       const value = parseInt(a ?? b ?? c,16); return value <= 0x10ffff ? String.fromCodePoint(value) : match;
     }).replace(/&#(?:x([a-f0-9]+)|(\d+));/gi,(match,hex,dec)=>{
       const value = parseInt(hex ?? dec,hex ? 16 : 10); return value <= 0x10ffff ? String.fromCodePoint(value) : match;
@@ -21,12 +22,15 @@ export function decodedViews(text) {
       .replace(/(?:%[a-f0-9]{2})+/gi,match=>{try{return decodeURIComponent(match);}catch{return match;}})
       .replace(/\\(["'\/\\])/g,'$1');
   }
+  return decoded;
+  };
+  const decoded = decode(text);
   const views = [decoded];
   for (const token of decoded.match(/[A-Za-z0-9+/]{24,}={0,2}/g) ?? []) {
     if(token.length > 4 * 1024 * 1024) continue;
     const bytes = Buffer.from(token,'base64');
     const value = bytes.toString('utf8');
-    if(!value.includes('\ufffd') && bytes.toString('base64').replace(/=+$/,'') === token.replace(/=+$/,'')) views.push(value);
+    if(!value.includes('\ufffd') && bytes.toString('base64').replace(/=+$/,'') === token.replace(/=+$/,'')) views.push(decode(value));
   }
   return views.map(normalizeForScan);
 }
@@ -52,7 +56,7 @@ export async function scanPublicArtifacts(roots, fingerprints) {
     const info=await lstat(path);
     if(info.isSymbolicLink()) throw Error('Public artifact scanner refuses symlinks');
     if(info.isDirectory()) for(const entry of await readdir(path)) await visit(resolve(path,entry));
-    else if(/\.(?:[cm]?js|json|map|html|rsc|txt|css|xml|svg)$/i.test(extname(path))) files.push(path);
+    else if(/\.(?:[cm]?js|json|map|html|rsc|txt|css|xml|svg|meta|webmanifest)$/i.test(extname(path))) files.push(path);
   }
   for(const root of roots) await visit(resolve(root));
   if(!files.length) throw Error('No inspectable public artifacts found');

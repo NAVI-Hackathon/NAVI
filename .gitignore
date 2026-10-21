@@ -72,3 +72,6 @@ apps/api/.env
 
 # Local development metadata: never committed, imported, served or deployed.
 /data/private/
+
+# Python deployment / crawler test bytecode.
+/scripts/**/__pycache__/
