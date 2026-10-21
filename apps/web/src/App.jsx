@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import AppHeader, { EmbedHeader } from './components/AppHeader.jsx';
 import Landing from './components/landing/Landing.jsx';
 import Workspace from './components/workspace/Workspace.jsx';
@@ -12,6 +12,7 @@ import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import GuideCard from './components/guide/GuideCard.jsx';
+import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 
@@ -68,6 +69,7 @@ export default function App() {
   const [tab, setTab] = useState('journey');
   const [explanation, setExplanation] = useState(null);
   const [guide, setGuide] = useState(null); // { plan, index } while a step-by-step guide is open
+  const [guidePending, setGuidePending] = useState(false); // plan request slower than a blink
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
@@ -244,9 +246,13 @@ export default function App() {
     const entry = knowledgeEntries.find(e => e.destination.path === destination.path && e.destination.anchor === destination.anchor);
     let plan = null;
     if (entry) {
+      // Only a slow plan request shows「正在準備導覽…」; the local /demo plan is instant and never flashes it.
+      const hint = setTimeout(() => { if (request === guideRequest.current) setGuidePending(true); }, 120);
       try { const result = await service.navigationPlan(entry.id); plan = result.status === 'answered' ? result.plan : null; } catch { plan = null; }
+      clearTimeout(hint);
     }
     if (request !== guideRequest.current) return; // a newer request replaced this one
+    setGuidePending(false);
     setGuide(plan && plan.steps.length > 1 && plan.steps[0].sourceId === entry.id ? { plan, index: 0 } : null);
   } : null;
   const guideStep = index => {
@@ -256,6 +262,7 @@ export default function App() {
   };
   const endGuide = completed => {
     guideRequest.current += 1;
+    setGuidePending(false);
     setGuide(null);
     if (completed) notify('導覽完成。需要時可以再按「帶我去」重新開始。');
   };
@@ -413,6 +420,12 @@ export default function App() {
         </AnimatePresence>
 
         <AnimatePresence>
+          {guidePending && !guide && (
+            <motion.p key="guide-preparing" className="guide-preparing" role="status"
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
+              <span className="dots" aria-hidden="true"><i /><i /><i /></span>正在準備導覽…
+            </motion.p>
+          )}
           {guide && (
             <GuideCard key="guide" guide={guide} embedded={host.connected}
               onStep={guideStep} onOpen={step => openOnSite(step.destination)} onEnd={endGuide} />

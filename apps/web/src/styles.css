@@ -670,3 +670,6 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .source-actions { display: flex; flex-wrap: wrap; gap: 0 16px; padding-bottom: 4px; }
 .source-actions .link-button { font-size: 11px; min-height: 32px; }
 .sources .source-evidence { margin-top: 0; border-top: 0; }
+.guide-preparing { position: fixed; z-index: 55; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid rgba(151, 201, 179, 0.22); border-radius: 999px; background: #14181c; box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45); font-size: 12px; color: var(--color-text-secondary); }
+@media (max-width: 767.98px) { .guide-preparing { left: 0; right: 0; bottom: 16px; width: max-content; margin: 0 auto; } }
+[data-embedded="true"] .guide-preparing { left: 0; right: 0; bottom: 12px; width: max-content; margin: 0 auto; }
