@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { displayOfficialUrl, SITE_ROUTES } from "./routes";
+import type { SourceRef } from "@/app/(site)/_lib/seed";
 
 export type Crumb = { label: string; href?: string };
 
@@ -33,12 +34,33 @@ export function PageBody({ children }: { children: ReactNode }) {
   return <div className="mx-auto w-full max-w-6xl px-4 py-6 md:py-8">{children}</div>;
 }
 
-/** 資料來源標示（純文字，不連到真實官網） */
-export function SourceNote({ urls, retrievedAt }: { urls: string[]; retrievedAt: string }) {
-  const unique = [...new Set(urls)];
+/**
+ * 資料來源標示（純文字，不連到真實官網）。每個網址顯示該頁條目自己的擷取日期；
+ * 條目沒有日期時改標「資料集整理日期」，兩者不混用。
+ */
+export function SourceNote({ sources, datasetDate }: { sources: SourceRef[]; datasetDate: string }) {
+  const byUrl = new Map<string, { dates: Set<string>; undated: boolean }>();
+  for (const source of sources) {
+    const entry = byUrl.get(source.url) ?? { dates: new Set<string>(), undated: false };
+    if (source.retrievedAt) entry.dates.add(source.retrievedAt);
+    else entry.undated = true;
+    byUrl.set(source.url, entry);
+  }
+  const label = ({ dates, undated }: { dates: Set<string>; undated: boolean }) => {
+    if (!dates.size) return `（資料集整理日期 ${datasetDate}）`;
+    const checked = `擷取日期 ${[...dates].sort().join("、")}`;
+    return undated ? `（${checked}；其餘條目為資料集整理日期 ${datasetDate}）` : `（${checked}）`;
+  };
   return (
-    <p className="mt-8 border-t border-neutral-200 pt-3 text-xs text-muted">
-      資料來源：法國巴黎人壽官網 {unique.map(displayOfficialUrl).join("、")}（擷取日期 {retrievedAt}）
+    <p className="mt-8 border-t border-neutral-200 pt-3 text-xs leading-relaxed text-muted">
+      資料來源：法國巴黎人壽官網{" "}
+      {[...byUrl.entries()].map(([url, entry], index) => (
+        <span key={url}>
+          {index > 0 && "、"}
+          {displayOfficialUrl(url)}
+          {label(entry)}
+        </span>
+      ))}
     </p>
   );
 }

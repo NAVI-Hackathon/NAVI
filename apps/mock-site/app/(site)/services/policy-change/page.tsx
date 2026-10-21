@@ -4,7 +4,7 @@ import { SITE_ROUTES } from "@/components/site/routes";
 import { Tabs } from "@/components/site/Tabs";
 import { toKebab } from "@/components/site/tour-ids";
 import { ServiceDetail } from "../../_components/ServiceDetail";
-import { retrievedAt, servicesByCategory } from "../../_lib/seed";
+import { datasetDate, servicesByCategory } from "../../_lib/seed";
 
 export const metadata: Metadata = { title: "保單變更" };
 
@@ -42,7 +42,7 @@ export default function PolicyChangePage() {
           請選擇欲辦理的變更項目，填妥申請書後郵寄至本公司，或留下資料由專人與您聯繫。
         </p>
         <Tabs label="變更項目" items={tabs} />
-        <SourceNote urls={services.map((s) => s.url)} retrievedAt={retrievedAt} />
+        <SourceNote sources={services} datasetDate={datasetDate} />
       </PageBody>
     </>
   );

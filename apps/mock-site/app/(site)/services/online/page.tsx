@@ -3,7 +3,7 @@ import { PageBody, PageHeader, SourceNote } from "@/components/site/PageHeader";
 import { SITE_ROUTES } from "@/components/site/routes";
 import { Tabs } from "@/components/site/Tabs";
 import { ServiceDetail } from "../../_components/ServiceDetail";
-import { getService, retrievedAt, seed } from "../../_lib/seed";
+import { datasetDate, getService, seed } from "../../_lib/seed";
 
 export const metadata: Metadata = { title: "網路保險服務" };
 
@@ -107,7 +107,7 @@ export default function OnlinePage() {
           加入巴黎線上 My Cardif 會員，即可於網站或法國巴黎人壽 App 查詢保單並辦理部分變更服務。
         </p>
         <Tabs label="網路保險服務" items={tabs} />
-        <SourceNote urls={[ONLINE_PAGE_URL]} retrievedAt={retrievedAt} />
+        <SourceNote sources={[{ url: ONLINE_PAGE_URL }, ...faqs.map((f) => ({ url: f.source, retrievedAt: f.retrievedAt }))]} datasetDate={datasetDate} />
       </PageBody>
     </>
   );

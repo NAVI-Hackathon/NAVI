@@ -4,7 +4,7 @@ import { PageBody, PageHeader, SourceNote } from "@/components/site/PageHeader";
 import { SITE_ROUTES } from "@/components/site/routes";
 import { Tabs } from "@/components/site/Tabs";
 import { ServiceDetail } from "../../_components/ServiceDetail";
-import { getService, retrievedAt, seed } from "../../_lib/seed";
+import { datasetDate, getService, seed } from "../../_lib/seed";
 
 export const metadata: Metadata = { title: "理賠程序介紹" };
 
@@ -99,7 +99,7 @@ export default function ClaimsPage() {
           頁面取得。
         </p>
         <Tabs label="理賠服務" items={tabs} />
-        <SourceNote urls={[byMail.url]} retrievedAt={retrievedAt} />
+        <SourceNote sources={[byMail]} datasetDate={datasetDate} />
       </PageBody>
     </>
   );

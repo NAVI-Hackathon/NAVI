@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageBody, PageHeader, SourceNote } from "@/components/site/PageHeader";
 import { displayOfficialUrl, SITE_ROUTES, toSitePath } from "@/components/site/routes";
 import Link from "next/link";
-import { retrievedAt, seed } from "../_lib/seed";
+import { datasetDate, seed } from "../_lib/seed";
 
 export const metadata: Metadata = { title: "常見問題" };
 
@@ -46,7 +46,7 @@ export default function FaqPage() {
             );
           })}
         </div>
-        <SourceNote urls={[...groups.keys()]} retrievedAt={retrievedAt} />
+        <SourceNote sources={seed.faq.map((f) => ({ url: f.source, retrievedAt: f.retrievedAt }))} datasetDate={datasetDate} />
       </PageBody>
     </>
   );

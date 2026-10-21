@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageBody, PageHeader, SourceNote } from "@/components/site/PageHeader";
 import { toSitePath } from "@/components/site/routes";
-import { retrievedAt, seed } from "../_lib/seed";
+import { datasetDate, seed } from "../_lib/seed";
 
 export const metadata: Metadata = { title: "保戶服務" };
 
@@ -41,7 +41,7 @@ export default function ServicesPage() {
             );
           })}
         </ul>
-        <SourceNote urls={[SERVICE_GROUP_URL]} retrievedAt={retrievedAt} />
+        <SourceNote sources={[{ url: SERVICE_GROUP_URL }]} datasetDate={datasetDate} />
       </PageBody>
     </>
   );

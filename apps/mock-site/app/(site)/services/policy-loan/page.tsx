@@ -3,7 +3,7 @@ import { PageBody, PageHeader, SourceNote } from "@/components/site/PageHeader";
 import { SITE_ROUTES } from "@/components/site/routes";
 import { Tabs } from "@/components/site/Tabs";
 import { ServiceDetail } from "../../_components/ServiceDetail";
-import { getService, retrievedAt } from "../../_lib/seed";
+import { datasetDate, getService } from "../../_lib/seed";
 
 export const metadata: Metadata = { title: "保單借款" };
 
@@ -24,7 +24,7 @@ export default function PolicyLoanPage() {
       />
       <PageBody>
         <Tabs label="保單借款" items={tabs} />
-        <SourceNote urls={[loan.url, repayment.url]} retrievedAt={retrievedAt} />
+        <SourceNote sources={[loan, repayment]} datasetDate={datasetDate} />
       </PageBody>
     </>
   );

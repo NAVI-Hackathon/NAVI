@@ -3,7 +3,7 @@ import { NaviHost } from "@/components/navi/NaviHost";
 import { toSitePath } from "@/components/site/routes";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader, type NavGroup } from "@/components/site/SiteHeader";
-import { retrievedAt, seed } from "./_lib/seed";
+import { datasetDate, seed } from "./_lib/seed";
 
 /** 這兩組不放進主選單：外部會員系統不爬、其他專區放在頁首小連結 */
 const HIDDEN_GROUPS = new Set(["外部/會員系統（不爬）", "其他專區"]);
@@ -27,7 +27,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <SiteFooter
         hotline={seed.contacts.hotline}
         address={seed.contacts.address}
-        retrievedAt={retrievedAt}
+        datasetDate={datasetDate}
       />
       <NaviHost />
     </>

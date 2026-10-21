@@ -24,6 +24,7 @@ const ServiceSchema = z.object({
   online_available: z.string(),
   precheck_questions: StringList.default([]),
   partner_hospitals: StringList.optional(),
+  retrievedAt: z.iso.date().optional(),
 });
 export type SeedService = z.infer<typeof ServiceSchema>;
 
@@ -33,6 +34,7 @@ const FormSchema = z.object({
   note: z.string().optional(),
   page: z.url().optional(),
   url: z.url().optional(),
+  retrievedAt: z.iso.date().optional(),
 });
 export type SeedForm = z.infer<typeof FormSchema>;
 
@@ -50,7 +52,7 @@ const SeedSchema = z.object({
   claim_document_requirements: z.record(z.string(), StringList),
   claim_general_rules: StringList,
   forms: z.array(FormSchema),
-  faq: z.array(z.object({ q: z.string(), a: z.string(), source: z.url() })),
+  faq: z.array(z.object({ q: z.string(), a: z.string(), source: z.url(), retrievedAt: z.iso.date().optional() })),
   contacts: z.object({
     hotline: z.string(),
     address: z.string(),
@@ -60,8 +62,13 @@ const SeedSchema = z.object({
 
 export const seed = SeedSchema.parse(raw);
 
-/** 擷取日期，頁面標示資料來源用 */
-export const retrievedAt = seed.meta.crawled;
+/** 整份資料集的整理日期；條目沒有自己的擷取日期時才用它，且標示為「資料集整理日期」 */
+export const datasetDate = seed.meta.crawled;
+
+/**
+ * 頁面「資料來源」的一筆：官網網址＋該條目自己的擷取日期（沒有就留空，不用今天或打包日期補）。
+ */
+export type SourceRef = { url: string; retrievedAt?: string };
 
 export function getService(id: string): SeedService {
   const service = seed.services.find((s) => s.id === id);

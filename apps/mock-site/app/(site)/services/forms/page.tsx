@@ -6,7 +6,7 @@ import { PageBody, PageHeader, SourceNote } from "@/components/site/PageHeader";
 import { SITE_ROUTES } from "@/components/site/routes";
 import { Tabs } from "@/components/site/Tabs";
 import { formTourId } from "@/components/site/tour-ids";
-import { retrievedAt, seed, type SeedForm } from "../../_lib/seed";
+import { datasetDate, seed, type SeedForm } from "../../_lib/seed";
 
 export const metadata: Metadata = { title: "常用表單下載" };
 
@@ -111,9 +111,10 @@ export default function FormsPage() {
           各類申請書請依您的保單類型下載對應版本，部分表單有唯一文件編號，請勿影印使用。
         </p>
         <Tabs label="表單分類" items={tabs} />
+        {/* 保全表單列在 a311（form.page）；其餘理賠表單出自 a314 */}
         <SourceNote
-          urls={["https://life.cardif.com.tw/zh/a311", "https://life.cardif.com.tw/zh/a314"]}
-          retrievedAt={retrievedAt}
+          sources={seed.forms.map((f) => ({ url: f.page ?? "https://life.cardif.com.tw/zh/a314", retrievedAt: f.retrievedAt }))}
+          datasetDate={datasetDate}
         />
       </PageBody>
     </>

@@ -4,11 +4,11 @@ import { SITE_ROUTES } from "./routes";
 export function SiteFooter({
   hotline,
   address,
-  retrievedAt,
+  datasetDate,
 }: {
   hotline: string;
   address: string;
-  retrievedAt: string;
+  datasetDate: string;
 }) {
   return (
     <footer className="mt-auto bg-neutral-800 text-sm text-neutral-300">
@@ -26,8 +26,8 @@ export function SiteFooter({
           <li><Link href={SITE_ROUTES.faq} data-tour-id="footer-faq" className="hover:text-white">常見問題</Link></li>
         </ul>
         <p className="leading-relaxed">
-          本站內容整理自法國巴黎人壽官網公開資訊（擷取日期 {retrievedAt}），僅供競賽展示，
-          實際規定以官方公告為準。
+          {`本站內容整理自法國巴黎人壽官網公開資訊（資料集整理日期 ${datasetDate}；各頁「資料來源」標示該頁條目的擷取日期），`}
+          僅供競賽展示，實際規定以官方公告為準。
         </p>
       </div>
       <p
