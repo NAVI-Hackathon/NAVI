@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import raw from '../../../../data/cardif_seed_data.json' with { type: 'json' };
+import raw from '../../../../data/cardif_public_data.json' with { type: 'json' };
 
 // Insurer facts used by NAVI come only from data/cardif_seed_data.json (the team's
 // curated copy of the public BNP Paribas Cardif Life site). Validated once at load.

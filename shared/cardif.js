@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import raw from '../data/cardif_seed_data.json' with { type: 'json' };
+import raw from '../data/cardif_public_data.json' with { type: 'json' };
 
 // Read the team's local public-site snapshot. No runtime requests to insurer websites.
 const strings = z.array(z.string());

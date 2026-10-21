@@ -69,3 +69,6 @@ apps/api/.env
 # Synthetic live evaluation cache and local generated reports
 /apps/api/eval/cache/
 /apps/api/eval/reports/
+
+# Local development metadata: never committed, imported, served or deployed.
+/data/private/

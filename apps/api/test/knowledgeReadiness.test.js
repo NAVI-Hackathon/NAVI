@@ -19,11 +19,10 @@ test('all four address queries keep the same verified source and canonical navig
     assert.doesNotMatch(JSON.stringify(shared), /internal_notes|頁面寫紙本|部分：|待確認|內部筆記|還沒修/);
   }
 });
-test('internal address notes remain private and are absent from validated public seed', () => {
-  const privateNote = raw.services.find(s => s.id === 'change_address').internal_notes;
-  assert.ok(privateNote.previous_online_note);
-  assert.equal(cardif.services.find(s => s.id === 'change_address').internal_notes, undefined);
-  for (const query of ['我要變更地址', '通訊地址線上改']) assert.ok(!retrieveKnowledgeContext(query).answer.includes(privateNote.previous_online_note));
+test('internal address notes are absent from source, generated projection and validated public seed', async () => {
+  const projection = JSON.parse(await readFile(new URL('../../../data/cardif_public_data.json', import.meta.url), 'utf8'));
+  for (const data of [raw, projection, cardif]) assert.equal(data.services.find(s => s.id === 'change_address').internal_notes, undefined);
+  for (const query of ['我要變更地址', '通訊地址線上改']) assert.doesNotMatch(retrieveKnowledgeContext(query).answer, /內部筆記|頁面寫紙本/);
 });
 test('published glossary definitions are literal official snapshot text with valid sources and real anchors', () => {
   assert.equal(cardif.glossary.length, 7);
