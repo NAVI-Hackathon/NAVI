@@ -1,0 +1,291 @@
+{
+  "allowedStates": [
+    "approved",
+    "needs_followup",
+    "pending",
+    "rejected"
+  ],
+  "autoAdoption": false,
+  "items": [
+    {
+      "changeId": "change:467ad8900e90ee36a158da12",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:9801425ca13e25e732bcb699",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:d5fea406c45f18aaa8787c15",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:3a6370e49c296dc479aa3014",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:aa7bc741abc78eb906f84d97",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:0e824d57bdd8b353669c2f28",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:d5c82e37e9b5ae259719aef8",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:9e2885bc403fd1f7c2fda391",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:1076b82f67ac9e58fa2bd3c3",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:8dbc08be6d176629ae59de37",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:a77fa67dda35812c59a53968",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:5daf8d32f7611ab52116d3f2",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:dcd56feb92db6842455adabf",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:937e35971f49184733c9659f",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:99de6444813730e60af168d3",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:db42ecae0668e88d478f6fd1",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:fe92cf271a785953873edbcb",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:4468be5a0f96eb598ddfc6a8",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:57f4bfaae4fe176b4bc22a79",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:2cec82569bd8e56125d936d0",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:c8f2b82767aef1b8d11112f2",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:3548647ee70644dbbec02a1d",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:ae6a5a3793164e942864efd5",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:0c7867af9a98a3a46ab23f48",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:d785c2b0e47bb73be999cf5e",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:8b992e8d77aff8df2107d761",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:1a371e63ed64513a473236b6",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Added",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    },
+    {
+      "changeId": "change:2375f6378ddddc54a67efcde",
+      "sourceId": "snapshot:41040466284b7df07333",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+      "category": "Requires Manual Review",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "decisionReason": null
+    }
+  ]
+}

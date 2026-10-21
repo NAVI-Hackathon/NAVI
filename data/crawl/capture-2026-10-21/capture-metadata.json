@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-10-21T11:00:49.546757+00:00",
+  "sourceCommit": "448321b7a7781aad613ebdad4fea405698e0aaa8",
+  "robotsSha256": "1d1f16217bed905c80b60e7a12dd9212fdcde1553de6ae9832cb74b04544013a",
+  "userAgent": "NAVI-InsurHack/1.0 (public information review; low-frequency local crawler)",
+  "delaySeconds": 1.5,
+  "summary": {
+    "pages": 8,
+    "successful": 8,
+    "failed": 0,
+    "categories": {
+      "Unchanged": 686,
+      "Added": 27,
+      "Requires Manual Review": 1
+    },
+    "pendingReview": 28,
+    "adopted": 0,
+    "liveGeminiRequests": 0,
+    "paidApiCalls": 0,
+    "pdfDownloads": 0
+  },
+  "runnerSha256": "0ad23d759cb6f944b84bf166f617d0e701636895fcaa63d97310d7002ee6a32b",
+  "workingTreeDirty": true,
+  "note": "Original local capture; initial derived IDs were later refined offline. Retrieval dates and source bytes were not refreshed."
+}

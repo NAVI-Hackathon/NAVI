@@ -133,10 +133,16 @@ def safe_name(url: str) -> str:
     return name if name.lower().endswith(".pdf") else name + ".pdf"
 
 
-def public_get(session, url, rp, delay):
+class NonHtmlResponse(ValueError):
+    def __init__(self, status_code, content_type):
+        super().__init__('非公開 HTML；不讀取或下載二進位內容')
+        self.status_code, self.content_type = status_code, content_type
+
+
+def public_get(session, url, rp, delay, *, html_only=False):
     """Check every redirect against the host and robots before making the next request."""
     for _ in range(4):
-        if not norm(url) or not rp.can_fetch(UA, url):
+        if not norm(url) or not rp.can_fetch(UA, url) or (html_only and is_pdf(url)):
             raise ValueError("非允許的公開來源或 robots 禁止")
         try:
             response = session.get(url, timeout=(5, 15), allow_redirects=False, stream=True)
@@ -144,6 +150,9 @@ def public_get(session, url, rp, delay):
                 url = urljoin(url, response.headers.get("Location", ""))
                 response.close()
                 continue
+            if html_only and 'text/html' not in response.headers.get('Content-Type', '').lower():
+                response.close()
+                raise NonHtmlResponse(response.status_code, response.headers.get('Content-Type', ''))
             chunks, size = [], 0
             for chunk in response.iter_content(65536):
                 size += len(chunk)
