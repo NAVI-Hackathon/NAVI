@@ -1,16 +1,6 @@
 import Icon from '../Icon.jsx';
 import { typeLabels } from '../../../../../shared/knowledge/index.js';
-
-/** "依據" line: the official page this answer is quoted from (opens the real site in a new tab). */
-export function SourceLine({ source }) {
-  return (
-    <p className="qa-source">
-      <Icon name="book" size={12} />依據：
-      <a href={source.url} target="_blank" rel="noopener noreferrer">法國巴黎人壽官網・{source.title}</a>
-      （擷取 {source.retrievedAt}）
-    </p>
-  );
-}
+import SourceEvidence from './SourceEvidence.jsx';
 
 export function NavigateButton({ destination, onNavigate }) {
   if (!onNavigate) return null;
@@ -47,7 +37,7 @@ export default function AnswerCard({ entry, onNavigate, compact = false, highlig
         </div>
       ))}
       <NavigateButton destination={entry.destination} onNavigate={onNavigate} />
-      <SourceLine source={entry.destination.source} />
+      <SourceEvidence sourceId={entry.id} preferredLines={highlights} fallback={entry.destination.source} />
     </article>
   );
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Icon from '../Icon.jsx';
+import SourceEvidence from '../knowledge/SourceEvidence.jsx';
 import AnswerCard from '../knowledge/AnswerCard.jsx';
 import { assistantQuestions } from '../../mocks/hospitalClaim.js';
-import { retrievedAt } from '../../content/cardifData.js';
 import { searchKnowledge } from '../../../../../shared/knowledge/index.js';
 import { crossfade, fadeUp, staggerChildren, transition } from '../../motion/tokens.js';
 
@@ -94,14 +94,11 @@ export default function AssistantPanel({ snapshot, onHandoff, onNavigate }) {
           <motion.section className="sources" variants={fadeUp} aria-labelledby="sources-title">
             <h3 id="sources-title" className="section-label">資料來源</h3>
             <ul>
-              {journey.officialSources.map(source => (
-                <li key={source.url}>
-                  <a href={source.url} target="_blank" rel="noopener noreferrer" className="source-link">
-                    <Icon name="book" size={14} />法國巴黎人壽官網・{source.title}<Icon name="external" size={13} className="summary-chevron" />
-                  </a>
-                  <p className="source-section">擷取日期 {source.retrievedAt}</p>
-                </li>
-              ))}
+              {journey.officialSources.map(source => {
+                // Snapshot sources of this journey carry a source ID, so their excerpts can be shown.
+                const sourceId = journey.sources.find(s => s.type === 'public_site_snapshot' && s.url === source.url)?.sourceId;
+                return <li key={source.url}><SourceEvidence sourceId={sourceId} onNavigate={onNavigate} fallback={source} /></li>;
+              })}
             </ul>
           </motion.section>
         )}
@@ -128,7 +125,7 @@ export default function AssistantPanel({ snapshot, onHandoff, onNavigate }) {
             <input id="ask-input" value={question} maxLength={300} placeholder="詢問文件或申請方式…" onChange={e => setQuestion(e.target.value)} />
             <button type="submit" className="icon-button icon-button-filled" aria-label="送出問題" disabled={!question.trim() || thinking}><Icon name="arrow" size={16} /></button>
           </form>
-          <p className="ask-note">回答引用自法國巴黎人壽官網公開資料（擷取 {retrievedAt}）。</p>
+          <p className="ask-note">回答引用自法國巴黎人壽官網公開資料；每則回答下方可展開來源、資料日期與原文摘錄。</p>
         </motion.section>
       </motion.div>
     </aside>
