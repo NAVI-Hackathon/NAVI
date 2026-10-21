@@ -11,6 +11,11 @@ import {
 
 const EMBED_URL = process.env.NEXT_PUBLIC_NAVI_EMBED_URL ?? "";
 const NAVI_ORIGIN = originOf(EMBED_URL);
+// 現場備案：連不上正式 NAVI 時改載入同一個 NAVI 的示範模式（前端本地資料，不需要 Backend）。
+const DEMO_URL = (() => {
+  try { const url = new URL(EMBED_URL); url.searchParams.set("mode", "demo"); return url.toString(); } catch { return ""; }
+})();
+const CONNECT_TIMEOUT_MS = 8000;
 
 export type NaviDestination = { kind: string; path: string; anchor: string | null; label: string };
 
@@ -20,6 +25,10 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
   const [connected, setConnected] = useState(false);
   // Phones: after NAVI takes the user to a place, the panel folds away; the button then invites them back.
   const [resume, setResume] = useState(false);
+  // Connection watchdog: if NAVI has not said navi:ready within 8 s, offer retry or demo mode.
+  const [attempt, setAttempt] = useState(0);
+  const [demo, setDemo] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
 
@@ -45,6 +54,19 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [onNavigate, sayHello]);
+
+  useEffect(() => {
+    if (!mounted || connected) return;
+    const timer = setTimeout(() => setTimedOut(true), CONNECT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [mounted, connected, attempt]);
+
+  const reconnect = (useDemo: boolean) => {
+    setConnected(false);
+    setTimedOut(false);
+    setDemo(useDemo);
+    setAttempt(n => n + 1); // remounts the iframe
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -88,15 +110,31 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
           hidden={!open}
           className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0a0b0d] shadow-[0_20px_70px_rgba(0,0,0,0.35)] sm:inset-auto sm:bottom-4 sm:right-4 sm:top-4 sm:w-[420px] sm:rounded-2xl sm:border sm:border-white/10"
         >
-          {!connected && (
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-xs text-[#90989d]">
+          {!connected && !timedOut && (
+            <div role="status" className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-xs text-[#90989d]">
               <span>正在連線 NAVI…</span>
               <button type="button" onClick={() => setOpen(false)} className="rounded px-2 py-1 text-[#eeefe9] hover:bg-white/10" aria-label="關閉 NAVI">關閉</button>
             </div>
           )}
+          {!connected && timedOut && (
+            <div role="alert" className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#0a0b0d] px-8 text-center">
+              <p className="text-base font-medium text-[#eeefe9]">NAVI 暫時無法連線</p>
+              <p className="text-xs leading-relaxed text-[#90989d]">
+                {demo ? "示範模式也無法載入，請確認 NAVI 網站是否啟動。" : "可以再試一次，或改用示範模式（使用示範資料，不需要連線服務）。"}
+              </p>
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                <button type="button" onClick={() => reconnect(demo)} className="rounded-lg bg-[#eeefe9] px-4 py-2 text-sm font-medium text-[#16191b] hover:bg-white">重試</button>
+                {!demo && DEMO_URL && (
+                  <button type="button" onClick={() => reconnect(true)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-[#eeefe9] hover:bg-white/10">改用示範模式</button>
+                )}
+                <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-4 py-2 text-sm text-[#90989d] hover:text-[#eeefe9]">關閉</button>
+              </div>
+            </div>
+          )}
           <iframe
+            key={attempt}
             ref={frame}
-            src={EMBED_URL}
+            src={demo ? DEMO_URL : EMBED_URL}
             title="NAVI 服務導航助手"
             onLoad={sayHello}
             className="w-full flex-1 border-0 bg-[#0a0b0d]"
