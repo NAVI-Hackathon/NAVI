@@ -10,7 +10,8 @@ import { useHostBridge } from './hooks/useHostBridge.js';
 import { naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
-import { searchKnowledge } from '../../../shared/knowledge/index.js';
+import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
+import GuideCard from './components/guide/GuideCard.jsx';
 import { JOURNEY_EXPIRED_MESSAGE } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 
@@ -66,6 +67,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [tab, setTab] = useState('journey');
   const [explanation, setExplanation] = useState(null);
+  const [guide, setGuide] = useState(null); // { plan, index } while a step-by-step guide is open
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
@@ -80,6 +82,7 @@ export default function App() {
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(reduced); }, [reduced]);
   useEffect(() => { document.documentElement.dataset.embedded = String(embedded); }, []);
+  useEffect(() => { document.documentElement.dataset.guide = String(Boolean(guide)); }, [guide]);
 
   useEffect(() => {
     const onPop = () => {
@@ -221,7 +224,7 @@ export default function App() {
   }
 
   /** Take the user to the step's page on the insurer site (embedded: host navigates; standalone: new tab). */
-  const navigate = host.connected
+  const openOnSite = host.connected
     ? destination => host.send(naviMessage('navi:navigate', { destination }))
     : !embedded && mockSiteOrigin
       ? destination => {
@@ -230,6 +233,32 @@ export default function App() {
         window.open(url, '_blank', 'noopener');
       }
       : null;
+
+  // Every「帶我去」whose place is a knowledge entry starts a step-by-step guide when that entry has a
+  // multi-step plan (shared/knowledge/navigationPlan.js); anything else is a single navigation as before.
+  const guideRequest = useRef(0);
+  const navigate = openOnSite ? async destination => {
+    // Go right away (a new tab must open inside the click); step 1 of the plan is this same place.
+    openOnSite(destination);
+    const request = ++guideRequest.current;
+    const entry = knowledgeEntries.find(e => e.destination.path === destination.path && e.destination.anchor === destination.anchor);
+    let plan = null;
+    if (entry) {
+      try { const result = await service.navigationPlan(entry.id); plan = result.status === 'answered' ? result.plan : null; } catch { plan = null; }
+    }
+    if (request !== guideRequest.current) return; // a newer request replaced this one
+    setGuide(plan && plan.steps.length > 1 && plan.steps[0].sourceId === entry.id ? { plan, index: 0 } : null);
+  } : null;
+  const guideStep = index => {
+    setGuide(current => (current ? { ...current, index } : current));
+    // Embedded: the host page follows each step. Standalone: 在官網開啟 opens a step on request (no tab per click).
+    if (host.connected) openOnSite(guide.plan.steps[index].destination);
+  };
+  const endGuide = completed => {
+    guideRequest.current += 1;
+    setGuide(null);
+    if (completed) notify('導覽完成。需要時可以再按「帶我去」重新開始。');
+  };
 
   const actions = {
     // Where uploaded files go differs by mode; say so plainly next to the upload cards.
@@ -310,6 +339,7 @@ export default function App() {
     setFeedback(null);
     setDocStates({});
     setDialog(null);
+    setGuide(null);
     setLandingKey(k => k + 1);
     goLanding();
     notify('已重新開始，可以描述新的情況。');
@@ -379,6 +409,13 @@ export default function App() {
           )}
           {snapshot && dialog === 'service' && (
             <ServiceDialog key="service" snapshot={snapshot} onClose={closeDialog} onHandoff={() => setDialog('handoff')} />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {guide && (
+            <GuideCard key="guide" guide={guide} embedded={host.connected}
+              onStep={guideStep} onOpen={step => openOnSite(step.destination)} onEnd={endGuide} />
           )}
         </AnimatePresence>
 

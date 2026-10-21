@@ -160,3 +160,14 @@ test('formal mode: explanation reason codes and the consent-based handoff (previ
   await service.uploadDocument('bank_passbook', { sample: true });
   await assert.rejects(service.confirmHandoff(old.previewId), { code: 'HANDOFF_PREVIEW_STALE' });
 });
+
+test('formal mode: step-by-step guide plans come from the server and match the shared plan', async t => {
+  const service = client(await backend(t));
+  const result = await service.navigationPlan('service:change_address');
+  assert.equal(result.status, 'answered');
+  assert.deepEqual(result.plan.steps.map(s => s.action), ['VIEW_INFORMATION', 'VIEW_FORM', 'OPEN_SERVICE']);
+  assert.equal(result.plan.steps[0].destination.anchor, 'service-change-address');
+  // Unreachable API: the same plan is built locally from the shared snapshot.
+  const offline = client('http://127.0.0.1:9');
+  assert.deepEqual((await offline.navigationPlan('service:change_address')).plan, result.plan);
+});

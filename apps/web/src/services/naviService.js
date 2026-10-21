@@ -3,6 +3,7 @@ import {
   removeDocument, confirmSession, requestHandoff, serializeSession, restoreSession,
 } from './journeyEngine.js';
 import { localHandoffSummary } from '../domain/preflight.js';
+import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
 
 export class DocumentRecognitionError extends Error {
   constructor() { super('DOCUMENT_RECOGNITION_FAILED'); this.code = 'DOCUMENT_RECOGNITION_FAILED'; }
@@ -70,6 +71,7 @@ export function createJourneyService({ mode, understand, storage, storageKey, do
     // /demo has no server: the Preflight board uses the local mirror of the reason codes (explain → null),
     // and the handoff preview/confirmation are built locally in the same shape as the server's.
     async explain() { return null; },
+    async navigationPlan(sourceId) { return planNavigation({ sourceId }); },
     async handoffPreview() {
       requireSession();
       return { previewId: crypto.randomUUID?.() ?? String(Date.now()), status: 'awaiting_confirmation', summary: localHandoffSummary(toSnapshot(session).journey) };

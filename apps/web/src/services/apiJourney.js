@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ServiceJourneySchema } from '../../../../shared/journey.js';
-import { HandoffConfirmationSchema, HandoffPreviewSchema, JourneyExplanationSchema } from '../../../../shared/competition.js';
+import { HandoffConfirmationSchema, HandoffPreviewSchema, JourneyExplanationSchema, NavigationPlanResponseSchema } from '../../../../shared/competition.js';
+import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
 import { opensJourney } from './naviService.js';
 import { samplePdfFile } from '../mocks/sampleDocuments.js';
 import { redactIdentifiers } from '../domain/privacy.js';
@@ -138,6 +139,18 @@ export function createApiJourneyService({
     async confirm() {
       const { journey } = requireState();
       return commit(await request(`/journeys/${journey.id}/review`, { method: 'POST', json: { confirmed: true } }));
+    },
+    /**
+     * Step-by-step guide from a knowledge source (POST /navigation/plans). The plan is built from the same
+     * shared snapshot either way, so if the API is unreachable the local plan is used instead.
+     */
+    async navigationPlan(sourceId, { signal } = {}) {
+      try {
+        return await request('/navigation/plans', { method: 'POST', json: { sourceId }, signal, schema: NavigationPlanResponseSchema });
+      } catch (error) {
+        if (signal?.aborted || error?.status) throw error;
+        return planNavigation({ sourceId });
+      }
     },
     /** Why each requirement is (not) counted: GET /journeys/:id/explanation (reason codes, earned points). */
     async explain({ signal } = {}) {

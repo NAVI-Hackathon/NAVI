@@ -18,6 +18,8 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [connected, setConnected] = useState(false);
+  // Phones: after NAVI takes the user to a place, the panel folds away; the button then invites them back.
+  const [resume, setResume] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
 
@@ -37,7 +39,7 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
       if (message.type === "navi:navigate") {
         onNavigate?.(message.destination);
         // On phones the panel covers the page; close it so the highlighted target is visible.
-        if (window.matchMedia("(max-width: 639.98px)").matches) setOpen(false);
+        if (window.matchMedia("(max-width: 639.98px)").matches) { setOpen(false); setResume(true); }
       }
     };
     window.addEventListener("message", onMessage);
@@ -62,15 +64,18 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
           data-tour-id="navi-launcher"
           aria-expanded={false}
           aria-controls="navi-panel"
-          onClick={() => { setMounted(true); setOpen(true); }}
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full border border-white/10 bg-[#0a0b0d] py-2.5 pl-2.5 pr-5 text-sm font-medium text-[#eeefe9] shadow-[0_12px_40px_rgba(0,0,0,0.28)] transition-transform hover:-translate-y-0.5"
+          aria-label={resume ? "回到 NAVI，繼續下一步" : undefined}
+          onClick={() => { setMounted(true); setOpen(true); setResume(false); }}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full border py-2.5 pl-2.5 pr-5 text-sm font-medium shadow-[0_12px_40px_rgba(0,0,0,0.28)] transition-transform hover:-translate-y-0.5 ${resume ? "navi-resume border-[#97c9b3]/60 bg-[#0a0b0d] text-[#eeefe9]" : "border-white/10 bg-[#0a0b0d] text-[#eeefe9]"}`}
         >
-          <span aria-hidden className="grid size-8 place-items-center rounded-full bg-[#eeefe9]">
-            <svg viewBox="0 0 40 40" className="size-5"><path d="M11 29V20h9v-9h9m-5 0h5v5" fill="none" stroke="#0a0b0d" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <span aria-hidden className={`grid size-8 place-items-center rounded-full ${resume ? "bg-[#97c9b3]" : "bg-[#eeefe9]"}`}>
+            {resume
+              ? <svg viewBox="0 0 24 24" className="size-4"><path d="M4 12h15m-6-6 6 6-6 6" fill="none" stroke="#0a0b0d" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              : <svg viewBox="0 0 40 40" className="size-5"><path d="M11 29V20h9v-9h9m-5 0h5v5" fill="none" stroke="#0a0b0d" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
           </span>
           <span className="flex flex-col items-start leading-tight">
-            <span className="tracking-[0.12em]">NAVI</span>
-            <span className="text-[11px] font-normal text-[#97c9b3]">告訴我發生了什麼</span>
+            <span className="tracking-[0.12em]">{resume ? "回到 NAVI" : "NAVI"}</span>
+            <span className="text-[11px] font-normal text-[#97c9b3]">{resume ? "繼續下一步" : "告訴我發生了什麼"}</span>
           </span>
         </button>
       )}
