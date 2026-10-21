@@ -1,0 +1,1754 @@
+{
+  "sourceCommit": "64ceb17b05d9b90b4edc95a2f737707bde8f4d88",
+  "metaCrawled": "2026-10-06",
+  "publishedAtAvailable": false,
+  "newCaptureAdopted": false,
+  "items": [
+    {
+      "sourceId": "glossary:insured",
+      "title": "被保險人",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-insured",
+        "label": "查看被保險人",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "glossary:policyholder",
+      "title": "要保人",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-policyholder",
+        "label": "查看要保人",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "glossary:beneficiary",
+      "title": "受益人",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-beneficiary",
+        "label": "查看受益人",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "glossary:insurance-age",
+      "title": "保險年齡",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-insurance-age",
+        "label": "查看保險年齡",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "glossary:premium",
+      "title": "保險費",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-premium",
+        "label": "查看保險費",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "glossary:management-fee",
+      "title": "保單管理費",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-management-fee",
+        "label": "查看保單管理費",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "glossary:account-value",
+      "title": "保單帳戶價值",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/glossary",
+        "anchor": "glossary-term-account-value",
+        "label": "查看保單帳戶價值",
+        "source": {
+          "url": "https://life.cardif.com.tw/insurancedictionary",
+          "title": "保險名詞",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_address",
+      "title": "變更戶籍地址 / 收費地址",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-20",
+      "dateBasis": "entry",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-address",
+        "label": "查看變更戶籍地址 / 收費地址",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-20"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_name",
+      "title": "變更要保人／被保險人姓名",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-name",
+        "label": "查看變更要保人／被保險人姓名",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_policyholder",
+      "title": "變更要保人",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-policyholder",
+        "label": "查看變更要保人",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_insured_id",
+      "title": "變更被保險人ID／生日／性別",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-insured-id",
+        "label": "查看變更被保險人ID／生日／性別",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_beneficiary",
+      "title": "變更受益人",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-beneficiary",
+        "label": "查看變更受益人",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_dividend_option",
+      "title": "變更保單紅利給付方式",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-dividend-option",
+        "label": "查看變更保單紅利給付方式",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_payment_method",
+      "title": "變更繳費方式",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-payment-method",
+        "label": "查看變更繳費方式",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_payment_frequency",
+      "title": "變更繳別",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-payment-frequency",
+        "label": "查看變更繳別",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:change_occupation",
+      "title": "變更職業內容",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-change-occupation",
+        "label": "查看變更職業內容",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:supplementary_health_disclosure",
+      "title": "補充健康告知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-supplementary-health-disclosure",
+        "label": "查看補充健康告知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:contact_info_chain",
+      "title": "保全聯盟鏈（一次變更多家保險公司聯絡資料）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-change",
+        "anchor": "service-contact-info-chain",
+        "label": "查看保全聯盟鏈（一次變更多家保險公司聯絡資料）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a312",
+          "title": "保單變更",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:policy_loan",
+      "title": "保單借款",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-loan",
+        "anchor": "service-policy-loan",
+        "label": "查看保單借款",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a313",
+          "title": "保單借款",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:loan_repayment",
+      "title": "保單借款還款",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/policy-loan",
+        "anchor": "service-loan-repayment",
+        "label": "查看保單借款還款",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a313",
+          "title": "保單借款",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:claim_by_mail",
+      "title": "理賠申請（郵寄）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "service-claim-by-mail",
+        "label": "查看理賠申請（郵寄）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:claim_union_chain",
+      "title": "理賠聯盟鏈（線上申請，一家申請多家理賠）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "service-claim-union-chain",
+        "label": "查看理賠聯盟鏈（線上申請，一家申請多家理賠）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:claim_hospital_upload",
+      "title": "保險理賠醫起通（醫院直接上傳文件）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "service-claim-hospital-upload",
+        "label": "查看保險理賠醫起通（醫院直接上傳文件）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:claim_household_registration",
+      "title": "戶政連線‧理賠免奔波",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "service-claim-household-registration",
+        "label": "查看戶政連線‧理賠免奔波",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "service:online_service_membership",
+      "title": "巴黎線上My Cardif 網路保險服務會員",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/online",
+        "anchor": "service-online-service-membership",
+        "label": "查看巴黎線上My Cardif 網路保險服務會員",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_contract_change",
+      "title": "保險契約內容變更申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-contract-change-investment",
+        "label": "下載保險契約內容變更申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_policyholder_change",
+      "title": "要保人變更專用表單（投資型／保障型／分紅型，含原要保人身故版）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-policyholder-change-investment",
+        "label": "下載要保人變更專用表單（投資型／保障型／分紅型，含原要保人身故版）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_investment_change",
+      "title": "投資內容異動申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-investment-change",
+        "label": "下載投資內容異動申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_risk_confirmation",
+      "title": "保戶風險確認表",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-risk-confirmation",
+        "label": "下載保戶風險確認表",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_single_topup",
+      "title": "單筆增額申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-single-topup",
+        "label": "下載單筆增額申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_bank_auth",
+      "title": "委託金融機構代繳保險費約定條款",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-bank-auth",
+        "label": "下載委託金融機構代繳保險費約定條款",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_credit_card_auth",
+      "title": "信用卡代繳保險費授權書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-credit-card-auth",
+        "label": "下載信用卡代繳保險費授權書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_health_disclosure",
+      "title": "健康告知暨聲明書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-health-disclosure",
+        "label": "下載健康告知暨聲明書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_policy_loan",
+      "title": "保險單借款合約書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-policy-loan",
+        "label": "下載保險單借款合約書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_ebill",
+      "title": "電子單據服務申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-ebill",
+        "label": "下載電子單據服務申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_beneficiary_change",
+      "title": "受益人變更申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-beneficiary-change",
+        "label": "下載受益人變更申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_contact_person",
+      "title": "指定聯絡人服務申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-contact-person",
+        "label": "下載指定聯絡人服務申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_online_service",
+      "title": "網路保險服務申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-online-service",
+        "label": "下載網路保險服務申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_kyc",
+      "title": "保戶投資風險屬性評估表（線上版：my.cardif.com.tw/KYC/）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-kyc",
+        "label": "下載保戶投資風險屬性評估表（線上版：my.cardif.com.tw/KYC/）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:form_fx_risk",
+      "title": "外幣收付之人身保險匯率風險說明書（投資型10幣別／非投資型美元）",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-fx-risk",
+        "label": "下載外幣收付之人身保險匯率風險說明書（投資型10幣別／非投資型美元）",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.1.1",
+      "title": "保險金申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-1-1",
+        "label": "下載保險金申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.1.2",
+      "title": "申請身故(完全失能)理賠應檢附文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-1-2",
+        "label": "下載申請身故(完全失能)理賠應檢附文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.1.3",
+      "title": "申請一般理賠應檢附文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-1-3",
+        "label": "下載申請一般理賠應檢附文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.2",
+      "title": "病歷資料調閱授權書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-2",
+        "label": "下載病歷資料調閱授權書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.3",
+      "title": "調查同意書(意外事故填寫)",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-3",
+        "label": "下載調查同意書(意外事故填寫)",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.4",
+      "title": "全民健康保險保險人提供資料申請書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-4",
+        "label": "下載全民健康保險保險人提供資料申請書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.5",
+      "title": "繼承人聲明(依繼承人順位領取)同意書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-5",
+        "label": "下載繼承人聲明(依繼承人順位領取)同意書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_1.6",
+      "title": "繼承人聲明(依推派領取)同意書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-1-6",
+        "label": "下載繼承人聲明(依推派領取)同意書",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_2.1.1",
+      "title": "保險金申請書(身故/完全失能)填寫範例",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-2-1-1",
+        "label": "下載保險金申請書(身故/完全失能)填寫範例",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_2.1.2",
+      "title": "保險金申請書(一般)填寫範例",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-2-1-2",
+        "label": "下載保險金申請書(一般)填寫範例",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_2.1.3",
+      "title": "保險金申請書(門診)填寫範例",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-2-1-3",
+        "label": "下載保險金申請書(門診)填寫範例",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_3.1",
+      "title": "壽險身故申請須知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-3-1",
+        "label": "下載壽險身故申請須知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_3.2",
+      "title": "壽險完全失能申請須知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-3-2",
+        "label": "下載壽險完全失能申請須知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_3.3",
+      "title": "投資年金身故申請須知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-3-3",
+        "label": "下載投資年金身故申請須知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_3.4",
+      "title": "健康險門診保險金申請注意須知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-3-4",
+        "label": "下載健康險門診保險金申請注意須知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_3.5",
+      "title": "住院醫療日額申請注意須知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-3-5",
+        "label": "下載住院醫療日額申請注意須知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "form:claim_3.6",
+      "title": "重大疾病或防癌險申請須知",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "form",
+        "path": "/services/forms",
+        "anchor": "form-claim-3-6",
+        "label": "下載重大疾病或防癌險申請須知",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a311",
+          "title": "常用表單下載",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:1",
+      "title": "要符合什麼條件才能申請網路保險服務會員？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-1",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:2",
+      "title": "已有保單查詢權限，想加開網路變更服務？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-2",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:3",
+      "title": "網路申請會員要注意什麼？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-3",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:4",
+      "title": "身分驗證怎麼進行？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-4",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:5",
+      "title": "人在國外收不到簡訊OTP？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-5",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:6",
+      "title": "密碼規則？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-6",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:7",
+      "title": "密碼輸錯幾次會鎖住？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-7",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:8",
+      "title": "收不到密碼重設email？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-8",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:9",
+      "title": "很久沒登入進不去？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-9",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:10",
+      "title": "客服時間？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-10",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/f8",
+          "title": "網路保險服務",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:11",
+      "title": "理賠要多久？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-11",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "faq:12",
+      "title": "保單借款多久撥款？",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "faq",
+        "path": "/faq",
+        "anchor": "faq-12",
+        "label": "查看常見問題",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a313",
+          "title": "保單借款",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:1",
+      "title": "醫療門診理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-1",
+        "label": "查看醫療門診應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:2",
+      "title": "住院醫療理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-2",
+        "label": "查看住院醫療應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:3",
+      "title": "防癌或重疾理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-3",
+        "label": "查看防癌或重疾應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:4",
+      "title": "失能(含意外)理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-4",
+        "label": "查看失能(含意外)應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:5",
+      "title": "身故(含意外)理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-5",
+        "label": "查看身故(含意外)應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:6",
+      "title": "借貸身故理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-6",
+        "label": "查看借貸身故應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:7",
+      "title": "借貸失能理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-7",
+        "label": "查看借貸失能應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:8",
+      "title": "暫時喪失工作能力理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-8",
+        "label": "查看暫時喪失工作能力應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:9",
+      "title": "傷害失能補助理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-9",
+        "label": "查看傷害失能補助應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:10",
+      "title": "特定傷害身故理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-10",
+        "label": "查看特定傷害身故應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:11",
+      "title": "完全失能扶助理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-11",
+        "label": "查看完全失能扶助應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:12",
+      "title": "重大傷害失能安養理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-12",
+        "label": "查看重大傷害失能安養應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:13",
+      "title": "返還保單價值理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-13",
+        "label": "查看返還保單價值應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:14",
+      "title": "未支領年金理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-14",
+        "label": "查看未支領年金應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:15",
+      "title": "投資型壽險理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-15",
+        "label": "查看投資型壽險應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:16",
+      "title": "投資型完全失能理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-16",
+        "label": "查看投資型完全失能應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-doc:17",
+      "title": "無理賠事故理賠應備文件",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-doc-17",
+        "label": "查看無理賠事故應備文件",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:1",
+      "title": "診斷證明書須為正本或加蓋醫院紅色印章之副本，不收影印本",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-1",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:2",
+      "title": "失能理賠需事故180天後開立之失能診斷證明書",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-2",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:3",
+      "title": "意外死亡須報警並由檢察官相驗",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-3",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:4",
+      "title": "骨折或截肢需提供X光片（骨折未住院需矯正前X光片，角落需有…",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-4",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:5",
+      "title": "身故及完全失能給付需提供完整保單正本",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-5",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:6",
+      "title": "受益人為法定繼承人時才需繼承系統表",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-6",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:7",
+      "title": "匯款給付需提供存摺影本",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-7",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:8",
+      "title": "非身故保險金受益人為被保險人本人",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-8",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:9",
+      "title": "海外事故文件需經我國駐外單位認證，中國大陸文件需經海基會及…",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-9",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:10",
+      "title": "寬限期內發生事故，自理賠金扣除保費後給付",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-10",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    },
+    {
+      "sourceId": "claim-rule:11",
+      "title": "身故／完全失能受益人須配合 FATCA／CRS 申報",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06",
+      "dateBasis": "legacy_dataset_fallback",
+      "navigationDestination": {
+        "kind": "page",
+        "path": "/services/claims",
+        "anchor": "claim-rule-11",
+        "label": "查看理賠申請規定",
+        "source": {
+          "url": "https://life.cardif.com.tw/zh/a314",
+          "title": "理賠程序介紹",
+          "retrievedAt": "2026-10-06"
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # 官網定向擷取差異報告
 
-產生時間：2026-10-21T11:04:26.640565+00:00
+產生時間：2026-10-21T11:09:58.338483+00:00
 
 **候選資料，尚未批准，不在正式 Knowledge／Browser Bundle／VPS 中。**
 
@@ -15,15 +15,15 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
   "successful": 8,
   "failed": 0,
   "categories": {
-    "Added": 27,
+    "Added": 22,
     "Modified": 0,
     "Removed": 0,
-    "Unchanged": 686,
+    "Unchanged": 662,
     "Fetch Failed": 0,
     "Extraction Failed": 0,
     "Requires Manual Review": 1
   },
-  "pendingReview": 28,
+  "pendingReview": 23,
   "adopted": 0,
   "liveGeminiRequests": 0,
   "paidApiCalls": 0,
@@ -35,122 +35,32 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 - snapshot:a991fbd27fb6e5bac74d — https://life.cardif.com.tw/zh/a312
   HTTP 200／ok；2026-10-21T11:00:16.890332+00:00
-  raw SHA-256 `de3d97e7398981d4daa45e88fcc18b5587ab59ef8ee0cc74b8f643144dbfdaae`；normalized `a52c0934e90c0d22d4c7203d96b574acbf8861da2e4aaa3f1cef2c4ad9bb265f`
+  raw SHA-256 `de3d97e7398981d4daa45e88fcc18b5587ab59ef8ee0cc74b8f643144dbfdaae`；normalized `4b3b80ddb2f3a1aea0e2ca0f1d1f382ca94ea4029e738c0c8402d14fed06bfa8`
 - snapshot:ce59ef0abeeaecf1890e — https://life.cardif.com.tw/zh/a314
   HTTP 200／ok；2026-10-21T11:00:19.123361+00:00
-  raw SHA-256 `5615cd914414b08cd25203f8df5f83fd4fb3a29d8b03f6c9dabc39a5fafd1838`；normalized `419a54a57e3d985075c3d5ac139c60b8592aa85edc0ee0f0e7061b0e22167969`
+  raw SHA-256 `5615cd914414b08cd25203f8df5f83fd4fb3a29d8b03f6c9dabc39a5fafd1838`；normalized `a2498ba73f51f2bca3b87b201afcb7dd5e5a41d2b4853a4bcde343776f1aac69`
 - snapshot:1e80c77e6d7361555bef — https://life.cardif.com.tw/zh/a313
   HTTP 200／ok；2026-10-21T11:00:30.634296+00:00
-  raw SHA-256 `847dbde8ae1ec779b28f5e64719e5fe6c5b9dcbd0ea39fa318ccd88f57cacbb3`；normalized `09d245d17875527171dfd5af1ae2c032c95d22208f5fa986361846c2d93488e8`
+  raw SHA-256 `847dbde8ae1ec779b28f5e64719e5fe6c5b9dcbd0ea39fa318ccd88f57cacbb3`；normalized `edcf28c52050d844602ae00e16e47c9dbb760d429161a87593429da8bafb62a0`
 - snapshot:53cf6b6148a3e8b640d0 — https://life.cardif.com.tw/zh/a311
   HTTP 200／ok；2026-10-21T11:00:33.908494+00:00
-  raw SHA-256 `562802432875cec8817db7c0a6870b8a8f9cd3b62e78a55e832c262e61f5abed`；normalized `5bfbaf8986dbbb300891236514fa87d93260ee1784883e3c25effe9de6001c91`
+  raw SHA-256 `562802432875cec8817db7c0a6870b8a8f9cd3b62e78a55e832c262e61f5abed`；normalized `a2c8fce897b99b1eb64853ba7ee40d4b0fc1cd94411b6f0142f203968220fce0`
 - snapshot:58ad32461008cd2dfc0f — https://life.cardif.com.tw/zh/f8
   HTTP 200／ok；2026-10-21T11:00:36.658232+00:00
-  raw SHA-256 `955ae287b5f5b47ee2be139883d438ed0280299b635a2e1f471291c308dce779`；normalized `593e169ffd307b1a3636cdad33b1e4a414def21badf31388613961535f6dc3be`
+  raw SHA-256 `955ae287b5f5b47ee2be139883d438ed0280299b635a2e1f471291c308dce779`；normalized `00c0fbc0471d58fd917c552af3272e94d6090951548dc6f1318d563b0fa0f9cb`
 - snapshot:7e7733c99cc5d754f904 — https://life.cardif.com.tw/insurancedictionary
   HTTP 200／ok；2026-10-21T11:00:41.572855+00:00
   raw SHA-256 `135beb591a7c42543b5f3865f1a4455dca4d70a865667306cde360ec53654f4b`；normalized `2c5edaa055d4421e06f9a78d194cad61a8312b3f423227f964065e2b60777c66`
 - snapshot:30b8a9d025324f3caa8b — https://life.cardif.com.tw/zh/a3
   HTTP 200／ok；2026-10-21T11:00:46.385935+00:00
-  raw SHA-256 `0d291d4ceeace1461a4e979824fc6133261c173af1c3f7438c1ea80f9746cd39`；normalized `5bfbaf8986dbbb300891236514fa87d93260ee1784883e3c25effe9de6001c91`
+  raw SHA-256 `0d291d4ceeace1461a4e979824fc6133261c173af1c3f7438c1ea80f9746cd39`；normalized `a2c8fce897b99b1eb64853ba7ee40d4b0fc1cd94411b6f0142f203968220fce0`
 - snapshot:41040466284b7df07333 — https://life.cardif.com.tw/zh/a319
   HTTP 200／ok；2026-10-21T11:00:49.505294+00:00
-  raw SHA-256 `f769d9ba895dd540bafaf2ac2f185eb0b20f138eb94332010a9bc2f7d1b3ada8`；normalized `3ca59f931338666823f5075117149936e323211a0d9baf90631dde0bba8b7381`
+  raw SHA-256 `f769d9ba895dd540bafaf2ac2f185eb0b20f138eb94332010a9bc2f7d1b3ada8`；normalized `80a42357900e9b2b512ba02448f97be469ce7edf5b4f05a5a2bd3241f8f40a1b`
 
 ## 逐筆差異（Unchanged 原文與雜湊完整保留於 JSON）
 
-### change:27cf6ac42707eedfda265524 — Added
-
-來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
-擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
-
-影響 Knowledge IDs：無既有對應；需人工建立映射
-導航：`[]`
-
-**原段落** SHA-256 `無`
-
-```text
-無（詳見分類；失敗不代表內容刪除）
-```
-
-**新段落** SHA-256 `f2bd784b49dddbd9255e9cca9432acde671896ba48f48c6a2e647880a3389e0b`
-
-```text
-## a314\_wc\_01
-```
-
-逐筆核對原文、條件與對應知識；未批准不可採用。
-
-### change:b4692abe6b812b2aa3283413 — Added
-
-來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
-擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
-
-影響 Knowledge IDs：無既有對應；需人工建立映射
-導航：`[]`
-
-**原段落** SHA-256 `無`
-
-```text
-無（詳見分類；失敗不代表內容刪除）
-```
-
-**新段落** SHA-256 `ee1c21c3179558ae3d6918b4508772a66498e853ff84f6d49ee62285a8323418`
-
-```text
-# 保戶服務
-```
-
-逐筆核對原文、條件與對應知識；未批准不可採用。
-
-### change:4b7442feb97eb5bd59e68e8a — Added
-
-來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
-擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
-
-影響 Knowledge IDs：無既有對應；需人工建立映射
-導航：`[]`
-
-**原段落** SHA-256 `無`
-
-```text
-無（詳見分類；失敗不代表內容刪除）
-```
-
-**新段落** SHA-256 `6fb3c5ffc3e192050814529784c857bc7a8fa4ec145bf1d69a1a849a4cedb4b8`
-
-```text
-## a319\_wc\_01
-```
-
-逐筆核對原文、條件與對應知識；未批准不可採用。
-
-### change:81df9070c950bde77e442700 — Added
-
-來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
-擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
-
-影響 Knowledge IDs：無既有對應；需人工建立映射
-導航：`[]`
-
-**原段落** SHA-256 `無`
-
-```text
-無（詳見分類；失敗不代表內容刪除）
-```
-
-**新段落** SHA-256 `9eea636420526b83ca920b5c860a525b66c041ba2ce616b47726a494ee362cc6`
-
-```text
-* [首頁](./default)
-* [保戶服務](./a314)
-* [理賠聯盟鏈\保險理賠醫起通Q&A](#)
-```
-
-逐筆核對原文、條件與對應知識；未批准不可採用。
-
-### change:a6eb79d92a0c7dba2a105996 — Added
+### change:b076c7e1b3c223b3ee4afdaa — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -172,7 +82,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:128bdae4a1454cdaaaae597e — Added
+### change:fbc36ee398020350b6cbb115 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -186,37 +96,15 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `e07104f5aeca7f391419c2ed21bcaddde541b797cab2581cd3d91f4047e3afbf`
+**新段落** SHA-256 `fd790b501760d11e33ee6d05a4e67355a0c9202dfda6a136e8ac6f1d0e616bcd`
 
 ```text
-## a319\_wc\_02
+* 參加理賠聯盟鏈的公司有哪些?
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:2721160805816196bd1d972b — Added
-
-來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
-擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
-
-影響 Knowledge IDs：無既有對應；需人工建立映射
-導航：`[]`
-
-**原段落** SHA-256 `無`
-
-```text
-無（詳見分類；失敗不代表內容刪除）
-```
-
-**新段落** SHA-256 `7718712e18a12e14c16d323d97c3e6b4d3273be1e1023f5167dfd7122694b130`
-
-```text
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 參加理賠聯盟鏈的公司有哪些?
-```
-
-逐筆核對原文、條件與對應知識；未批准不可採用。
-
-### change:3fdc1b9a39fad4c4e3e9f8d5 — Added
+### change:b6a026b4179cfcda7375aaeb — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -238,7 +126,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:7d4d11cee4c5fe4c0377c98b — Added
+### change:3fcce63f42cb23b0983c8a98 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -252,16 +140,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `cf53c3e897202e18417dfc217463659cf47e004ea430ac680fff25169278acb8`
+**新段落** SHA-256 `a3ffce35778778c5abe0673139fcb753c17fad0f33c706f348d2796419f8f698`
 
 ```text
 產險公司：國泰產險、富邦產險、和泰產險、泰安產險。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 參加保險醫起通的公司有哪些?
+* 參加保險醫起通的公司有哪些?
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:992f42c985ba816d94c2a4f5 — Added
+### change:48c9db74009221a99f9cbef2 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -283,7 +171,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:90edebf7884de2b39440cdaf — Added
+### change:d65b79d405857e97c93b91d4 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -297,16 +185,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `8eeb7c63e41745cdc9d3302dbc040872f877ac56cf41f5b44afb3b22b3c9c3e0`
+**新段落** SHA-256 `1f7e90cd2d4fbf04324319e22dfd7a37e8ee2f34883a1123a3ec2f8864d0a474`
 
 ```text
 產險公司：國泰產險、富邦產險、和泰產險、泰安產險。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 參加保險理賠醫起通的醫療院所有哪些?
+* 參加保險理賠醫起通的醫療院所有哪些?
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:a9dcf88703f0d1b88e4bf4b9 — Added
+### change:b082c7b9a37d406d30ce05ef — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -328,7 +216,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:423a4979260842e9c5ff8ff4 — Added
+### change:6e55e76da94f4a21e0586b21 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -350,7 +238,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:8332d97941d1535f471aa281 — Added
+### change:69feedc1e94c1bf4a3cbe9bc — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -372,7 +260,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:139e5202e0ad25f14c63514f — Added
+### change:0b52805506f1d2638853ee25 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -394,7 +282,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:e0a5b4365cbd227f3ea31bd9 — Added
+### change:aa9d08985904d72cb3dc4d95 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -416,7 +304,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:ee673dbd3dc713a6eb3be144 — Added
+### change:5e7f717f724f1938f988683a — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -438,7 +326,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:c96ccb8684fd0b5911d5edf7 — Added
+### change:10fd493b3591d0f029efb287 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -452,7 +340,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `220c902ff79979d5ab467d66ce4cdfedc61543eccf1ed2da489d6fe77847421f`
+**新段落** SHA-256 `36e98b1f096095b1bdaa1125b81e8771975e38923959c403505a72f2db9e6391`
 
 ```text
 先生醫藥基金會亞東紀念醫院、
@@ -470,12 +358,12 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 + 國軍花蓮總醫院附設民眾診療服務處、臺北榮民總醫院玉里分院、臺北榮民總醫院鳳林分院、
 + 臺北榮民總醫院臺東分院、
 + 三軍總醫院澎湖分院附設民眾診療服務處。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 適用的保單有哪些?
+* 適用的保單有哪些?
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:3957243f19297805d87e6fc6 — Added
+### change:64bf18d148cefb061a6e92da — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -489,16 +377,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `bc9b242e6e1a3ba30017e64bb8702037a068d621abb4c978e3d9587fd3c9c2c6`
+**新段落** SHA-256 `ec3e9694b697b9cdda1a4354cf5c4bc861d918d7fc34a2e2877a828b8eb678a9`
 
 ```text
 限定有效的個人人身保險契約保單，並排除團體保險、待記名式保單、旅行平安保險。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 適用範圍有哪些？
+* 適用範圍有哪些？
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:5f2bd1e6005b09e2195c40aa — Added
+### change:2b044b08546b95274c9545df — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -520,7 +408,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:c476f6686bb75ceda440a720 — Added
+### change:582338a92badb4fcd5dd7b40 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -542,7 +430,7 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:01d82a5792ab713000a08a2b — Added
+### change:ab8e8b7c2509db940e6dc52b — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -556,16 +444,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `cac3e534bf88b612932e6ec9d3e6261e836bd10cd3420d1e3f66b232bab26615`
+**新段落** SHA-256 `b60a49ead04ca5f5537f598a0a855cd08062f7d17af8fcc1b88f5cff318e90ae`
 
 ```text
 當次理賠核付金額逾新台幣30萬元時，該保險公司（含首家）將待理賠申請文件送達首家保險公司後，才會進行理賠核付。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 辦理方式有哪些呢？
+* 辦理方式有哪些呢？
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:38871232d7968a6ba497b6ae — Added
+### change:5956a981a0a950928328d9cd — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -579,16 +467,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `669f25eb2e6f7c26a8542b1eb8976807652d7a8839f5765fd4b8229ca4a6abc2`
+**新段落** SHA-256 `5f22a7d14ab01fcc7db84e787cbceae27d8eb9ab7b62dac36f606bba395900db`
 
 ```text
 法國巴黎人壽官網[巴黎線上](https://my.cardif.com.tw/B2C/)或法國巴黎人壽APP；或透過[壽險公會保險存摺](https://insurtech.lia-roc.org.tw/)或保險存摺APP，指定法國巴黎人壽為首家理賠申請公司。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 如何進行數位身分驗證？
+* 如何進行數位身分驗證？
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:109acbd65f4c995c9aa48fb6 — Added
+### change:7e4fd11c29e9952d18abd1e2 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -602,16 +490,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `96bce609d4e2115ca20241a2975975c603b7d49c768d5f16fe3831bcac5ea58f`
+**新段落** SHA-256 `6aba97caf02b8217124f1e3053876af062011e38ba8bda6b944b77a863bb0bf7`
 
 ```text
 壽險公會提供兩種身分驗證方式，一種是強化版身分識別，利用MID驗證(被保險人本人手機及電信公司)及內政部國民身分證領補換查驗作業雙重比對；另一種方式則是註冊保險存摺後利用保險存摺帳號密碼驗證。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 後續其他保險公司還會請我補資料嗎？
+* 後續其他保險公司還會請我補資料嗎？
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:16f954c7b30863881376da82 — Added
+### change:a3ec7e95cfc819b53e6306e0 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -625,16 +513,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `266e24def7927ed341fe79c96a50952719769e4a6a2aaa2b77f189a2c688b7f9`
+**新段落** SHA-256 `3325a75c6eb58685dfaf1b48c0c7053d5d9c51db47c1b65908daf319508db500`
 
 ```text
 後續實際作業流程，將依照各保險公司內部作業規則審核辦理。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 要如何知道我申請案件轉送各保險公司的處理進度？
+* 要如何知道我申請案件轉送各保險公司的處理進度？
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:7192eadd93833286062f01f6 — Added
+### change:22c29f034a7e1606589c7781 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending
@@ -648,16 +536,16 @@ Modified 為同節唯一文字相似配對；Added／Removed 可能含抽取差�
 無（詳見分類；失敗不代表內容刪除）
 ```
 
-**新段落** SHA-256 `ef1704fb41ed79b44493a7cdfa7ae182cf96eca525e5765c3979392f2b3a255c`
+**新段落** SHA-256 `f80180a1b6b3dd6b5c0dca4c5e8b5c9d110f53b01187ecf6d2350502d488bea8`
 
 ```text
 各轉收保險公司會主動通知保戶案件處理狀況，保戶也可以撥打各轉收保險公司0800客服專線查詢。
-* *![](/o/tw.com.cardif.life.theme/images/icon-download1.png)* 請問有規定首家保險公司多久之內要轉送給其他公司嗎？
+* 請問有規定首家保險公司多久之內要轉送給其他公司嗎？
 ```
 
 逐筆核對原文、條件與對應知識；未批准不可採用。
 
-### change:3fb00247974a5f8205ec6ac7 — Added
+### change:757464a908ef698a77acfe00 — Added
 
 來源：snapshot:41040466284b7df07333 https://life.cardif.com.tw/zh/a319
 擷取：2026-10-21T11:00:49.505294+00:00；審核：pending

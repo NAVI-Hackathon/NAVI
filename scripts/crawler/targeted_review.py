@@ -28,6 +28,10 @@ def digest(value):
 def normalize(text):
     # Preserve numbers, negation, punctuation, table/paragraph boundaries and order.
     text = unicodedata.normalize('NFC', text).replace('\r\n', '\n').replace('\r', '\n')
+    text = re.sub(r'\*?!\[\]\(/o/tw\.com\.cardif\.life\.theme/images/icon-download1\.png\)\*?', '', text)
+    text = re.sub(r'(?m)^#{1,6}\s+[a-z0-9]+(?:\\?_wc)(?:\\?_[a-z0-9]+)+[ \t]*$', '', text)
+    text = re.sub(r'(?m)^# 保戶服務[ \t]*$', '', text)
+    text = re.sub(r'(?m)^\* \[首頁\]\([^)]*\)(?:\s+\* \[[^\]]*\]\([^)]*\))*[ \t]*$', '', text)
     return re.sub(r'\n{3,}', '\n\n', '\n'.join(re.sub(r'[ \t]+', ' ', line).strip() for line in text.split('\n'))).strip()
 
 
@@ -216,8 +220,11 @@ def main():
             if datetime.fromisoformat(page['retrievedAt'].replace('Z', '+00:00')).utcoffset() is None:
                 raise ValueError('Snapshot retrieval time must include a timezone')
             if page['extractionStatus'] == 'ok':
-                if page['normalizedContentSha256'] != digest(normalize(page['content_md'])):
+                if page['normalizedContentSha256'] != digest(page['content_md']):
                     raise ValueError('Snapshot content hash mismatch')
+                page.setdefault('captureNormalizedContentSha256', page['normalizedContentSha256'])
+                page['content_md'] = normalize(page['content_md'])
+                page['normalizedContentSha256'] = digest(page['content_md'])
                 page['paragraphs'] = paragraphs(page['content_md'])
                 page['sectionIds'] = list(dict.fromkeys(r['sectionId'] for r in page['paragraphs']))
         robots_bytes = (capture / 'robots.txt').read_bytes()
@@ -243,6 +250,14 @@ def main():
     (out / 'pages.jsonl').write_text(''.join(json.dumps(p, ensure_ascii=False) + '\n' for p in pages), encoding='utf-8')
     previous = {page['url']: page for page in old_pages}
     changes = [change for page in pages for change in page_diff(previous.get(page['sourceUrl']), page, impacts[page['sourceUrl']])]
+    page_metadata = []
+    for page in pages:
+        old = previous.get(page['sourceUrl'])
+        old_normalized = digest(normalize(old['content_md'])) if old else None
+        page_metadata.append({**{k: v for k, v in page.items() if k not in ('content_md', 'paragraphs', 'links', 'pdfs')},
+                              'previousRawContentSha256': old.get('sha256') if old else None,
+                              'previousNormalizedContentSha256': old_normalized,
+                              'normalizedContentChanged': old_normalized != page['normalizedContentSha256'] if old and page['extractionStatus'] == 'ok' else None})
     summary = {'pages': len(pages), 'successful': sum(p['extractionStatus'] == 'ok' for p in pages),
                'failed': sum(p['extractionStatus'] != 'ok' for p in pages),
                'categories': {key: sum(c['category'] == key for c in changes) for key in
@@ -253,7 +268,7 @@ def main():
               'baselineSha256': digest(BASELINE.read_bytes()), 'sourceCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'robotsSha256': digest(robots_bytes), 'userAgent': UA, 'delaySeconds': delay,
               'derivedFromSnapshot': args.from_snapshot, 'runnerSha256': digest(Path(__file__).read_bytes()),
-              'summary': summary, 'pages': [{k: v for k, v in page.items() if k not in ('content_md', 'paragraphs', 'links', 'pdfs')} for page in pages],
+              'summary': summary, 'pages': page_metadata,
               'changes': changes}
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(render_report(report), encoding='utf-8')

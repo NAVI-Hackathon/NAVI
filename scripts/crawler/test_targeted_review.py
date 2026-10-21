@@ -24,6 +24,18 @@ class ReviewTests(unittest.TestCase):
         self.assertNotEqual(review.digest(review.normalize(value)), review.digest(review.normalize(value.replace('10', '15'))))
         self.assertNotEqual(review.digest(review.normalize(value)), review.digest(review.normalize(value.replace('不可', '可以'))))
 
+    def test_only_known_decorative_icon_and_machine_headings_are_removed(self):
+        value = '## a319\\_wc\\_02\n\n10 日內不可省略。\n\n![](/o/tw.com.cardif.life.theme/images/icon-download1.png)\n\n![申請條件](/content/conditions.png)'
+        normalized = review.normalize(value)
+        self.assertNotIn('a319', normalized)
+        self.assertNotIn('icon-download1', normalized)
+        self.assertIn('10 日內不可省略。', normalized)
+        self.assertIn('![申請條件](/content/conditions.png)', normalized)
+
+    def test_breadcrumbs_and_generic_banner_do_not_become_knowledge(self):
+        value = '# 保戶服務\n\n* [首頁](./default) * [保戶服務](./a314) * [理賠](#)\n\n10 日內須寄回正本。'
+        self.assertEqual(review.normalize(value), '10 日內須寄回正本。')
+
     def test_paragraph_ids_do_not_depend_on_array_positions(self):
         before = review.paragraphs('# 地址\n\n原文一\n\n原文二')
         after = review.paragraphs('# 地址\n\n新段落\n\n原文一\n\n原文二')
