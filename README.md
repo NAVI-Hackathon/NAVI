@@ -173,7 +173,7 @@ npm run test:ai           # 相容舊指令：現在執行 Local evaluation
 
 ## Local Knowledge Search
 
-共用入口：`shared/knowledge/index.js` 的 `searchKnowledge(query)`，保留 `status/results/related/highlights/hotline`、原條目 ID 與 `destination`。來源只讀 `data/cardif_seed_data.json`，不即時爬取。Frontend 現有 Adapter 仍保留，由 A 依遷移指南接入；本次沒有修改 UI。
+共用入口：`shared/knowledge/index.js` 的 `searchKnowledge(query)`，保留 `status/results/related/highlights/hotline`、原條目 ID 與 `destination`。資料由 `data/cardif_seed_data.json` 生成公開白名單投影 `data/cardif_public_data.json`，執行時不即時爬取。Frontend 與 Backend 已共用引擎，既有 Adapter 保持相容。
 
 Backend 本地公共搜尋：`GET /api/knowledge/search?query=門診理賠文件`。`GET /api/knowledge?query=改地址` 同時保留既有 `answer/sources/found/isMock`，公共結果附搜尋欄位；Legacy 班機相容內容仍標示 prototype／isMock，不混入公共搜尋。既有 `POST /api/knowledge/answer` 的可選 Provider 說明能力保留；本地搜尋與評估不會呼叫它或 Gemini。
 
@@ -276,3 +276,5 @@ Free Tier 價格與配額由供應商決定，請核對 [Google pricing](https:/
 ## Public Knowledge Build Boundary
 
 Browser／Mock Site 只讀生成的 `data/cardif_public_data.json`。資料更新後執行 `npm run knowledge:project`；Build 自動驗證公開欄位白名單與掃描產物，拒絕 internal metadata 或已排除筆記。`data/private/` 僅本地受控備份，禁止提交／匯入／部署。詳見 [Release 與 Knowledge Refresh 安全記錄](docs/release-knowledge-refresh-2026-10-21.md)。新擷取資料須逐筆人工批准，不能自動覆蓋正式 Knowledge。
+
+Release 1 已部署 A 的可信來源 UI 與公開資料安全修正，精確應用 SHA、公開驗收、效能與回復方式見 [2026-10-21 驗收](docs/release1-validation-2026-10-21.md)。定向官網擷取只產生 [候選 Diff](docs/knowledge-crawl-diff-2026-10-21.md) 與 [逐筆審核清單](data/crawl/candidate-2026-10-21/review-checklist.json)；尚未採用新知識，Release 2 尚未部署。

@@ -1,0 +1,570 @@
+{
+  "release1Commit": "64ceb17b05d9b90b4edc95a2f737707bde8f4d88",
+  "pullRequest": "https://github.com/NAVI-Hackathon/NAVI/pull/6",
+  "artifactSha256": "c7d06f335c1edd16520a90711c329d6225e854b3b50e1ec662eed42436bdb35b",
+  "activeRelease": "/opt/navi-hackathon/releases/64ceb17b05d9-1792580773",
+  "rollbackRelease": "/opt/navi-hackathon/releases/448321b7a778-1792580188",
+  "applicationValidation": {
+    "evidenceCommit": "7b87833170e74996b4c4d298e4a04c6ca96e95a0",
+    "applicationDiffFromDeployedCommit": false,
+    "jobs": [
+      {
+        "id": "tests",
+        "command": [
+          "npm",
+          "test"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 3287.156209,
+        "logSha256": "65ce113d248533f8b60588238c002c6a27eb84153351c65587fc193a14de6c6c"
+      },
+      {
+        "id": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 2708.1396669999995,
+        "logSha256": "175f844d2f68f6f4c30881cdfaf6f0905ee44aa3c0d40278e20355c9a63a82a5"
+      },
+      {
+        "id": "build",
+        "command": [
+          "npm",
+          "run",
+          "build:all"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 8798.958833,
+        "logSha256": "e896ecbe2b4bc9d473746ae2bcddfed72840d662952f19353707029c22f1f86d"
+      },
+      {
+        "id": "legacy",
+        "command": [
+          "npm",
+          "run",
+          "eval:ai:local"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 998.3668339999986,
+        "logSha256": "a66e719027a5a3256ee71267f6563bed6ab8ea388410705f19cb42527560272d"
+      },
+      {
+        "id": "hospitalization",
+        "command": [
+          "npm",
+          "run",
+          "eval:hospitalization"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 876.2958330000001,
+        "logSha256": "e9f7c1ee4673b45f67ded2d039729838dc798b0451bbad553a704adda7c4c71d"
+      },
+      {
+        "id": "knowledge",
+        "command": [
+          "npm",
+          "run",
+          "eval:knowledge"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 384.7786669999987,
+        "logSha256": "b297babbb10123698935e3ac3bbe4ff2f9b2ed81eeda43ae587c4c0a5528d91f"
+      },
+      {
+        "id": "shared-browser",
+        "command": [
+          "npm",
+          "run",
+          "test:shared:browser"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 350.86412500000006,
+        "logSha256": "c5ee8f708e65f9f822db47ee4d5ed2b41b2b7b9d7e2d879e689240e16ad9cd06"
+      },
+      {
+        "id": "competition-e2e",
+        "command": [
+          "node",
+          "--import",
+          "./apps/api/test/networkGuard.js",
+          "scripts/evidence/competition-e2e.js"
+        ],
+        "exitCode": 0,
+        "signal": null,
+        "elapsedMs": 293.78337499999907,
+        "logSha256": "a58369ae1d676db6e392310352bb31f86a3f913f6755bfc8d1ae1013d8c6fa9b"
+      }
+    ],
+    "webTests": 41,
+    "apiTests": 154,
+    "crawlerTests": 19,
+    "dedicatedManagerTests": 4,
+    "builderTests": 2,
+    "typecheckMock": "passed"
+  },
+  "evaluations": {
+    "legacy": {
+      "scope": "local",
+      "total": 120,
+      "passed": 120,
+      "failed": 0,
+      "skipped": 0,
+      "requests": 0,
+      "groups": {
+        "intent": {
+          "total": 30,
+          "passed": 30,
+          "failed": 0
+        },
+        "document": {
+          "total": 20,
+          "passed": 20,
+          "failed": 0
+        },
+        "consistency": {
+          "total": 30,
+          "passed": 30,
+          "failed": 0
+        },
+        "knowledge": {
+          "total": 20,
+          "passed": 20,
+          "failed": 0
+        },
+        "security": {
+          "total": 20,
+          "passed": 20,
+          "failed": 0
+        }
+      },
+      "freshLiveSamples": 0,
+      "cachedSamples": 0,
+      "liveLatencyMs": {
+        "p50": null,
+        "p95": null
+      },
+      "interpretation": "Deterministic / scripted-demo fixtures only; not Gemini model accuracy.",
+      "goldenPath": [
+        35,
+        70,
+        90,
+        100
+      ]
+    },
+    "hospitalization": {
+      "scope": "local",
+      "total": 76,
+      "passed": 76,
+      "failed": 0,
+      "skipped": 0,
+      "requests": 0,
+      "groups": {
+        "intent": {
+          "total": 15,
+          "passed": 15,
+          "failed": 0
+        },
+        "hospital": {
+          "total": 12,
+          "passed": 12,
+          "failed": 0
+        },
+        "document": {
+          "total": 20,
+          "passed": 20,
+          "failed": 0
+        },
+        "consistency": {
+          "total": 12,
+          "passed": 12,
+          "failed": 0
+        },
+        "workflow": {
+          "total": 17,
+          "passed": 17,
+          "failed": 0
+        }
+      },
+      "freshLiveSamples": 0,
+      "cachedSamples": 0,
+      "liveLatencyMs": {
+        "p50": null,
+        "p95": null
+      },
+      "interpretation": "Deterministic / scripted-demo fixtures only; not Gemini model accuracy.",
+      "metrics": {
+        "intentClassification": {
+          "passed": 15,
+          "total": 15,
+          "passRate": 1
+        },
+        "negationDetection": {
+          "passed": 5,
+          "total": 5,
+          "passRate": 1
+        },
+        "hospitalMatching": {
+          "passed": 12,
+          "total": 12,
+          "passRate": 1
+        },
+        "documentValidation": {
+          "passed": 20,
+          "total": 20,
+          "passRate": 1
+        },
+        "consistencyDetection": {
+          "passed": 12,
+          "total": 12,
+          "passRate": 1
+        },
+        "workflowBoundary": {
+          "passed": 17,
+          "total": 17,
+          "passRate": 1
+        },
+        "unsupportedHandling": {
+          "passed": 10,
+          "total": 10,
+          "passRate": 1
+        },
+        "mockLiveBoundary": {
+          "passed": 4,
+          "total": 4,
+          "passRate": 1
+        }
+      },
+      "geminiRequests": 0,
+      "paidApiCalls": 0,
+      "blockedExternalAttempts": 0,
+      "goldenPath": [
+        35,
+        70,
+        90,
+        100
+      ]
+    },
+    "knowledge": {
+      "scope": "local_knowledge",
+      "total": 111,
+      "passed": 111,
+      "failed": 0,
+      "newCases": 66,
+      "newRetrievalCases": 56,
+      "metrics": {
+        "top1Accuracy": {
+          "passed": 75,
+          "total": 75,
+          "rate": 1
+        },
+        "top3Recall": {
+          "passed": 75,
+          "total": 75,
+          "rate": 1
+        },
+        "unsupportedQueryRejection": {
+          "passed": 11,
+          "total": 11,
+          "rate": 1
+        },
+        "outOfScopeDetection": {
+          "passed": 15,
+          "total": 15,
+          "rate": 1
+        },
+        "navigationAccuracy": {
+          "passed": 85,
+          "total": 85,
+          "rate": 1
+        },
+        "invalidSourceRate": {
+          "invalid": 0,
+          "total": 195,
+          "rate": 0
+        },
+        "invalidRouteRate": {
+          "invalid": 0,
+          "total": 195,
+          "rate": 0
+        },
+        "latencyMs": {
+          "p50": 0.219,
+          "p95": 0.457,
+          "samples": 101,
+          "scope": "warm local shared retrieval; excludes HTTP and module initialization"
+        }
+      },
+      "geminiRequests": 0,
+      "paidApiCalls": 0,
+      "blockedExternalAttempts": 0,
+      "interpretation": "本地 Snapshot 檢索測試；不是 Gemini 準確率，也不代表理賠資格或結果。"
+    }
+  },
+  "externalSmoke": {
+    "sourceCommit": "64ceb17b05d9b90b4edc95a2f737707bde8f4d88",
+    "checks": [
+      "latest-build:web/index.html",
+      "latest-build:mock/index.html",
+      "static-route:/services",
+      "static-route:/services/forms",
+      "static-route:/services/policy-change",
+      "static-route:/services/policy-loan",
+      "static-route:/services/claims",
+      "static-route:/services/online",
+      "static-route:/glossary",
+      "static-route:/faq",
+      "web-route:/demo",
+      "web-route:/embed",
+      "health-demo",
+      "canonical-multi-step-plan",
+      "navigation-anchor:claim-doc:2",
+      "navigation-anchor:form:claim_1.1.1",
+      "navigation-anchor:service:claim_by_mail",
+      "navigation-url-injection-rejected",
+      "verified-address-evidence",
+      "eligibility-refused",
+      "initial35",
+      "explanation35",
+      "manual-unverified-zero-credit",
+      "diagnosis70",
+      "stale-handoff-rejected",
+      "bank90",
+      "review100",
+      "explanation100",
+      "handoff-redacted",
+      "handoff-confirmed-not-sent",
+      "handoff-replay-rejected",
+      "remove-withdraws70",
+      "reload-persists70",
+      "unsupported-upload-rejected",
+      "untrusted-origin-rejected",
+      "outpatient-not-hospital",
+      "beneficiary-service-ranking"
+    ],
+    "passed": 37,
+    "apiRequests": 23,
+    "readiness": [
+      35,
+      70,
+      90,
+      100
+    ],
+    "responseMs": {
+      "p50": 57.38824999999997,
+      "p95": 143.4252080000001
+    },
+    "liveGeminiRequests": 0,
+    "scope": "external HTTP synthetic demo"
+  },
+  "publicArtifactSecurity": {
+    "sourceCommit": "64ceb17b05d9b90b4edc95a2f737707bde8f4d88",
+    "publicFilesVerified": 88,
+    "bytes": 2908481,
+    "byExtension": {
+      ".js": 19,
+      ".css": 2,
+      ".svg": 6,
+      ".html": 12,
+      ".txt": 49
+    },
+    "privateFindings": 0
+  },
+  "baselineResources": {
+    "epoch": 1792579466.0963764,
+    "apiPid": 30623,
+    "apiRssMiB": 89.21875,
+    "nginxRssMiB": 8.66015625,
+    "memAvailableMiB": 552.09765625,
+    "swapUsedMiB": 19.61328125,
+    "load": [
+      "0.00",
+      "0.00",
+      "0.00"
+    ],
+    "oomKills": 0,
+    "apiEvents": {
+      "low": "0",
+      "high": "0",
+      "max": "0",
+      "oom": "0",
+      "oom_kill": "0",
+      "oom_group_kill": "0"
+    },
+    "restarts": 0
+  },
+  "afterResources": {
+    "epoch": 1792581060.3812785,
+    "sourceCommit": "64ceb17b05d9b90b4edc95a2f737707bde8f4d88",
+    "apiPid": 47771,
+    "apiRssMiB": 87.91015625,
+    "nginxRssMiB": 8.5390625,
+    "memAvailableMiB": 549.88671875,
+    "swapUsedMiB": 19.61328125,
+    "load": [
+      "0.08",
+      "0.03",
+      "0.01"
+    ],
+    "oomKills": 0,
+    "apiEvents": {
+      "low": "0",
+      "high": "0",
+      "max": "0",
+      "oom": "0",
+      "oom_kill": "0",
+      "oom_group_kill": "0"
+    },
+    "restarts": 0,
+    "aiMode": "demo",
+    "allowPaidAI": "false",
+    "hasGeminiKey": false
+  },
+  "crawl": {
+    "summary": {
+      "pages": 8,
+      "successful": 8,
+      "failed": 0,
+      "categories": {
+        "Added": 22,
+        "Modified": 0,
+        "Removed": 0,
+        "Unchanged": 662,
+        "Fetch Failed": 0,
+        "Extraction Failed": 0,
+        "Requires Manual Review": 1
+      },
+      "pendingReview": 23,
+      "adopted": 0,
+      "liveGeminiRequests": 0,
+      "paidApiCalls": 0,
+      "pdfDownloads": 0
+    },
+    "pages": [
+      {
+        "sourceId": "snapshot:a991fbd27fb6e5bac74d",
+        "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+        "title": "保單變更",
+        "retrievedAt": "2026-10-21T11:00:16.890332+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "de3d97e7398981d4daa45e88fcc18b5587ab59ef8ee0cc74b8f643144dbfdaae",
+        "normalizedContentSha256": "4b3b80ddb2f3a1aea0e2ca0f1d1f382ca94ea4029e738c0c8402d14fed06bfa8",
+        "previousRawContentSha256": "577b07173cc59f659899a066700a090b3115a98856c00f885ed38c736c0857e6",
+        "previousNormalizedContentSha256": "4b3b80ddb2f3a1aea0e2ca0f1d1f382ca94ea4029e738c0c8402d14fed06bfa8",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:ce59ef0abeeaecf1890e",
+        "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+        "title": "保單理賠",
+        "retrievedAt": "2026-10-21T11:00:19.123361+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "5615cd914414b08cd25203f8df5f83fd4fb3a29d8b03f6c9dabc39a5fafd1838",
+        "normalizedContentSha256": "a2498ba73f51f2bca3b87b201afcb7dd5e5a41d2b4853a4bcde343776f1aac69",
+        "previousRawContentSha256": "cb5b7050a6eedcb3216778fff99d531b96898e00d735d5bc299bd390b2e9df60",
+        "previousNormalizedContentSha256": "a2498ba73f51f2bca3b87b201afcb7dd5e5a41d2b4853a4bcde343776f1aac69",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:1e80c77e6d7361555bef",
+        "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+        "title": "保單借款",
+        "retrievedAt": "2026-10-21T11:00:30.634296+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "847dbde8ae1ec779b28f5e64719e5fe6c5b9dcbd0ea39fa318ccd88f57cacbb3",
+        "normalizedContentSha256": "edcf28c52050d844602ae00e16e47c9dbb760d429161a87593429da8bafb62a0",
+        "previousRawContentSha256": "801e5ceb0532128f1d9a4031769122b8fe1f1939538fe9ab478d561956b503ad",
+        "previousNormalizedContentSha256": "edcf28c52050d844602ae00e16e47c9dbb760d429161a87593429da8bafb62a0",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:53cf6b6148a3e8b640d0",
+        "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+        "title": "常用表單下載",
+        "retrievedAt": "2026-10-21T11:00:33.908494+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "562802432875cec8817db7c0a6870b8a8f9cd3b62e78a55e832c262e61f5abed",
+        "normalizedContentSha256": "a2c8fce897b99b1eb64853ba7ee40d4b0fc1cd94411b6f0142f203968220fce0",
+        "previousRawContentSha256": "3752a2ebf90ac171a8bac22f5c280ddca0475be96b344d516ae00eddce7b2bad",
+        "previousNormalizedContentSha256": "a2c8fce897b99b1eb64853ba7ee40d4b0fc1cd94411b6f0142f203968220fce0",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:58ad32461008cd2dfc0f",
+        "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+        "title": "網路保險服務",
+        "retrievedAt": "2026-10-21T11:00:36.658232+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "955ae287b5f5b47ee2be139883d438ed0280299b635a2e1f471291c308dce779",
+        "normalizedContentSha256": "00c0fbc0471d58fd917c552af3272e94d6090951548dc6f1318d563b0fa0f9cb",
+        "previousRawContentSha256": "c068a4747da3c79c41b3c359c23fa81ccc2a051dc08092bbc8000795a4f131d5",
+        "previousNormalizedContentSha256": "00c0fbc0471d58fd917c552af3272e94d6090951548dc6f1318d563b0fa0f9cb",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:7e7733c99cc5d754f904",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "title": "秒懂保險專有名詞",
+        "retrievedAt": "2026-10-21T11:00:41.572855+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "135beb591a7c42543b5f3865f1a4455dca4d70a865667306cde360ec53654f4b",
+        "normalizedContentSha256": "2c5edaa055d4421e06f9a78d194cad61a8312b3f423227f964065e2b60777c66",
+        "previousRawContentSha256": "53b8d3b0a4a1fa6127725131a107a5ddd2f306a590b7b656d785609d5f7fc2e9",
+        "previousNormalizedContentSha256": "2c5edaa055d4421e06f9a78d194cad61a8312b3f423227f964065e2b60777c66",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:30b8a9d025324f3caa8b",
+        "sourceUrl": "https://life.cardif.com.tw/zh/a3",
+        "title": "常用表單下載",
+        "retrievedAt": "2026-10-21T11:00:46.385935+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "0d291d4ceeace1461a4e979824fc6133261c173af1c3f7438c1ea80f9746cd39",
+        "normalizedContentSha256": "a2c8fce897b99b1eb64853ba7ee40d4b0fc1cd94411b6f0142f203968220fce0",
+        "previousRawContentSha256": "662bd27e5a0bc954ad5da2685c40c128ec98e8f5a5b65def538127fb5353aad4",
+        "previousNormalizedContentSha256": "a2c8fce897b99b1eb64853ba7ee40d4b0fc1cd94411b6f0142f203968220fce0",
+        "normalizedContentChanged": false
+      },
+      {
+        "sourceId": "snapshot:41040466284b7df07333",
+        "sourceUrl": "https://life.cardif.com.tw/zh/a319",
+        "title": "理賠鏈QA",
+        "retrievedAt": "2026-10-21T11:00:49.505294+00:00",
+        "httpStatus": 200,
+        "extractionStatus": "ok",
+        "rawContentSha256": "f769d9ba895dd540bafaf2ac2f185eb0b20f138eb94332010a9bc2f7d1b3ada8",
+        "normalizedContentSha256": "80a42357900e9b2b512ba02448f97be469ce7edf5b4f05a5a2bd3241f8f40a1b",
+        "previousRawContentSha256": null,
+        "previousNormalizedContentSha256": null,
+        "normalizedContentChanged": null
+      }
+    ]
+  },
+  "adoptedKnowledge": [],
+  "release2Deployed": false,
+  "liveGeminiRequests": 0,
+  "paidApiCalls": 0,
+  "newPaidDependencies": 0,
+  "limitations": [
+    "HTTP synthetic-data demo only",
+    "No real Gemini or medical/bank document recognition in this release",
+    "No new official knowledge adopted without human review",
+    "Old public Git history and downloaded caches are not erased"
+  ]
+}
