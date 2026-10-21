@@ -127,18 +127,25 @@ export default function Landing({ analysisPhase, feedback, onStart, onRetry, onC
         </motion.div>
       </section>
 
-      <motion.section className="how-it-works" variants={fadeUp} aria-label="NAVI 如何協助你">
-        {[
-          ['spark', '理解你的情況', '用你自己的話描述，不需要保險術語。'],
-          ['route', '建立服務旅程', '看見目前進度、缺少的資料與下一步。'],
-          ['arrow', '帶你到正確入口', '資料備齊後，前往對的服務繼續辦理。'],
-        ].map(([icon, title, body], i) => (
-          <div key={title} className="how-step">
-            <span className="how-index">{String(i + 1).padStart(2, '0')}</span>
-            <Icon name={icon} size={18} />
-            <div><strong>{title}</strong><p>{body}</p></div>
-          </div>
-        ))}
+      {/* What NAVI does, in three words — each backed by a feature that is actually built. */}
+      <motion.section className="how-it-works" variants={fadeUp} aria-labelledby="how-title">
+        <h2 id="how-title" className="how-title">NAVI 怎麼幫你</h2>
+        <ol className="how-steps">
+          {[
+            ['spark', '理解', '用自己的話描述，NAVI 找出你要辦的服務。', '意圖理解・描述先遮蔽個資'],
+            ['shield', '檢核', '文件分成已取得、需要補件、需要人工確認，原因一看就懂。', '後端規則判定・不判斷理賠'],
+            ['route', '帶你去', '一步一步帶到官網正確的頁面，並附上原文來源。', '可驗證導覽・資料快照摘錄'],
+          ].map(([icon, title, body, tech], i) => (
+            <li key={title} className="how-step">
+              <span className="how-icon"><Icon name={icon} size={18} /></span>
+              <p className="how-index">0{i + 1}</p>
+              <strong>{title}</strong>
+              <p className="how-body">{body}</p>
+              <span className="how-tech">{tech}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="how-note"><Icon name="book" size={13} />所有說明只引用法國巴黎人壽官網公開資料；不提供投保建議，也不判斷能否理賠。</p>
       </motion.section>
     </motion.main>
   );
