@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Icon from '../Icon.jsx';
 import { typeLabels } from '../../../../../shared/knowledge/index.js';
 import SourceEvidence from './SourceEvidence.jsx';
@@ -15,12 +16,16 @@ export function NavigateButton({ destination, onNavigate }) {
  * One official answer. `compact` (assistant panel) shows the summary or the lines most related
  * to the question (`highlights`); otherwise every detail list.
  */
-export default function AnswerCard({ entry, onNavigate, compact = false, highlights = [], headingLevel = 3 }) {
+export default function AnswerCard({ entry, onNavigate, compact = false, expandable = false, highlights = [], headingLevel = 3 }) {
   const Heading = `h${headingLevel}`;
-  const details = !compact ? entry.details
-    : entry.summary ? []
-    : highlights.length ? [{ label: '相關說明', items: highlights }]
-    : entry.details.slice(0, 2).map(d => ({ ...d, items: d.items.slice(0, 3) }));
+  // `expandable` (chat): start with the short version, 看完整說明 shows every detail list.
+  const [expanded, setExpanded] = useState(false);
+  const short = compact && !expanded;
+  // Short version: the lines most related to the question, otherwise the first list — never only a lead-in.
+  const details = !short ? entry.details
+    : highlights.length ? [{ label: '重點', items: highlights.slice(0, 3) }]
+    : entry.details.slice(0, entry.summary ? 1 : 2).map(d => ({ ...d, items: d.items.slice(0, 3) }));
+  const hasMore = expandable && compact && entry.details.some(d => d.items.length) && details.reduce((n, d) => n + d.items.length, 0) < entry.details.reduce((n, d) => n + d.items.length, 0);
   const summary = entry.summary;
   return (
     <article className={`answer-card${compact ? ' answer-card-compact' : ''}`}>
@@ -36,6 +41,11 @@ export default function AnswerCard({ entry, onNavigate, compact = false, highlig
           <ul>{detail.items.map(item => <li key={item}>{item}</li>)}</ul>
         </div>
       ))}
+      {(hasMore || expanded) && (
+        <button type="button" className="link-button answer-more" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
+          {expanded ? '收合' : '看完整說明'}<Icon name="chevron" size={12} className={expanded ? 'is-open' : ''} />
+        </button>
+      )}
       <NavigateButton destination={entry.destination} onNavigate={onNavigate} />
       <SourceEvidence sourceId={entry.id} preferredLines={highlights} fallback={entry.destination.source} />
     </article>

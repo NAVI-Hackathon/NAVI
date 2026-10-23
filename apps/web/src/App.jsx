@@ -11,6 +11,7 @@ import { naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
+import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
 import GuideCard from './components/guide/GuideCard.jsx';
 import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE } from './services/apiJourney.js';
@@ -28,22 +29,26 @@ const errorCopy = {
   AI_PROVIDER_ERROR: ['分析服務暫時無法回應', '請稍後再試一次，或改用示範模式。'],
 };
 
-function feedbackFor(understanding, hotline) {
+// NAVI's chat replies. Answers are quoted from official data; NAVI never writes policy text itself.
+function replyFor(understanding, askedText, hotline) {
   if (understanding.meta.outcome === 'clarification') {
-    return { kind: 'clarification', title: '我還需要一些資訊', body: '可以再多描述一點嗎？例如發生了什麼事、你想處理哪一件事。' };
+    return { kind: 'note', tone: 'info', title: '我還需要一些資訊', body: '可以再多描述一點，或直接選一個：', followUp: followUpForClarification(askedText) };
   }
   return {
-    kind: 'preview',
-    title: serviceLabel(understanding.data.serviceType),
+    kind: 'note', tone: 'info', title: serviceLabel(understanding.data.serviceType),
     body: `${understanding.data.summary} 官網資料中沒有找到這項需求的說明，你可以換個方式描述，或洽客服專線 ${hotline}。`,
+    followUp: followUpForRefusal(),
   };
 }
 
 // NAVI only quotes the official site: no product advice, no judging whether a claim will be paid.
-const guardFeedback = hotline => ({
-  kind: 'guard', title: '這個問題需要由專人協助',
-  body: `NAVI 只根據法國巴黎人壽官網公開資料提供說明，不提供投保建議，也無法判斷能否理賠或理賠金額。請洽客服專線 ${hotline}。`,
+const guardReply = hotline => ({
+  kind: 'note', tone: 'guard', title: '這個問題需要由專人協助',
+  body: `NAVI 只根據官網公開資料說明，不提供投保建議，也無法判斷能否理賠或理賠金額。請洽客服專線 ${hotline}。`,
+  followUp: followUpForRefusal(),
 });
+
+const welcome = () => [{ id: 'welcome', role: 'navi', kind: 'welcome' }];
 
 function wait(ms, signal) {
   return new Promise((resolve, reject) => {
@@ -62,7 +67,8 @@ export default function App() {
   // so the page opens straight on the workspace instead of flashing the landing page.
   const [resuming, setResuming] = useState(() => Boolean(service.hasStoredJourney?.()));
   const [analysisPhase, setAnalysisPhase] = useState(null);
-  const [feedback, setFeedback] = useState(null);
+  const [messages, setMessages] = useState(welcome); // the chat on the landing page
+  const messageId = useRef(0);
   const [docStates, setDocStates] = useState({});
   const [dialog, setDialog] = useState(null);
   const [toast, setToast] = useState(null);
@@ -73,7 +79,6 @@ export default function App() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
-  const [landingKey, setLandingKey] = useState(0);
   const systemReduced = useReducedMotion();
   const host = useHostBridge(embedded);
   const reduced = reduceMotion || systemReduced;
@@ -116,7 +121,7 @@ export default function App() {
     setAnalysisPhase(null);
     history.replaceState(null, '', location.pathname + location.search);
     setView('landing');
-    setFeedback({ kind: 'expired', title: '這份服務旅程已失效', body: `${JOURNEY_EXPIRED_MESSAGE}描述你的情況，就能建立新的服務旅程。` });
+    say({ kind: 'note', tone: 'info', title: '這份服務旅程已失效', body: `${JOURNEY_EXPIRED_MESSAGE}描述你的情況，就能建立新的服務旅程。` });
   }, [service]);
 
   // Formal mode keeps only the journey id in the browser; read the journey back after a reload.
@@ -163,22 +168,29 @@ export default function App() {
     window.scrollTo(0, 0);
   }
 
-  async function start(text) {
+  /** Append a chat message (NAVI by default). */
+  function say(message) {
+    const id = `m${++messageId.current}`;
+    setMessages(list => [...list, { role: 'navi', ...message, id }]);
+  }
+
+  /**
+   * One chat turn. `label` is what the user's bubble shows (an option button's label); `text` is what is
+   * analysed — for follow-up options it carries the earlier context too. The server still decides.
+   */
+  async function send(text, label = text) {
     analysisCtl.current?.abort();
     const ctl = new AbortController();
     analysisCtl.current = ctl;
-    setFeedback(null);
-    const showFeedback = next => {
-      setAnalysisPhase(null);
-      setFeedback(next);
-      requestAnimationFrame(() => document.getElementById('feedback-title')?.focus());
-    };
+    say({ role: 'user', text: label });
+    const reply = next => { setAnalysisPhase(null); say(next); };
     // Official-site answers are searched locally; refused questions never reach the AI.
     const knowledge = searchKnowledge(text);
-    if (knowledge.status === 'out_of_scope') { showFeedback(guardFeedback(knowledge.hotline)); return; }
+    if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return; }
     const answered = knowledge.status === 'answered';
+    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text) });
     setAnalysisPhase(0);
-    const step = reduced ? 0 : 640;
+    const step = reduced ? 0 : 520;
     const startedAt = performance.now();
     try {
       // 住院醫療理賠 opens the full journey; other services show the official answers when there are any.
@@ -187,23 +199,20 @@ export default function App() {
       await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
       setAnalysisPhase(1);
       await wait(step, ctl.signal);
-      if (!result.snapshot) {
-        showFeedback(answered ? { kind: 'answers', result: knowledge } : feedbackFor(result.understanding, knowledge.hotline));
-        return;
-      }
+      if (!result.snapshot) { reply(answered ? answers() : replyFor(result.understanding, text, knowledge.hotline)); return; }
       setAnalysisPhase(2);
       await wait(step, ctl.signal);
       setDocStates({});
       setTab('journey');
       setSnapshot(result.snapshot);
-      setAnalysisPhase(null);
-      goWorkspace();
+      // The journey opens as a card in the chat; the user enters the workspace from there.
+      reply({ kind: 'journey', journeyId: result.snapshot.journey.id });
     } catch (error) {
       if (ctl.signal.aborted) return;
       // The official answers do not depend on the AI service, so they still help when it is down.
-      if (answered) { showFeedback({ kind: 'answers', result: knowledge, notice: 'AI 分析暫時無法使用，以下是官網資料中的相關說明。' }); return; }
+      if (answered) { reply(answers('AI 分析暫時無法使用，以下是官網資料中的相關說明。')); return; }
       const [title, body] = errorCopy[error?.code] ?? errorCopy.DEFAULT;
-      showFeedback({ kind: 'error', title, body });
+      reply({ kind: 'note', tone: 'error', title, body, retry: { text, label } });
     }
   }
 
@@ -343,11 +352,10 @@ export default function App() {
     service.reset();
     setSnapshot(null);
     setAnalysisPhase(null);
-    setFeedback(null);
+    setMessages(welcome());
     setDocStates({});
     setDialog(null);
     setGuide(null);
-    setLandingKey(k => k + 1);
     goLanding();
     notify('已重新開始，可以描述新的情況。');
   }
@@ -389,8 +397,9 @@ export default function App() {
               />
             ) : (
               <Landing
-                key={`landing-${landingKey}`} mode={mode} analysisPhase={analysisPhase} feedback={feedback}
-                onStart={start} onRetry={start} onClearFeedback={() => setFeedback(null)} onNavigate={navigate}
+                key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot}
+                onSend={send} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
           </AnimatePresence>
