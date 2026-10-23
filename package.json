@@ -40,12 +40,16 @@
     "test:shared:browser": "node scripts/evidence/browser-build.js",
     "knowledge:project": "node scripts/knowledge/project-public.js",
     "knowledge:check": "node scripts/knowledge/project-public.js --check",
-    "security:public": "node scripts/security/public-artifacts.js apps/web/dist apps/mock-site/.next/static apps/mock-site/.next/server/app"
+    "security:public": "node scripts/security/public-artifacts.js apps/web/dist apps/mock-site/.next/static apps/mock-site/.next/server/app",
+    "test:layout": "playwright test -c tests/layout/playwright.config.js"
   },
   "engines": {
     "node": ">=22.12"
   },
   "dependencies": {
     "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }

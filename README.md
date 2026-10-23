@@ -156,6 +156,7 @@ npm run build:all         # 兩站各自 build
 npm run lint              # Mock Website 既有 ESLint
 npm run typecheck:mock    # Mock Website TypeScript
 npm run test:sites        # 先啟動 dev:all；雙站路由、資產、API proxy smoke checks
+npm run test:layout       # 手機版面回歸（Playwright Chromium，自動在 4180 啟動 /demo）；首次執行前 npx playwright install chromium
 npm run preview           # 只預覽 build，不會自動提供 API；需另啟 API / 設定部署 proxy
 npm run eval:ai:local     # 保留 120 個 Legacy 合成 fixture / deterministic cases，零 Gemini 請求
 npm run eval:hospitalization # 保留 76 個住院案例、8 項 metrics、loopback HTTP，零 Gemini 請求

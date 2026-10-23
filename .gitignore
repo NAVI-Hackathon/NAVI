@@ -75,3 +75,7 @@ apps/api/.env
 
 # Python deployment / crawler test bytecode.
 /scripts/**/__pycache__/
+
+# Playwright layout tests
+test-results/
+playwright-report/
