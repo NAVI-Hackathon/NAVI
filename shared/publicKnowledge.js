@@ -18,8 +18,8 @@ export const PublicKnowledgeSchema = z.object({
   })),
   online_service_features: z.record(z.string(), strings),
   claim_document_requirements: z.record(z.string(), strings), claim_general_rules: strings,
-  forms: z.array(z.object({ id: z.string(), name: z.string(), note: z.string().optional(), page: url.optional(), url: url.optional() })),
-  faq: z.array(z.object({ q: z.string(), a: z.string(), source: url })),
+  forms: z.array(z.object({ id: z.string(), name: z.string(), note: z.string().optional(), page: url.optional(), url: url.optional(), retrievedAt: date.optional() })),
+  faq: z.array(z.object({ q: z.string(), a: z.string(), source: url, retrievedAt: date.optional() })),
   contacts: z.object({ hotline: z.string(), address: z.string(), outbound_call_number: z.string() }),
   glossary: z.array(z.object({
     id: z.string(), term: z.string(), definition: z.string(), category: z.string(), keywords: strings,
