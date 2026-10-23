@@ -7,8 +7,8 @@ const officialUrl = z.url().regex(/^https:\/\/life\.cardif\.com\.tw\//);
 export const cardif = z.object({
   meta: z.object({ crawled: z.iso.date() }),
   services: z.array(z.object({ id: z.string(), name: z.string(), category: z.string(), url: officialUrl, channels: strings, documents: strings, notes: strings, keywords: strings.optional(), partner_hospitals: strings.optional(), precheck_questions: strings.optional(), requires_login: z.boolean().optional(), related_forms: strings.optional(), apply_time: z.string().nullable().optional(), effective_time: z.string().nullable().optional(), online_available: z.string().nullable().optional(), online_requirements: strings.optional(), retrievedAt: z.iso.date().optional() })),
-  forms: z.array(z.object({ id: z.string(), name: z.string(), note: z.string().optional(), page: officialUrl.optional(), url: officialUrl.optional() })),
-  faq: z.array(z.object({ q: z.string(), a: z.string(), source: officialUrl })),
+  forms: z.array(z.object({ id: z.string(), name: z.string(), note: z.string().optional(), page: officialUrl.optional(), url: officialUrl.optional(), retrievedAt: z.iso.date().optional() })),
+  faq: z.array(z.object({ q: z.string(), a: z.string(), source: officialUrl, retrievedAt: z.iso.date().optional() })),
   claim_document_requirements: z.record(z.string(), strings), claim_general_rules: strings,
   contacts: z.object({ hotline: z.string() }),
   glossary: z.array(z.object({ id: z.string().regex(/^[a-z]+(?:-[a-z]+)*$/), term: z.string().min(1), definition: z.string().min(1), category: z.string(), keywords: strings, sourceType: z.literal('public_site_snapshot'), sourceTitle: z.string(), sourceUrl: officialUrl, retrievedAt: z.iso.date() }).strict()).default([]),
