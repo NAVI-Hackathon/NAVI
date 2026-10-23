@@ -612,7 +612,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .guide-actions .button { min-height: 44px; }
 }
 [data-embedded="true"] .guide-card { left: 10px; right: 10px; bottom: 10px; width: auto; }
-[data-guide="true"] .app-shell { padding-bottom: 320px; }
+[data-guide="true"]:not([data-view="chat"]) .app-shell { padding-bottom: 320px; }
 
 /* Trusted source: title, date and freshness; expands to the snapshot excerpt and links */
 .source-evidence { margin-top: 10px; border-top: var(--border); }
@@ -656,8 +656,22 @@ button:active:not(:disabled) { transform: scale(0.98); }
    Conversation above, input fixed at the bottom. Brand green (mock insurer site) marks what the
    user does — their bubbles, option buttons and the input — on the dark NAVI canvas. */
 :root { --chat-brand: #00915a; --chat-brand-strong: #00744a; --chat-brand-soft: rgba(0, 145, 90, 0.14); --chat-brand-line: rgba(0, 145, 90, 0.6); }
-.chat { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 820px; margin: 0 auto; padding: 28px 24px 0; }
-.chat-thread { flex: 1; display: flex; flex-direction: column; gap: 18px; padding-bottom: 40px; }
+.chat { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; }
+/* One screen tall (visual viewport, so the keyboard never hides the input); only the thread scrolls. */
+[data-view="chat"] body { overflow: hidden; }
+[data-view="chat"] .app-shell { height: var(--app-height, 100dvh); min-height: 0; overflow: hidden; }
+.chat-thread { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 28px 24px 0; scrollbar-width: thin; scrollbar-color: #353f45 transparent; }
+.chat-thread-inner { display: flex; flex-direction: column; gap: 18px; max-width: 772px; margin: 0 auto; padding-bottom: 40px; }
+.chat-dock { flex: none; padding: 10px 24px calc(10px + env(safe-area-inset-bottom)); background: var(--color-canvas); box-shadow: 0 -18px 24px -8px var(--color-canvas); }
+.chat-dock-inner { max-width: 772px; margin: 0 auto; }
+/* In the dock the guide card is part of the layout, capped so the input always stays visible. */
+.chat-dock .guide-card, .chat-dock .guide-preparing { position: static; width: 100%; margin: 0 0 10px; transform: none; }
+.chat-dock .guide-card { display: flex; flex-direction: column; max-height: min(48vh, calc(var(--app-height, 100dvh) * 0.5)); }
+/* When space is short only the step content scrolls; the header and 上一步／下一步 always stay reachable. */
+.chat-dock .guide-card > :not(.guide-body) { flex: none; }
+.chat-dock .guide-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+@media (max-height: 640px) { .chat-dock .guide-disclaimer { display: none; } }
+.chat-dock .guide-preparing { width: max-content; margin: 0 auto 10px; }
 .msg { display: flex; align-items: flex-start; gap: 10px; }
 .msg-user { justify-content: flex-end; }
 .msg-user .msg-bubble { max-width: 82%; padding: 10px 15px; border-radius: 18px 18px 4px 18px; background: var(--chat-brand-strong); color: #fff; font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -689,8 +703,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .chat-journey-title { font-size: 16px; font-weight: 500; color: var(--color-text); }
 .chat-journey-next { font-size: 13px; color: var(--color-text-secondary); }
 .chat-journey-open { grid-column: 1 / -1; justify-self: start; }
-/* The fade above the input keeps clear space between the last message and the box. */
-.chat-composer { position: sticky; z-index: 30; bottom: 0; padding: 32px 0 calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--color-canvas) 70%, rgba(10, 11, 13, 0)); }
+.chat-composer { margin: 0; }
 .chat-composer-box { display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 18px; border: 1.5px solid var(--chat-brand); border-radius: 24px; background: #14181c; box-shadow: 0 0 0 4px rgba(0, 145, 90, 0.12), 0 12px 40px rgba(0, 0, 0, 0.35); }
 .chat-composer-box:focus-within { box-shadow: 0 0 0 4px rgba(0, 145, 90, 0.26), 0 12px 40px rgba(0, 0, 0, 0.35); }
 .chat-composer textarea { flex: 1; min-height: 40px; max-height: 132px; padding: 8px 0; border: 0; background: transparent; resize: none; font-size: 15px; line-height: 1.6; }
@@ -699,18 +712,19 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .chat-send:hover:not(:disabled) { background: var(--chat-brand); }
 .chat-help { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 7px; font-size: 11px; color: var(--color-text-muted); }
 .chat .how-it-works { margin-top: 28px; }
-[data-view="chat"] .guide-card, [data-view="chat"] .guide-preparing { bottom: calc(var(--composer-height, 96px) + 10px); }
-[data-view="chat"] .toast-region { bottom: calc(var(--composer-height, 96px) + 10px); }
+[data-view="chat"] .toast-region { bottom: calc(var(--dock-height, 110px) + 10px); }
 [data-view="chat"][data-guide="true"] .toast-region { top: 20px; bottom: auto; }
 @media (max-width: 767.98px) {
-  .chat { padding: 18px 14px 0; }
+  .chat-thread { padding: 18px 14px 0; }
+  .chat-dock { padding-left: 12px; padding-right: 12px; }
   .msg-user .msg-bubble { max-width: 88%; }
   .msg-navi .msg-bubble { padding: 12px 14px; }
   .msg-avatar { width: 26px; height: 26px; font-size: 12px; }
   .chat-composer textarea { font-size: 16px; } /* 16px keeps iOS from zooming into the field */
   .chat-option { font-size: 13px; }
 }
-[data-embedded="true"] .chat { padding: 14px 12px 0; }
+[data-embedded="true"] .chat-thread { padding: 14px 12px 0; }
+[data-embedded="true"] .chat-dock { padding-left: 10px; padding-right: 10px; }
 .msg-bubble > .chat-options:first-child { margin-top: 0; }
 .chat-question-past { margin: 0; color: var(--color-text-secondary); }
-.chat-end { scroll-margin-bottom: calc(var(--composer-height, 116px) + 24px); }
+.chat-end { scroll-margin-bottom: 8px; }

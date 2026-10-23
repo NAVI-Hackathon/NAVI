@@ -360,6 +360,23 @@ export default function App() {
     notify('已重新開始，可以描述新的情況。');
   }
 
+  // The step-by-step guide: in the chat it sits in the bottom dock above the input (never over it);
+  // on the workspace it floats at the bottom of the screen.
+  const guideLayer = (
+    <AnimatePresence>
+      {guidePending && !guide && (
+        <motion.p key="guide-preparing" className="guide-preparing" role="status"
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
+          <span className="dots" aria-hidden="true"><i /><i /><i /></span>正在準備導覽…
+        </motion.p>
+      )}
+      {guide && (
+        <GuideCard key="guide" guide={guide} embedded={host.connected}
+          onStep={guideStep} onOpen={step => openOnSite(step.destination)} onEnd={endGuide} />
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <MotionConfig reducedMotion={reduceMotion ? 'always' : 'user'}>
       <div className="app-shell">
@@ -398,7 +415,7 @@ export default function App() {
             ) : (
               <Landing
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot}
-                onSend={send} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                dock={guideLayer} onSend={send} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
@@ -428,18 +445,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {guidePending && !guide && (
-            <motion.p key="guide-preparing" className="guide-preparing" role="status"
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
-              <span className="dots" aria-hidden="true"><i /><i /><i /></span>正在準備導覽…
-            </motion.p>
-          )}
-          {guide && (
-            <GuideCard key="guide" guide={guide} embedded={host.connected}
-              onStep={guideStep} onOpen={step => openOnSite(step.destination)} onEnd={endGuide} />
-          )}
-        </AnimatePresence>
+        {view === 'workspace' && snapshot && guideLayer}
 
         <div className="toast-region" aria-live="polite">
           <AnimatePresence>{toast && <Toast key={toast.key} message={toast.message} onDismiss={dismissToast} />}</AnimatePresence>

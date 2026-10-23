@@ -101,10 +101,10 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate
  * NAVI landing as a chat: the conversation scrolls above, the input stays at the bottom.
  * Replies come from the official-site search and the backend; option buttons only send text back.
  */
-export default function Landing({ messages, analysisPhase, snapshot, mode, onSend, onNavigate, onHotline, onOpenWorkspace, ref }) {
+export default function Landing({ messages, analysisPhase, snapshot, mode, dock, onSend, onNavigate, onHotline, onOpenWorkspace, ref }) {
   const [text, setText] = useState('');
   const textarea = useRef(null);
-  const composer = useRef(null);
+  const dockRef = useRef(null);
   const end = useRef(null);
   const reduced = useReducedMotion();
   const busy = analysisPhase !== null;
@@ -117,15 +117,32 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, onSen
     mounted.current = true;
   }, [messages.length, busy, reduced]);
 
-  // Other fixed layers (guide card, toast) sit above the input; share its height.
+  // Layout: the page is exactly one screen tall; the thread scrolls on its own and the bottom dock
+  // (guide card above the input) never moves with it. The height follows the *visual* viewport so the
+  // input stays above the on-screen keyboard (iOS Safari does not shrink 100dvh for the keyboard).
   useLayoutEffect(() => {
-    const node = composer.current;
-    if (!node) return undefined;
     const root = document.documentElement;
-    const observer = new ResizeObserver(() => root.style.setProperty('--composer-height', `${node.offsetHeight}px`));
-    observer.observe(node);
+    const viewport = window.visualViewport;
     root.dataset.view = 'chat';
-    return () => { observer.disconnect(); delete root.dataset.view; };
+    const fit = () => {
+      if (!viewport) return;
+      root.style.setProperty('--app-height', `${Math.round(viewport.height)}px`);
+      if (viewport.offsetTop > 0) window.scrollTo(0, 0); // undo the page pan iOS applies when focusing
+    };
+    fit();
+    viewport?.addEventListener('resize', fit);
+    viewport?.addEventListener('scroll', fit);
+    // The toast sits above the dock, whatever the guide card's current height.
+    const observer = new ResizeObserver(() => root.style.setProperty('--dock-height', `${dockRef.current?.offsetHeight ?? 0}px`));
+    if (dockRef.current) observer.observe(dockRef.current);
+    return () => {
+      viewport?.removeEventListener('resize', fit);
+      viewport?.removeEventListener('scroll', fit);
+      observer.disconnect();
+      delete root.dataset.view;
+      root.style.removeProperty('--app-height');
+      root.style.removeProperty('--dock-height');
+    };
   }, []);
 
   // Grow with the text up to about five lines.
@@ -151,6 +168,7 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, onSen
       exit={{ opacity: 0, transition: transition.exit }}
     >
       <div className="chat-thread" role="log" aria-live="polite" aria-label="與 NAVI 的對話">
+        <div className="chat-thread-inner">
         <AnimatePresence initial={false}>
           {messages.map(message => (
             <motion.div key={message.id} layout="position" variants={fadeUp} initial="hidden" animate="show">
@@ -169,9 +187,14 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, onSen
         </AnimatePresence>
         <div ref={end} className="chat-end" />
         {messages.length === 1 && !embedded && <HowItWorks />}
+        </div>
       </div>
 
-      <form ref={composer} className="chat-composer" onSubmit={submit} aria-busy={busy}>
+      {/* Bottom dock: the guide card (when open) stacks above the input; they never overlap. */}
+      <div ref={dockRef} className="chat-dock">
+      <div className="chat-dock-inner">
+      {dock}
+      <form className="chat-composer" onSubmit={submit} aria-busy={busy}>
         <div className="chat-composer-box">
           <label className="visually-hidden" htmlFor="story-input">輸入訊息</label>
           <textarea
@@ -190,6 +213,8 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, onSen
           {mode === 'demo' ? '示範模式：內容只在這個分頁中比對，不會送出。' : '請勿輸入身分證字號、病歷或帳戶資料。'}
         </p>
       </form>
+      </div>
+      </div>
     </motion.main>
   );
 }
