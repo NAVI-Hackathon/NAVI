@@ -230,7 +230,7 @@ export function knowledgeSource(item) {
   if (!record || record.title !== item.title || record.sourceId !== item.sourceId || record.content !== item.content || !verifyNavigationDestination(item.navigationDestination, item.id) || item.sourceUrl !== record.sourceUrl || item.retrievedAt !== record.retrievedAt) return null;
   return {
     id: record.id, sourceId: record.id, title: record.title, section: record.id, type: 'public_site_snapshot', isMock: false,
-    url: record.sourceUrl, sourceUrl: record.sourceUrl, retrievedAt: record.retrievedAt, dateBasis: record.dateBasis, navigationDestination: record.destination,
+    url: record.sourceUrl, sourceUrl: record.sourceUrl, retrievedAt: record.retrievedAt, navigationDestination: record.destination,
   };
 }
 // Whole evidence lines only, with the historical 1800-character answer bound.
@@ -252,5 +252,5 @@ export function verifyKnowledgeSource(value) {
   const parsed = KnowledgeSourceSchema.safeParse(value);
   if (!parsed.success || parsed.data.type !== 'public_site_snapshot') return false;
   const source = parsed.data, record = byId.get(source.id);
-  return Boolean(record && source.title === record.title && source.section === record.id && source.sourceUrl === record.sourceUrl && source.retrievedAt === record.retrievedAt && (source.dateBasis === undefined || source.dateBasis === record.dateBasis) && verifyNavigationDestination(source.navigationDestination, source.id));
+  return Boolean(record && source.title === record.title && source.section === record.id && source.sourceUrl === record.sourceUrl && source.retrievedAt === record.retrievedAt && verifyNavigationDestination(source.navigationDestination, source.id));
 }
