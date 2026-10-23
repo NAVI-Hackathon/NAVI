@@ -388,8 +388,11 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .tab-indicator { position: absolute; inset: 0; z-index: -1; border-radius: 6px; background: #242b2f; }
 .tab-count { font-size: 9px; color: var(--color-accent); font-variant-numeric: tabular-nums; }
 .mobile-panel { display: grid; gap: 28px; margin-bottom: 28px; }
-.mobile-readiness { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px; }
-.mobile-readiness .next-action { padding: 16px; }
+.mobile-readiness { display: grid; gap: 16px; }
+.mobile-readiness-head { display: flex; align-items: center; gap: 16px; }
+.mobile-readiness-caption { margin-top: 2px; font-size: 14px; color: var(--color-text); }
+.mobile-readiness .next-action { padding: 18px; }
+.mobile-preflight .specialist-link { margin-top: 8px; font-size: 12px; }
 
 /* Modal (original dialog look) */
 .modal-layer { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; }
@@ -449,7 +452,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .brand { gap: 9px; }
   .brand-mark { width: 28px; height: 28px; }
   .wordmark { font-size: 21px; }
-  .wordmark small { font-size: 7px; letter-spacing: 0.01em; }
+  .wordmark small { font-size: 9px; letter-spacing: 0.01em; }
   .app-header-actions { gap: 10px; }
   .demo-banner { padding: 7px 20px; font-size: 10px; }
   .landing { padding: 0 22px; }
@@ -681,3 +684,18 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .guide-preparing { position: fixed; z-index: 55; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid rgba(151, 201, 179, 0.22); border-radius: 999px; background: #14181c; box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45); font-size: 12px; color: var(--color-text-secondary); }
 @media (max-width: 767.98px) { .guide-preparing { left: 0; right: 0; bottom: 16px; width: max-content; margin: 0 auto; } }
 [data-embedded="true"] .guide-preparing { left: 0; right: 0; bottom: 12px; width: max-content; margin: 0 auto; }
+
+/* Phones (and the embedded panel, which uses the phone layout): nothing below 11px, finger-sized targets */
+@media (max-width: 767.98px) {
+  .hero-eyebrow, .eyebrow { font-size: 11px; }
+  .tag, .tab-count, .step-number, .step-state, .live-badge, .strip-note, .safe-note, .ask-note,
+  .modal-footnote, .preflight-counts, .preflight-group h4, .preflight-earned, .source-date, .how-index, .how-tech,
+  .insight-facts dt, .workspace-footer, .readiness-note, .preflight-optional p, .guide-disclaimer, .guide-instruction, .guide-evidence footer { font-size: 11px; }
+  .preflight-detail, .link-button, .next-action-buttons .link-button, .next-action p { font-size: 12px; }
+  .preflight-action { min-height: 38px; padding: 0 14px; font-size: 12px; }
+  .chip { min-height: 40px; }
+  .handoff-card h3, .handoff-status, .handoff-sources span, .handoff-redacted { font-size: 11px; }
+  .handoff-sources a { display: inline-block; padding: 6px 0; font-size: 12px; }
+}
+.mobile-readiness .ring-value strong { font-size: 24px; letter-spacing: -1px; }
+.mobile-readiness .ring-value span { font-size: 11px; }

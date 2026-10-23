@@ -30,7 +30,8 @@ function Mark({ tone }) {
 /**
  * Claim Preflight: what NAVI already has, what is still missing, and what needs a person —
  * each with the reason and the one thing to do next. Items glide between groups as the server
- * updates the journey (shared layoutId per requirement).
+ * updates the journey. Items fade in where they land (no cross-group glide: headings and items
+ * would otherwise move at different times and overlap on small screens).
  */
 export default function PreflightBoard({ journey, explanation, busy, onAction }) {
   const board = buildPreflight(journey, { explanation });
@@ -59,9 +60,8 @@ export default function PreflightBoard({ journey, explanation, busy, onAction })
           <ul>
             <AnimatePresence initial={false}>
               {board[group.key].map(item => (
-                <motion.li key={item.id} layoutId={`preflight-${item.id}`} layout="position" className="preflight-item"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}
-                  transition={transition.layout}>
+                <motion.li key={item.id} className="preflight-item"
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: { duration: 0 } }}>
                   <Mark tone={group.tone} />
                   <div className="preflight-body">
                     <p className="preflight-title">{item.title}{item.earned > 0 && <span className="preflight-earned">+{item.earned}%</span>}</p>

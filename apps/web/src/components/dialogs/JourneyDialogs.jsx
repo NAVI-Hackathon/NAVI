@@ -25,7 +25,8 @@ export function ReviewDialog({ snapshot, onConfirm, onProceed, onClose }) {
     ['醫院', cert.hospitalName],
     ['住院期間', stayText(cert.admissionDate, cert.dischargeDate)],
     ['住院天數', days ? `${days} 天` : null],
-    ['診斷', cert.diagnosis],
+    // The server never extracts clinical details; show the row only when a diagnosis is present.
+    ...(cert.diagnosis ? [['診斷', cert.diagnosis]] : []),
     ['匯款帳戶', bank.bankName ? `${bank.bankName}　${maskAccount(bank.accountLast4)}（${bank.accountHolder}）` : null],
   ];
   return (

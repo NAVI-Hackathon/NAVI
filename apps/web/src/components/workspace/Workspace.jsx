@@ -17,6 +17,12 @@ const mobileTabs = [
   { id: 'assistant', label: 'AI 助手', icon: 'spark' },
 ];
 
+function readinessCaption(journey) {
+  if (journey.currentStage === 'READY_TO_PROCEED') return '資料已準備完成';
+  const missing = journey.requirements.filter(r => r.required && r.status !== 'verified').length;
+  return missing ? `還有 ${missing} 項資料待補齊` : '必要文件已備齊，請確認資料';
+}
+
 function stateLabel(journey) {
   return {
     EVIDENCE_COLLECTION: '正在準備資料',
@@ -131,13 +137,24 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
                 <>
                   {hasDocuments && (
                     <section className="panel mobile-readiness" aria-label="準備完成度">
-                      <ReadinessRing value={journey.readiness} size={96} compact />
+                      <div className="mobile-readiness-head">
+                        <ReadinessRing value={journey.readiness} size={76} compact />
+                        <div>
+                          <p className="eyebrow">準備完成度</p>
+                          <p className="mobile-readiness-caption">{readinessCaption(journey)}</p>
+                        </div>
+                      </div>
                       <NextActionCard action={journey.nextAction} complete={journey.currentStage === 'READY_TO_PROCEED'} busy={busy} onAction={actions.next} onSample={type => actions.upload(type, { sample: true })} onNavigate={actions.navigate} />
                     </section>
                   )}
                   {hasDocuments && (
                     <section className="panel mobile-preflight">
                       <PreflightBoard journey={journey} explanation={preflight.explanation} busy={busy} onAction={preflight.onAction} />
+                      {journey.nextAction.type !== 'CONTACT_SPECIALIST' && (
+                        <button type="button" className="link-button specialist-link" onClick={actions.handoff}>
+                          <Icon name="headset" size={16} />需要協助？轉由專員接續<Icon name="chevron" size={14} />
+                        </button>
+                      )}
                     </section>
                   )}
                   {!hasDocuments && readiness()}
