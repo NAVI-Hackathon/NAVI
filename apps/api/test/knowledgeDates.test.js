@@ -47,10 +47,10 @@ test('explicit dates round-trip through browser-compatible parser, search index,
     assert.equal(entry.id, id); assert.equal(entry.retrievedAt, date); assert.equal(entry.dateBasis, 'entry');
     assert.equal(entry.destination.source.retrievedAt, date);
     const source = engine.knowledgeSource(entry);
-    assert.equal(source.retrievedAt, date); assert.equal(source.dateBasis, 'entry');
+    assert.equal(source.retrievedAt, date); assert.equal(Object.hasOwn(source, 'dateBasis'), false);
     assert.equal(engine.verifyKnowledgeSource(source), true);
     assert.equal(engine.verifyNavigationDestination(entry.destination, id), true);
-    assert.equal(engine.verifyKnowledgeSource({ ...source, dateBasis: 'legacy_dataset_fallback' }), false);
+    assert.equal(engine.verifyKnowledgeSource({ ...source, dateBasis: 'entry' }), false);
   }
   for (const id of [`form:${fixture.forms[1].id}`, 'faq:2']) {
     const entry = engine.getKnowledgeEntry(id);
@@ -59,16 +59,16 @@ test('explicit dates round-trip through browser-compatible parser, search index,
   }
 });
 
-test('Backend sources preserve canonical date basis and accept legacy sources without the optional field', () => {
+test('Backend sources preserve the existing strict source shape while search exposes date basis', () => {
   for (const entry of knowledgeEntries) {
     const source = knowledgeSource(entry), [backend] = getSources([entry.id]);
     assert.deepEqual(backend, source);
     assert.equal(searchPublicKnowledge(entry.id).results[0].retrievedAt, source.retrievedAt);
+    assert.ok(['entry', 'legacy_dataset_fallback'].includes(entry.dateBasis));
     assert.equal(verifyKnowledgeSource(source), true);
-    const { dateBasis, ...legacy } = source;
-    assert.equal(KnowledgeSourceSchema.safeParse(legacy).success, true);
-    assert.equal(verifyKnowledgeSource(legacy), true);
-    assert.equal(verifyKnowledgeSource({ ...source, dateBasis: dateBasis === 'entry' ? 'legacy_dataset_fallback' : 'entry' }), false);
-    assert.equal(KnowledgeSourceSchema.safeParse({ ...source, dateBasis: 'published' }).success, false);
+    assert.equal(KnowledgeSourceSchema.safeParse(source).success, true);
+    // Cached pre-release clients strictly validate this exact shape.
+    assert.deepEqual(Object.keys(source).sort(), ['id', 'sourceId', 'title', 'section', 'type', 'isMock', 'url', 'sourceUrl', 'retrievedAt', 'navigationDestination'].sort());
+    assert.equal(KnowledgeSourceSchema.safeParse({ ...source, dateBasis: 'entry' }).success, false);
   }
 });
