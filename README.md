@@ -8,21 +8,23 @@ NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
 ## 線上 Demo
 
+目前使用自訂網域與免費 HTTPS；部署及首次跨 origins 回滾方式見[網域 HTTPS 指南](docs/domain-https-deployment.md)。下列入口維持 Demo 模式，非正式理賠送件服務。
+
 | 網站 | 網址 | 說明 |
 | --- | --- | --- |
-| 模擬官網 | **http://207.148.113.119/** | 從這裡開始：右下角 **NAVI** 開啟嵌入式助手 |
-| NAVI | http://207.148.113.119:8080/ | 獨立頁面；走 Backend Journey API |
-| NAVI 離線備案 | http://207.148.113.119:8080/demo | 前端本地 Mock，不依賴 API |
-| Backend 健康檢查 | http://207.148.113.119:8080/api/health | |
+| 模擬官網 | **https://navitw.com/** | 從這裡開始：右下角 **NAVI** 開啟嵌入式助手 |
+| NAVI | https://app.navitw.com/ | 獨立頁面；走 Backend Journey API |
+| NAVI 離線備案 | https://app.navitw.com/demo | 前端本地 Mock，不依賴 API |
+| Backend 健康檢查 | https://app.navitw.com/api/health | |
 
 - Backend 以 `AI_MODE=demo` 執行，未設定 Gemini Key：意圖判讀與文件辨識都是示範資料，畫面標示「示範辨識資料，未讀取文件內容」。
 - 2026-10-20 完整驗收（Developer A，示範資料、零 Gemini 請求）：官網開啟 NAVI → 住院醫療理賠 35% → 範例診斷書 70% → 範例存摺 90% → 確認 100%；重新整理後由 Backend 讀回 100%；移除存摺退回 70% 並撤回確認；假案件編號顯示「已失效」；「帶我去」與前往服務皆使模擬官網切換分頁並高亮；手機寬度（375px）流程與確認對話框無橫向溢出；`/demo` 全程不呼叫 API；知識問答與帶我去正常。部署版本含 `38934f4`。實機手機尚未測試。
-- 目前使用 HTTP，尚未配置 HTTPS；瀏覽器網址列會顯示「不安全」。案件只存在記憶體：服務重啟即清空、1 小時後過期，之後會顯示「這份服務旅程已失效」。
+- 三個網域憑證已簽發並通過續期模擬；`www.navitw.com` 轉往主網域，舊 IP／8080 入口只保留轉址。仍只接受合成展示資料。案件只存在記憶體：服務重啟即清空、1 小時後過期，之後會顯示「這份服務旅程已失效」。
 - 請勿輸入真實病歷、姓名、身分證或帳號。線上服務無法使用時，以本機 `npm run dev:all` 作為展示備案。
 
 - Developer B 已完成桌面／390px住院35→70→90→100、嵌入導航、檔案刪除／重傳、API離線時的 `/demo` 備援及少量並行驗收；詳細資源與測試數據見[專用VPS指南](docs/vps-dedicated-deployment.md)。
 
-現在的部署與維護以[專用VPS指南](docs/vps-dedicated-deployment.md)為準。舊共享 VPS 的[隔離部署報告](docs/vps-isolated-deployment.md)僅作歷史紀錄，不代表目前服務狀態。
+網域部署與回滾以[HTTPS 指南](docs/domain-https-deployment.md)為準；底層服務管理仍沿用[專用VPS指南](docs/vps-dedicated-deployment.md)。舊共享 VPS 的[隔離部署報告](docs/vps-isolated-deployment.md)僅作歷史紀錄，不代表目前服務狀態。
 
 ## Latest Main Readiness
 
