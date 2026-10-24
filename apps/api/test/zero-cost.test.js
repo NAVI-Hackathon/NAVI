@@ -26,6 +26,7 @@ async function temporary(t) { const directory = await mkdtemp(join(tmpdir(), 'na
 
 test('Zero-cost defaults keep Demo available without credentials or network', async () => {
   const defaults = loadConfig({}); assert.equal(defaults.aiMode, 'demo'); assert.equal(defaults.liveRequestLimit, 12);
+  assert.equal(defaults.model, 'gemini-3.1-flash-lite');
   assert.equal(defaults.allowPaidAI, false); assert.equal(defaults.freeTierConfirmed, false);
   assert.equal((await createAIProvider(defaults).understandIntent('我的班機延誤了')).serviceType, 'flight_delay');
 });
@@ -36,6 +37,7 @@ test('Paid flag/provider and invalid budget configuration fail closed', () => {
 });
 for (const [label, override, code] of [
   ['unconfirmed Free Tier', { freeTierConfirmed: false }, 'FREE_TIER_NOT_CONFIRMED'],
+  ['previous model', { model: 'gemini-3.5-flash-lite' }, 'PAID_AI_DISABLED'],
   ['paid/unknown model', { model: 'gemini-pro' }, 'PAID_AI_DISABLED'],
   ['CI', { ci: true }, 'LIVE_AI_DISABLED_IN_CI'],
   ['paid flag', { allowPaidAI: true }, 'PAID_AI_DISABLED'],
