@@ -9,8 +9,23 @@ import published from '../../../data/cardif_public_data.json' with { type: 'json
 import policy from '../../../scripts/security/excluded-note-fingerprints.json' with { type: 'json' };
 import { fingerprint, inspectPublicText, scanPublicArtifacts } from '../../../scripts/security/public-artifacts.js';
 import { generatePublicKnowledge } from '../../../scripts/knowledge/project-public.js';
+import { getKnowledgeEntry, verifyEvidenceSnippet } from '../../../shared/knowledge/index.js';
 
 const canary='NAVI 合成內部筆記僅供安全測試，並非官網原文。PRIVATE CANARY 2026';
+test('mail claim document instructions expose a readable reference without renaming the data field', () => {
+  const label = '依事故類型檢附文件（請參閱「理賠應備文件」）';
+  for (const snapshot of [seed, published]) {
+    assert.ok(snapshot.services.find(service => service.id === 'claim_by_mail').documents.includes(label));
+    assert.ok(Object.keys(snapshot.claim_document_requirements).length > 0);
+    assert.ok(!JSON.stringify(snapshot.services).includes('claim_document_requirements'));
+  }
+  const entry = getKnowledgeEntry('service:claim_by_mail');
+  assert.ok(entry.details.find(detail => detail.label === '應備文件').items.includes(label));
+  assert.equal(verifyEvidenceSnippet(entry.id, label), true);
+  assert.equal(entry.sourceUrl, 'https://life.cardif.com.tw/zh/a314');
+  assert.equal(entry.destination.path, '/services/claims');
+  assert.equal(entry.destination.anchor, 'service-claim-by-mail');
+});
 test('allowlist projection rejects new private fields recursively while preserving public IDs and nested sitemap', async () => {
   const injected=structuredClone(seed);injected.internal_notes=canary;injected.meta.internal_notes=canary;injected.services[0].internal_notes={value:canary};injected.forms[0].privateReview=canary;injected.faq[0].customerData=canary;injected.sitemap[0].internal_notes=canary;
   assert.deepEqual(projectPublicKnowledge(injected),published);
