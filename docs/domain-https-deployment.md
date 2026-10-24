@@ -39,3 +39,16 @@ Ubuntu `certbot.timer` 執行續期；`/etc/letsencrypt/renewal-hooks/deploy/nav
 驗證 DNS 路由、來源與外部 TLS、憑證 SAN/效期、HTTP/WWW 轉址、公開資產 hash/內部筆記掃描、Origin 拒絕、聊天室與來源摘錄、Guided Action 跨頁高亮、住院 35→70→90→100、手動不計分、Preflight/Handoff、Demo 備援及375/390/430版面座標。虛擬鍵盤僅縮短 viewport 模擬；實體 iOS Safari 由 Developer A 驗收。
 
 目前沒有 SSE endpoint；代理仍關閉 response buffering，維持 HTTP/1.1、無 Connection close，未移除應用自身 timeout。`AI_MODE=demo`、`ALLOW_PAID_AI=false`、無 Gemini Key，禁止自動切 Live。
+
+## 2026-10-25 驗收紀錄（台灣時間）
+
+- 實際應用 SHA：`0e646f7b3386663e19724461c325d71489e432d8`，包含手機修正62f33da、版面測試ed01d19及Seed文字修正。後續本節與README是文件更新，不改動部署程式。
+- Web44＋API162＝206/206，Lint、mock typecheck及雙站Production Build通過。Legacy120/120、住院76/76、Knowledge111/111。
+- 公開HTTPS合成API驗收39項；住院35→70→90→100、缺件/刪除撤回、手動未驗證不計分、Preflight/Handoff、過期預覽與重播防護通過。
+- 88份公開文字資產與產物SHA相符，內部筆記命中0。外部TLS/HTTP轉址/ACME/來源拒絕15項通過；Cloudflare節點與來源VPS的三個名稱共6個TLS驗證通過。
+- TLS憑證到期為2027-01-22；HTTP轉址後再執行續期dry-run與deploy hook成功，certbot.timer active。ACME路徑仍直接回200；www HTTP可能先由Cloudflare轉到HTTPS www，再由Nginx轉往主網域。
+- 線上Playwright版面測試5/5：375、390、430px，以及390×544／375×460鍵盤高度模擬；三個導覽步驟、上中下捲動、座標零重疊和控制項可點擊。不是實體iOS鍵盤。
+- 瀏覽器：多輪追問選門診、正式住院100%、遮蔽交接摘要確認後仍「尚未送出」、Safari桌面嵌入跨頁/分頁/高亮三步及embed demo35/70/90/100通過。正式390px案件建立和文件互動另行檢查。
+- 原版release與root-only設定備份保留，首次遷移復原使用`python3 /opt/navi-hackathon/scripts/rollback-domain-migration.py`。腳本已審閱並通過語法及路徑檢查，未為測試而中斷正式站執行完整回滾。
+- 來源網站仍清楚標示模擬，未修改A的UI、shared或任何保險規則。Gemini生成0、付費API0、新增npm相依0。只在新VPS操作。
+- 未完成：A的iPhone Safari實機驗收；尚未確認Cloudflare後台Full(strict)選項（兩端TLS憑證已獨立驗證）。憑證帳號目前沒有通知email。
