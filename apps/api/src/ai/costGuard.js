@@ -1,6 +1,6 @@
 import { ApiError } from '../middleware/errorHandler.js';
 
-export const FREE_TIER_MODEL = 'gemini-3.5-flash-lite';
+export const FREE_TIER_MODEL = 'gemini-3.1-flash-lite';
 export const DEFAULT_LIVE_REQUEST_LIMIT = 12;
 export function assertFreeProvider(provider) {
   if (provider.requiresPaidTier) throw new ApiError('PAID_AI_DISABLED', 'NAVI 不允許載入付費 AI 服務。', 503, false);

@@ -69,7 +69,7 @@ npm run dev:navi
 
 **一般模式（`/`、`/embed`）的住院工作區已接入 Backend server-owned Journey**：建立案件、上傳診斷書／住院證明與存摺、刪除、確認都呼叫 API，畫面只渲染 Backend 回傳的準備度、階段、下一步與理賠管道；依明確啟動模式區分 Demo／Live。`/demo`、`/embed?mode=demo` 則完全使用本地 Mock Adapter，作為 API 故障時的備案。本次只使用注入 transport 與合成文件測試，沒有真實 Gemini 請求。[住院 Backend 與 PR Review](docs/backend-hospitalization.md)記錄先前住院實作的契約與限制；[歷史 Backend Phase 2](docs/backend-ai-phase-2.md)保留班機延誤整合紀錄。
 
-Backend 設定集中於 `apps/api/src/config/env.js`，範例在 `apps/api/.env.example`；預設 `gemini-3.5-flash-lite` / minimal thinking，整體 AI deadline 10 秒。`.env` 只在本機，不能 commit。Live 未設定 Key 或未確認 Free Tier 時不允許外部請求；Demo 不需要 Key。health 的配置欄位僅表示 Key 存在，不代表供應商連線成功或 Billing 狀態。
+Backend 設定集中於 `apps/api/src/config/env.js`，範例在 `apps/api/.env.example`；預設 `gemini-3.1-flash-lite` / minimal thinking，整體 AI deadline 10 秒。`.env` 只在本機，不能 commit。Live 未設定 Key 或未確認 Free Tier 時不允許外部請求；Demo 不需要 Key。health 的配置欄位僅表示 Key 存在，不代表供應商連線成功或 Billing 狀態。
 
 前端設定在 `apps/web/.env.example`；`/api` 由 Vite proxy 連到 3001，production 需部署同 origin reverse proxy 或設定 `VITE_API_BASE_URL`。Key 不可放進 `VITE_*`。
 
@@ -233,7 +233,7 @@ Premium Dark UI、繁中／英文輔助、CSS Motion System、Reduced Motion、�
 
 NAVI prototype is intentionally designed to run using free-tier and local components only, **subject to provider free-tier availability and quotas**.
 
-- Gemini Developer API `gemini-3.5-flash-lite` Free Tier，minimal thinking；僅限未啟用 Billing 的專案。
+- Gemini Developer API `gemini-3.1-flash-lite` Free Tier，minimal thinking；僅限未啟用 Billing 的專案。
 - Demo Provider、Local JSON Knowledge Base、InMemory state、本地 synthetic fixtures，不需要外部服務。
 - 無 paid search / Maps grounding、paid vector DB、paid OCR、付費儲存、Batch、付費 Context Caching、Vertex AI 或其他付費 AI fallback。
 - `ALLOW_PAID_AI=false`；設為 true 直接拒絕配置，不能啟用付費能力。
@@ -244,7 +244,7 @@ NAVI prototype is intentionally designed to run using free-tier and local compon
 ```dotenv
 AI_MODE=live
 GEMINI_API_KEY=<backend-only key>
-GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_MODEL=gemini-3.1-flash-lite
 GEMINI_FREE_TIER_CONFIRMED=true
 ALLOW_PAID_AI=false
 LIVE_AI_REQUEST_LIMIT=12

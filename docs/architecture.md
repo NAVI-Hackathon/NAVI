@@ -32,7 +32,7 @@ flowchart TD
 
 Demo is the default; ordinary dev scripts force Demo. Live requires an explicit command and `GEMINI_FREE_TIER_CONFIRMED=true` after a human verifies the project has no Billing. The tool cannot verify billing from an API Key. CI cannot call live AI. All attempts, including retries, share a hard 12-request budget per provider/process; no automatic reset or paid fallback. 429 backs off once, then stops live evaluation. Quota/guard failures are not hidden by wording fallbacks.
 
-The only approved live model is `gemini-3.5-flash-lite`, configured centrally. A single 10-second deadline covers at most two attempts. Live intent/document failures return safe API errors and leave the stored Journey unchanged. Only non-critical knowledge/handoff wording can use the actual retrieved/known-fact template, explicitly labeled.
+The only approved live model is `gemini-3.1-flash-lite`, configured centrally. A single 10-second deadline covers at most two attempts. Live intent/document failures return safe API errors and leave the stored Journey unchanged. Only non-critical knowledge/handoff wording can use the actual retrieved/known-fact template, explicitly labeled.
 
 所有 Backend Journey 不留原始敘述／模型自由摘要，文件不留 bytes／臨床診斷／完整帳號。損壞文件容器回 DOCUMENT_INVALID（422）；抽取後必要欄位不足為 needs_review。住院證明只依一般住院清單使用，醫起通仍需診斷書。
 
