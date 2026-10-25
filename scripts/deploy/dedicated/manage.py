@@ -73,7 +73,9 @@ def healthy():
         if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
 
 def activate(target):
-    target = release(target); old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
+    target = release(target)
+    if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True: raise RuntimeError('Legacy releases cannot be activated; use an isolated rollback target')
+    old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
     owned_service(); run(['nginx', '-t'])
     link('current', target)
     try:
