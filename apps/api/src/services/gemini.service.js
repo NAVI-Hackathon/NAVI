@@ -8,7 +8,7 @@ import { createDurableQuota } from '../ai/durableQuota.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 // Native REST transport; inline media never leaves the backend through a public URL.
-export function createGeminiProvider(config, fetchImpl = fetch, { budget = createAIRequestBudget(config.liveRequestLimit), cache } = {}) {
+export function createGeminiProvider(config, fetchImpl = fetch, { budget = createAIRequestBudget(config.liveRequestLimit, { daily: config.production }), cache } = {}) {
   if (config.production && cache) throw new Error('Evaluation cache is prohibited in production');
   const quota = config.usageFile ? createDurableQuota({ file: config.usageFile, dailyLimit: config.dailyLimit, concurrency: config.maxConcurrent, timeoutMs: config.timeoutMs }) : null;
   const metadata = new Map();

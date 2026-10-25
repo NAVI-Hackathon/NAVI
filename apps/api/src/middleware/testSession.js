@@ -5,9 +5,10 @@ const TTL = 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest();
 const cookieName = '__Host-navi-test';
 
-// Operator-only synthetic staging; this is not patient authentication or public medical intake.
+// Synthetic access only; anonymous cookies are not patient authentication or medical intake.
 export function createTestSessions(config, repository) {
   const sessions = new Map(); const owners = new Map();
+  const requestSessions = new WeakMap();
   const enabled = config.restrictedLive;
   function sweep() {
     for (const [id, session] of sessions) if (session.expiresAt <= Date.now()) {
@@ -19,10 +20,19 @@ export function createTestSessions(config, repository) {
   if (enabled) setInterval(sweep, 60000).unref();
   function current(req) {
     sweep();
+    if (sessions.has(requestSessions.get(req))) return requestSessions.get(req);
     const matches = (req.headers.cookie ?? '').split(';').map(part => part.trim()).filter(part => part.startsWith(`${cookieName}=`));
     if (matches.length !== 1) return null;
     const id = matches[0].slice(cookieName.length + 1);
     return sessions.has(id) ? id : null;
+  }
+  function issue(req, res, operator) {
+    sweep();
+    if (sessions.size >= 20) throw new ApiError('TEST_SESSION_CAPACITY', '目前使用人數較多，請稍後再試。', 429, true);
+    const id = randomBytes(32).toString('hex');
+    sessions.set(id, { expiresAt: Date.now() + TTL, intents: new Map(), operator });
+    requestSessions.set(req, id);
+    res.cookie(cookieName, id, { httpOnly: true, secure: true, sameSite: 'strict', path: '/', maxAge: TTL });
   }
   function requireSession(req) {
     if (!enabled) return;
@@ -34,14 +44,23 @@ export function createTestSessions(config, repository) {
       if (!enabled || config.sessionToken.length < 32) throw new ApiError('AI_UNAVAILABLE', '目前未開放合成資料測試。', 503, false);
       const body = req.body;
       if (!config.origins.includes(req.headers.origin) || !body || Object.keys(body).sort().join(',') !== 'syntheticOnly,token' || body.syntheticOnly !== true || typeof body.token !== 'string' || !timingSafeEqual(hash(body.token), hash(config.sessionToken))) throw new ApiError('TEST_SESSION_DENIED', '無法啟用測試，請確認授權與合成資料聲明。', 403, false);
-      sweep();
-      if (sessions.size >= 20) throw new ApiError('TEST_SESSION_CAPACITY', '測試工作階段已達上限，請稍後再試。', 429, true);
-      const id = randomBytes(32).toString('hex');
-      sessions.set(id, { expiresAt: Date.now() + TTL, intents: new Map() });
-      res.cookie(cookieName, id, { httpOnly: true, secure: true, sameSite: 'strict', path: '/', maxAge: TTL });
+      issue(req, res, true);
       res.set('Cache-Control', 'no-store').status(201).json({ syntheticOnly: true, expiresInSeconds: TTL / 1000, disclosure: '僅限合成資料。資料會送至 Google Gemini；免費服務資料可能用於改善產品。不可上傳真實醫療、銀行或個人資料。', documentRetention: '上傳檔案僅於記憶體中分析，不寫入磁碟；結構化測試案件最長保留一小時，重啟即清除。' });
     },
-    guard(req, res, next) { try { requireSession(req); next(); } catch (error) { next(error); } },
+    guard(req, res, next) {
+      try {
+        if (enabled && config.publicSynthetic && !current(req)) {
+          if (!config.origins.includes(req.headers.origin)) throw new ApiError('ORIGIN_NOT_ALLOWED', '請從核准的 NAVI 網頁操作。', 403, false);
+          issue(req, res, false);
+        }
+        requireSession(req); next();
+      } catch (error) { next(error); }
+    },
+    authorizeDocument(req, upload) {
+      if (enabled && config.publicSynthetic && !sessions.get(current(req))?.operator && !config.syntheticDocumentHashes.includes(createHash('sha256').update(upload.bytes).digest('hex'))) {
+        throw new ApiError('SYNTHETIC_DOCUMENT_REQUIRED', '目前公開原型只接受經核准的合成測試文件，請勿上傳真實醫療或銀行資料。', 422, false);
+      }
+    },
     own(req, id) { if (enabled) owners.set(id, current(req)); },
     authorize(req, id) {
       requireSession(req);

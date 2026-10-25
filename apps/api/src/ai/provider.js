@@ -13,7 +13,7 @@ export function createAIProvider(config) {
   if (config.aiMode === 'demo') return assertFreeProvider(createDemoProvider());
   if (config.restrictedLive) {
     try { assertLiveAllowed(config); } catch { return createUnavailableProvider(); }
-    if (!config.apiKey || !config.usageFile || config.sessionToken.length < 32) return createUnavailableProvider();
+    if (!config.apiKey || !config.usageFile || (!config.publicSynthetic && config.sessionToken.length < 32)) return createUnavailableProvider();
   }
   return assertFreeProvider(createGeminiProvider(config));
 }

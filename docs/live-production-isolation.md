@@ -2,6 +2,8 @@
 
 本次範圍：Backend、部署工具、測試；不修改聊天室 UI、shared schema 或 Guided Action。已由 A 同意受控 Session / Cookie / 可用性狀態的相容擴充。
 
+一般訪客的相容接入修復見 [一般模式 Live 接入](regular-live-access.md)。以下 Stage A／舊部署狀態是當時的歷史記錄，不代表目前正式站狀態。
+
 ## Provider 邊界
 
 - `NODE_ENV=production` 的 `AI_MODE=demo` 會建立 **unavailable** Provider，絕不建立 Demo Provider；舊 `--demo` 參數也不會讓公開 API 回傳 Fixture。

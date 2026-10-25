@@ -25,7 +25,7 @@ export function createApp(config, provider = createAIProvider(config), repositor
   // ponytail: in-memory limit is per process; use a shared store only when deploying multiple instances.
   const limiter = rateLimit({ windowMs: 60000, limit: config.rateLimit, standardHeaders: 'draft-8', legacyHeaders: false, handler: (req, res) => res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: '操作次數較多，請稍後再試。', retryable: true } }) });
   app.use('/api', limiter, express.json({ limit: '16kb' }));
-  app.get('/api/ai/status', (req, res) => res.json({ mode: provider.mode ?? 'unavailable', available: provider.mode === 'live', syntheticOnly: Boolean(config.restrictedLive), demo: 'frontend_local_only', privacy: '黑客松原型，非正式理賠入口。請勿提供真實醫療、銀行或個人資料。' }));
+  app.get('/api/ai/status', (req, res) => res.json({ mode: provider.mode ?? 'unavailable', available: provider.mode === 'live', syntheticOnly: Boolean(config.restrictedLive), access: config.publicSynthetic ? 'public_synthetic' : 'operator_synthetic', demo: 'frontend_local_only', privacy: '黑客松原型，非正式理賠入口。請勿提供真實醫療、銀行或個人資料。' }));
   app.post('/api/test-sessions', sessions.activate);
   app.use('/api', (req, res, next) => {
     const path = req.path.toLowerCase().replace(/\/+$/, '');
