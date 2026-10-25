@@ -21,7 +21,7 @@ export async function enhanceHandoff(summary, { provider, config, signal }) {
     }, { config, signal });
     return { ...summary, narrative: result, summaryMode: 'selected_facts' };
   } catch (error) {
-    if (['AI_RATE_LIMITED', 'AI_REQUEST_BUDGET_REACHED', 'FREE_TIER_NOT_CONFIRMED', 'LIVE_AI_DISABLED_IN_CI', 'PAID_AI_DISABLED'].includes(error.code)) throw error;
+    if (['AI_UNAVAILABLE', 'AI_USAGE_UNAVAILABLE', 'AI_DAILY_LIMIT_REACHED', 'AI_BUSY', 'AI_RATE_LIMITED', 'AI_REQUEST_BUDGET_REACHED', 'FREE_TIER_NOT_CONFIRMED', 'LIVE_AI_DISABLED_IN_CI', 'PAID_AI_DISABLED'].includes(error.code)) throw error;
     if (signal?.aborted || error.code === 'REQUEST_CANCELLED' || !(error instanceof ApiError)) throw error;
     provider.recordFallback?.('handoff');
     return template();

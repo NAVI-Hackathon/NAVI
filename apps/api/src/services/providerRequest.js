@@ -25,7 +25,8 @@ export async function withProviderDeadline(task, { config, signal }) {
 // One shared deadline covers both attempts; no nested retries or hidden demo substitution.
 export function requestValidatedAI(task, options) {
   return withProviderDeadline(async signal => {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    const attempts = options.config.aiMaxAttempts ?? 2;
+    for (let attempt = 0; attempt < attempts; attempt++) {
       try { return await task(signal); }
       catch (error) {
         if (signal?.aborted) throw error;
@@ -33,7 +34,7 @@ export function requestValidatedAI(task, options) {
         const transient = error.code === 'AI_PROVIDER_ERROR' && error.retryable;
         const rateLimited = error.code === 'AI_RATE_LIMITED' && error.retryable;
         if (!invalid && !transient && !rateLimited) throw error;
-        if (attempt === 1) {
+        if (attempt === attempts - 1) {
           if (invalid) throw new ApiError('AI_RESPONSE_INVALID', '分析結果尚不完整，請重新分析。');
           throw error;
         }

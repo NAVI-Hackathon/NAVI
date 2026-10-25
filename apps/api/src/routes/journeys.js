@@ -24,7 +24,7 @@ function requestSignal(res) {
   res.on('close', () => { if (!res.writableEnded) controller.abort(); });
   return controller.signal;
 }
-export function createJourneyRouter({ config, provider, repository }) {
+export function createJourneyRouter({ config, provider, repository, sessions }) {
   const router = express.Router();
   const service = createJourneyService({ config, provider, repository });
   const handoff = createHandoffConfirmationService({ getJourney: service.get });
@@ -39,10 +39,14 @@ export function createJourneyRouter({ config, provider, repository }) {
   router.post('/analyze-intent', async (req, res) => {
     const { message } = validate(RequestSchema, req.body);
     const result = await understandIntent(message, { config, provider, signal: requestSignal(res) });
+    sessions?.remember(req, message, result.data);
     res.json(result.data);
   });
   router.post('/journeys', async (req, res) => {
-    res.status(201).json(await service.create(validate(CreateJourneyRequestSchema, req.body), requestSignal(res)));
+    const input = validate(CreateJourneyRequestSchema, req.body);
+    const journey = await service.create(input, requestSignal(res), sessions?.intent(req, input.message));
+    sessions?.own(req, journey.id);
+    res.status(201).json(journey);
   });
   router.post('/journeys/:id/manual-document-information', (req, res) => {
     res.json(service.addManualDocumentInformation(req.params.id, validate(ManualDocumentInformationRequestSchema, req.body)));
@@ -53,7 +57,11 @@ export function createJourneyRouter({ config, provider, repository }) {
   router.get('/journeys/:id', (req, res) => res.json(service.get(req.params.id)));
   router.post('/journeys/:id/documents', express.raw({ type: 'multipart/form-data', limit: MAX_DOCUMENT_BYTES + 64 * 1024, inflate: false }), async (req, res) => {
     service.get(req.params.id);
-    res.json(await service.addDocument(req.params.id, await parseUpload(req), requestSignal(res)));
+    let upload;
+    try {
+      upload = await parseUpload(req);
+      res.json(await service.addDocument(req.params.id, upload, requestSignal(res)));
+    } finally { upload?.bytes.fill(0); if (Buffer.isBuffer(req.body)) req.body.fill(0); }
   });
   router.delete('/journeys/:id/documents/:documentId', (req, res) => res.json(service.removeDocument(req.params.id, req.params.documentId)));
   router.post('/journeys/:id/review', (req, res) => {

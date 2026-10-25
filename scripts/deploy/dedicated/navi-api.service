@@ -10,7 +10,7 @@ User=navi-hackathon
 Group=navi-hackathon
 WorkingDirectory=/opt/navi-hackathon/current
 EnvironmentFile=/opt/navi-hackathon/config/api.env
-ExecStart=/opt/navi-hackathon/runtime/node/bin/node --max-old-space-size=192 /opt/navi-hackathon/current/apps/api/src/server.js --demo
+ExecStart=/opt/navi-hackathon/runtime/node/bin/node --max-old-space-size=192 /opt/navi-hackathon/current/apps/api/src/server.js
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=10

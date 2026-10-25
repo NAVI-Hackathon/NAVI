@@ -25,8 +25,10 @@ export function createJourneyService({ repository, provider, config }) {
   }
   return {
     get,
-    async create({ message, intentResult }, signal) {
-      const data = intentResult ? normalizeIntent(intentResult, message) : (await understandIntent(message, { provider, config, signal })).data;
+    async create({ message, intentResult }, signal, trustedIntentResult) {
+      // Only a server receipt may reuse a live intent; browser-supplied facts never bypass Gemini.
+      const supplied = provider.mode === 'live' || provider.mode === 'unavailable' ? trustedIntentResult : intentResult;
+      const data = supplied ? normalizeIntent(supplied, message) : (await understandIntent(message, { provider, config, signal })).data;
       if (data.serviceType === 'hospitalization_claim' && data.intent === 'knowledge_query') throw new ApiError('SERVICE_NOT_SUPPORTED', '請先查詢相關服務資訊，確認要申辦時再開始服務旅程。', 409, false);
       const definition = getJourneyDefinition(data.serviceType);
       if (data.serviceType === 'hospitalization_claim') {
@@ -39,7 +41,7 @@ export function createJourneyService({ repository, provider, config }) {
       const hospital = data.serviceType === 'hospitalization_claim';
       const summary = hospital ? HOSPITAL_SUMMARY : `使用者希望取得${definition?.title ?? titles[data.serviceType]}相關服務協助。`;
       const conversation = hospital ? '使用者詢問住院醫療理賠；原始描述不留存。' : '使用者描述服務需求；原始描述不留存。';
-      return save({ id: randomUUID(), serviceType: data.serviceType, title: definition?.title ?? titles[data.serviceType], summary: summary.slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: conversation.slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: intentResult ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
+      return save({ id: randomUUID(), serviceType: data.serviceType, title: definition?.title ?? titles[data.serviceType], summary: summary.slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: conversation.slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: provider.mode === 'live' ? 'live' : supplied ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
     },
     addManualDocumentInformation(id, input) {
       const current = get(id);
@@ -62,9 +64,12 @@ export function createJourneyService({ repository, provider, config }) {
     async addDocument(id, upload, signal) {
       editable(get(id));
       const document = await analyzeDocument(upload, { provider, config, signal });
+      if (upload.documentType && upload.documentType !== 'unknown' && upload.documentType !== document.documentType) throw new ApiError('DOCUMENT_TYPE_MISMATCH', '文件內容與選擇的類型不同，請確認後重新上傳。', 422, false);
       // Read again after asynchronous analysis so concurrent uploads retain one another's documents.
       const current = get(id);
       editable(current);
+      const manual = current.manualDocumentInformation?.find(item => item.documentType === 'bank_passbook');
+      if (provider.mode === 'live' && document.documentType === 'bank_passbook' && manual && ['bankName', 'accountLast4'].some(key => manual.fields[key] && document.fields[key] && String(manual.fields[key]).normalize('NFKC').replace(/\s/g, '') !== String(document.fields[key]).normalize('NFKC').replace(/\s/g, ''))) throw new ApiError('BANK_INFORMATION_MISMATCH', '文件與先前提供的銀行資訊不一致，請確認手動資訊或由專員協助。', 422, false);
       const allowed = getJourneyDefinition(current.serviceType)?.documentTypes ?? ['boarding_pass', 'delay_certificate'];
       if (!allowed.includes(document.documentType)) throw new ApiError('DOCUMENT_SERVICE_MISMATCH', '文件類型與目前服務需求不同，請重新選擇。', 422, true);
       const documents = [...current.documents.filter(doc => doc.documentType !== document.documentType), document];

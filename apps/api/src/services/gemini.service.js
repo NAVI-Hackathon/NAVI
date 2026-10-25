@@ -4,17 +4,20 @@ import { DOCUMENT_PROMPT } from '../ai/prompts/documentPrompt.js';
 import { KNOWLEDGE_PROMPT, HANDOFF_PROMPT } from '../ai/prompts/knowledgePrompt.js';
 import { intentJsonSchema, documentJsonSchema, normalizeGeminiIntent, normalizeGeminiDocument, GroundedAnswerSchema, HandoffSelectionSchema } from '../ai/schemas.js';
 import { assertLiveAllowed, createAIRequestBudget } from '../ai/costGuard.js';
+import { createDurableQuota } from '../ai/durableQuota.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 // Native REST transport; inline media never leaves the backend through a public URL.
 export function createGeminiProvider(config, fetchImpl = fetch, { budget = createAIRequestBudget(config.liveRequestLimit), cache } = {}) {
+  if (config.production && cache) throw new Error('Evaluation cache is prohibited in production');
+  const quota = config.usageFile ? createDurableQuota({ file: config.usageFile, dailyLimit: config.dailyLimit, concurrency: config.maxConcurrent, timeoutMs: config.timeoutMs }) : null;
   const metadata = new Map();
   let rateLimitStreak = 0;
   async function generate(operation, prompt, parts, schema, validate, signal = AbortSignal.timeout(config.timeoutMs)) {
     if (!config.apiKey && !cache) throw new ApiError('AI_NOT_CONFIGURED', '目前暫時無法分析你的需求。請稍後再試。', 503, false);
     const started = performance.now();
     let schemaValid = false; let cacheHit = false;
-    let errorCode;
+    let errorCode; let lease;
     try {
       signal.throwIfAborted();
       const cached = await cache?.read(operation, prompt, parts, schema);
@@ -24,6 +27,8 @@ export function createGeminiProvider(config, fetchImpl = fetch, { budget = creat
       }
       assertLiveAllowed(config);
       if (!config.apiKey) throw new ApiError('AI_NOT_CONFIGURED', '請設定 Backend Gemini API Key。', 503, false);
+      if (fetchImpl === fetch && !quota) throw new ApiError('AI_USAGE_UNAVAILABLE', '免費使用額度記錄尚未設定，分析暫停。', 503, false);
+      lease = quota?.acquire();
       budget.consume();
       const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent`, {
         method: 'POST', signal,
@@ -34,6 +39,7 @@ export function createGeminiProvider(config, fetchImpl = fetch, { budget = creat
         }),
       });
       if (response.status === 429) {
+        quota?.block();
         if (++rateLimitStreak >= 2) budget.stop('AI_RATE_LIMITED');
         throw new ApiError('AI_RATE_LIMITED', '目前分析服務已達使用上限，請稍後再試或切換示範模式。', 429, rateLimitStreak < 2);
       }
@@ -56,6 +62,7 @@ export function createGeminiProvider(config, fetchImpl = fetch, { budget = creat
       if (error.name === 'ZodError' || error instanceof SyntaxError) throw new ApiError('AI_RESPONSE_INVALID', '分析結果尚不完整，請重新分析。');
       throw new ApiError('AI_PROVIDER_ERROR', '目前暫時無法完成分析。請稍後再試。');
     } finally {
+      if (lease) quota.release(lease);
       const event = { provider: 'gemini', model: config.model, operation, latencyMs: Math.round(performance.now() - started), schemaValid, cacheHit, fallbackUsed: false, ...(errorCode ? { errorCode } : {}) };
       metadata.set(operation, event);
       if (config.debugAi) console.info(JSON.stringify({ event: 'ai_request', ...event }));
