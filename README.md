@@ -281,3 +281,7 @@ Free Tier 價格與配額由供應商決定，請核對 [Google pricing](https:/
 Browser／Mock Site 只讀生成的 `data/cardif_public_data.json`。資料更新後執行 `npm run knowledge:project`；Build 自動驗證公開欄位白名單與掃描產物，拒絕 internal metadata 或已排除筆記。`data/private/` 僅本地受控備份，禁止提交／匯入／部署。詳見 [Release 與 Knowledge Refresh 安全記錄](docs/release-knowledge-refresh-2026-10-21.md)。新擷取資料須逐筆人工批准，不能自動覆蓋正式 Knowledge。
 
 Release 1 已部署 A 的可信來源 UI 與公開資料安全修正，精確應用 SHA、公開驗收、效能與回復方式見 [2026-10-21 驗收](docs/release1-validation-2026-10-21.md)。定向官網擷取只產生 [候選 Diff](docs/knowledge-crawl-diff-2026-10-21.md) 與 [逐筆審核清單](data/crawl/candidate-2026-10-21/review-checklist.json)；尚未採用新知識，Release 2 尚未部署。
+
+### Live / Demo Provider Isolation
+
+Backend 的受控合成測試 Session、案件 Cookie、持久化免費額度與錯誤契約見 [Live Production Isolation](docs/live-production-isolation.md)。正式 API 不使用 Demo Fixture 回退，`/demo` 保留前端離線備援。一般民眾真實敏感文件尚未開放。

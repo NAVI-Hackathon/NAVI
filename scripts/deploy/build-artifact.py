@@ -49,7 +49,7 @@ def build(revision, output, web_origin='http://127.0.0.1:18171', mock_origin='ht
     for name in ['package.json','package-lock.json','apps/api/package.json','apps/web/package.json','apps/mock-site/package.json']:
         target=payload/name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(source/name,target)
     shutil.copy2(HERE/'runtime-server.mjs',payload/'runtime-server.mjs')
-    metadata={'schema':1,'sourceCommit':sha,'buildNode':subprocess.check_output(['node','--version'],text=True).strip(),'buildPlatform':platform.system()+'-'+platform.machine(),'buildOverlay':'next.config.ts output=export; source repo unchanged',
+    metadata={'providerIsolation': (source/'apps/api/src/middleware/testSession.js').is_file(), 'schema':1,'sourceCommit':sha,'buildNode':subprocess.check_output(['node','--version'],text=True).strip(),'buildPlatform':platform.system()+'-'+platform.machine(),'buildOverlay':'next.config.ts output=export; source repo unchanged',
         'staticArtifacts':'HTML/CSS/browser JS; no native runtime modules', 'apiDependencies':'Installed on Ubuntu from root lockfile, API workspace only',
         'origins':{'web':web_origin,'mock':mock_origin},
         'toolHashes':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in HERE.iterdir() if p.is_file() and p.suffix in ['.py','.mjs','.sh']}}

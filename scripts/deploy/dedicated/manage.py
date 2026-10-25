@@ -52,7 +52,7 @@ def install(m, artifact, checksum):
                 continue
             public = p == target or p.is_relative_to(target / 'web') or p.is_relative_to(target / 'mock')
             os.chown(p, 0, m['gid']); p.chmod((0o755 if public else 0o750) if p.is_dir() else (0o644 if public else 0o640))
-    save(target / 'ready.json', {'sourceCommit': meta['sourceCommit'], 'sha256': checksum, 'origins': m['origins']})
+    save(target / 'ready.json', {'sourceCommit': meta['sourceCommit'], 'sha256': checksum, 'origins': m['origins'], 'providerIsolation': meta.get('providerIsolation') is True and (target / 'apps/api/src/middleware/testSession.js').is_file()})
     print(str(target))
 
 def owned_service():
@@ -66,7 +66,11 @@ def link(name, target):
 def healthy():
     with urllib.request.urlopen('http://127.0.0.1:18172/api/health', timeout=2) as r:
         body = json.load(r)
-        if body != {'status': 'ok', 'aiProviderConfigured': False}: raise RuntimeError('Unexpected API mode/configuration')
+        mode = r.headers.get('X-NAVI-AI-Mode')
+        if body.get('status') != 'ok' or type(body.get('aiProviderConfigured')) is not bool or mode not in ('live', 'unavailable'): raise RuntimeError('Unexpected API mode/configuration')
+    with urllib.request.urlopen('http://127.0.0.1:18172/api/ai/status', timeout=2) as r:
+        state = json.load(r)
+        if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
 
 def activate(target):
     target = release(target); old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
@@ -82,7 +86,10 @@ def activate(target):
         run(['systemctl', 'reload', 'nginx'])
     except BaseException:
         if old:
-            link('current', old); run(['systemctl', 'restart', UNIT]); run(['systemctl', 'reload', 'nginx'])
+            link('current', old)
+            # Never restore a legacy public Demo API after a live-isolation failure.
+            isolated = json.loads((old / 'ready.json').read_text()).get('providerIsolation') is True
+            run(['systemctl', 'restart' if isolated else 'stop', UNIT]); run(['systemctl', 'reload', 'nginx'])
         else: run(['systemctl', 'stop', UNIT])
         raise
     if old and old != target: link('previous', old)
