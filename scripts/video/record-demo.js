@@ -9,7 +9,7 @@ import { mkdir, readdir, rename, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 
-const SITE = process.env.SITE ?? 'http://207.148.113.119';
+const SITE = process.env.SITE ?? 'https://navitw.com';
 const SIZE = { width: 1280, height: 720 };
 const OUT = join('artifacts', 'video', new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
