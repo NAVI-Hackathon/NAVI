@@ -60,6 +60,7 @@ export function createJourneyRouter({ config, provider, repository, sessions }) 
     let upload;
     try {
       upload = await parseUpload(req);
+      sessions?.authorizeDocument(req, upload);
       res.json(await service.addDocument(req.params.id, upload, requestSignal(res)));
     } finally { upload?.bytes.fill(0); if (Buffer.isBuffer(req.body)) req.body.fill(0); }
   });

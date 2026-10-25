@@ -11,12 +11,18 @@ export function assertLiveAllowed(config) {
   if (config.ci) throw new ApiError('LIVE_AI_DISABLED_IN_CI', 'CI 僅允許本地與示範測試。', 503, false);
   if (!config.freeTierConfirmed) throw new ApiError('FREE_TIER_NOT_CONFIRMED', '請先確認 API Key 所屬專案為 Free Tier，且未啟用 Billing。', 503, false);
 }
-// ponytail: budget is per provider process; share a counter only if multiple API workers are deployed.
-export function createAIRequestBudget(limit = DEFAULT_LIVE_REQUEST_LIMIT) {
+// Manual runs keep a process cap; production also enforces the persistent Pacific-day cap.
+export function createAIRequestBudget(limit = DEFAULT_LIVE_REQUEST_LIMIT, { daily = false, now = Date.now } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1) throw new Error('Invalid live AI request limit');
   let used = 0; let stopped = null;
+  let day = null;
   return {
     consume() {
+      if (daily) {
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now());
+        if (day && today < day) throw new ApiError('AI_USAGE_UNAVAILABLE', '目前無法確認免費使用額度，請稍後再試。', 503, false);
+        if (today !== day) { used = 0; stopped = null; day = today; }
+      }
       if (stopped) throw new ApiError(stopped, '分析服務已暫停，請稍後再試或使用示範模式。', stopped === 'AI_RATE_LIMITED' ? 429 : 503, false);
       if (used >= limit) { stopped = 'AI_REQUEST_BUDGET_REACHED'; throw new ApiError(stopped, '已達本次分析服務使用上限，請使用示範模式。', 429, false); }
       used++;
