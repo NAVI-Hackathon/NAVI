@@ -87,7 +87,11 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
           aria-expanded={false}
           aria-controls="navi-panel"
           aria-label={resume ? "回到 NAVI，繼續下一步" : undefined}
-          onClick={() => { setMounted(true); setOpen(true); setResume(false); }}
+          onClick={() => {
+            // 錄影與展示入口：?navi=demo 直接載入示範模式（範例文件只在示範模式提供）。
+            if (!mounted && DEMO_URL && new URLSearchParams(window.location.search).get("navi") === "demo") setDemo(true);
+            setMounted(true); setOpen(true); setResume(false);
+          }}
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full border py-2.5 pl-2.5 pr-5 text-sm font-medium shadow-[0_12px_40px_rgba(0,0,0,0.28)] transition-transform hover:-translate-y-0.5 ${resume ? "navi-resume border-[#97c9b3]/60 bg-[#0a0b0d] text-[#eeefe9]" : "border-white/10 bg-[#0a0b0d] text-[#eeefe9]"}`}
         >
           <span aria-hidden className={`grid size-8 place-items-center rounded-full ${resume ? "bg-[#97c9b3]" : "bg-[#eeefe9]"}`}>

@@ -286,6 +286,8 @@ export default function App() {
       : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
     manualVerifies: service.capabilities.manualEntry,
     upload,
+    // Sample documents only in /demo: formal mode is real use and never fills in sample data.
+    sample: service.capabilities.samples ? type => upload(type, { sample: true }) : null,
     navigate,
     async remove(type) {
       const next = await attempt(() => service.removeDocument(type));

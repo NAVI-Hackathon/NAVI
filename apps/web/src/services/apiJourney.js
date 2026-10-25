@@ -13,6 +13,7 @@ export class JourneyApiError extends Error {
   constructor(code, message, status = 0) { super(message || code); this.code = code; this.status = status; }
 }
 export const JOURNEY_EXPIRED_MESSAGE = '這份服務旅程已失效或不存在，請重新開始。';
+export const RECOGNITION_UNAVAILABLE_MESSAGE = '目前線上服務尚未啟用文件辨識，NAVI 無法讀取你上傳的文件。你可以先提供資訊（尚未驗證），或洽客服專線由專人協助。';
 
 const kindOf = serviceType => (serviceType === 'hospitalization_claim' ? 'hospital' : serviceType);
 // Privacy: the browser keeps only the journey id and display flags. The description and document
@@ -31,6 +32,9 @@ export function createApiJourneyService({
 }) {
   let state = null;
   let pending = null; // stored journey reference waiting to be read back from the server
+  // X-NAVI-AI-Mode of the server. A 'demo' server answers every upload with fixed sample fields
+  // whatever the file holds, so formal mode never sends the user's own file there.
+  let aiMode = null;
   const api = path => `${baseUrl.replace(/\/$/, '')}/api${path}`;
 
   function save() {
@@ -56,6 +60,7 @@ export function createApiJourneyService({
       if (signal?.aborted) throw signal.reason;
       throw new JourneyApiError(deadline.aborted ? 'AI_TIMEOUT' : 'NETWORK_ERROR', deadline.aborted ? '處理時間較長，請再試一次。' : '目前無法連線到服務，請確認網路後再試一次。');
     }
+    aiMode = response.headers?.get?.('X-NAVI-AI-Mode') ?? aiMode;
     let result = null;
     try { result = await response.json(); } catch { /* handled below */ }
     if (!response.ok) {
@@ -72,7 +77,8 @@ export function createApiJourneyService({
     mode: 'live',
     // Manual information is accepted but never verified: it is stored as「待確認」 next to the
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
-    capabilities: { manualEntry: false, manualInformation: true },
+    // Formal mode is real use: the UI offers no sample documents (those stay in /demo).
+    capabilities: { manualEntry: false, manualInformation: true, samples: false },
     /** Nothing to show synchronously: the journey itself is only on the server (see resume). */
     restore() {
       state = null;
@@ -115,10 +121,18 @@ export function createApiJourneyService({
     },
     async uploadDocument(type, { file = null, sample = false } = {}, { signal } = {}) {
       const { journey } = requireState();
+      const own = Boolean(file) && !sample;
+      if (own && aiMode === 'demo') throw new JourneyApiError('DOCUMENT_RECOGNITION_UNAVAILABLE', RECOGNITION_UNAVAILABLE_MESSAGE);
       const form = new FormData();
-      form.append('file', sample || !file ? samplePdfFile(type) : file);
+      form.append('file', own ? file : samplePdfFile(type));
       form.append('documentType', type);
       const result = await request(`/journeys/${journey.id}/documents`, { method: 'POST', body: form, signal, timeout: documentTimeoutMs, schema: UploadResponse });
+      const added = result.journey.documents.find(d => d.documentType === type);
+      // Fixture fields are never shown as the user's document (e.g. a proxy that drops the mode header).
+      if (own && added?.isMock) {
+        commit(await request(`/journeys/${journey.id}/documents/${added.id}`, { method: 'DELETE' }));
+        throw new JourneyApiError('DOCUMENT_RECOGNITION_UNAVAILABLE', RECOGNITION_UNAVAILABLE_MESSAGE);
+      }
       return commit(result.journey);
     },
     async submitManual(type, fields) {

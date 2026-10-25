@@ -36,7 +36,7 @@ export default function NextActionCard({ action, complete, busy, onAction, onSam
                 <Icon name="external" size={14} />帶我去：{action.destination.label}
               </button>
             )}
-            {action.type === 'UPLOAD_DOCUMENT' && (
+            {action.type === 'UPLOAD_DOCUMENT' && onSample && (
               <button type="button" className="link-button" disabled={processing} onClick={() => onSample(action.target)}>使用範例文件</button>
             )}
           </div>

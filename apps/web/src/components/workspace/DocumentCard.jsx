@@ -84,7 +84,7 @@ function PendingInformation({ type, information, disabled, onUpload, onSample, o
       <p className="doc-match is-review"><Icon name="info" size={14} />不計入準備完成度。請上傳{spec.title}由系統驗證，或由專員確認。</p>
       <div className="doc-pending-actions">
         <button type="button" className="button button-secondary button-small" disabled={disabled} onClick={onUpload}>上傳文件<Icon name="upload" size={15} /></button>
-        <button type="button" className="link-button" disabled={disabled} onClick={onSample}>使用範例{spec.title}</button>
+        {onSample && <button type="button" className="link-button" disabled={disabled} onClick={onSample}>使用範例{spec.title}</button>}
         <button type="button" className="link-button" disabled={disabled} onClick={onEdit}>編輯資訊</button>
         <button type="button" className="link-button" disabled={disabled} onClick={onRemove}>移除</button>
       </div>
@@ -103,7 +103,7 @@ function Analyzing() {
   );
 }
 
-export default function DocumentCard({ type, document, manualInformation, manualVerifies = true, uiState, busy, onUpload, onRemove, onManual, onRemoveManual, onRetry, registerInput }) {
+export default function DocumentCard({ type, document, manualInformation, manualVerifies = true, uiState, busy, onUpload, onSample, onRemove, onManual, onRemoveManual, onRetry, registerInput }) {
   const spec = documentSpecs[type];
   const input = useRef(null);
   const depth = useRef(0);
@@ -182,7 +182,7 @@ export default function DocumentCard({ type, document, manualInformation, manual
 
         {state === 'pending' && (
           <PendingInformation key="pending" type={type} information={manualInformation} disabled={disabled}
-            onUpload={() => input.current?.click()} onSample={() => onUpload(type, { sample: true })}
+            onUpload={() => input.current?.click()} onSample={onSample ? () => onSample(type) : null}
             onEdit={() => onManual(type, null)} onRemove={() => onRemoveManual?.(type)} />
         )}
 
@@ -193,7 +193,7 @@ export default function DocumentCard({ type, document, manualInformation, manual
             <p className="dropzone-hint">PDF、PNG、JPG、WebP，10 MB 以內</p>
             <div className="dropzone-actions">
               <button type="button" className="button button-secondary button-small" disabled={disabled} onClick={() => input.current?.click()}>選擇文件</button>
-              <button type="button" className="link-button" disabled={disabled} onClick={() => { setError(''); onUpload(type, { sample: true }); }}>使用範例{spec.title}</button>
+              {onSample && <button type="button" className="link-button" disabled={disabled} onClick={() => { setError(''); onSample(type); }}>使用範例{spec.title}</button>}
               {!manualVerifies && onManual && <button type="button" className="link-button" disabled={disabled} onClick={() => onManual(type, null)}>{manualLabel}</button>}
             </div>
           </motion.div>

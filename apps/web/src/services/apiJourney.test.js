@@ -116,14 +116,46 @@ test('a 住院 information question (knowledge_query) never creates a journey', 
 test('server errors reach the user as written', async t => {
   const service = client(await backend(t));
   await service.analyze(DEMO_STORY);
-  const text = new File(['hello'], 'note.txt', { type: 'text/plain' });
-  await assert.rejects(service.uploadDocument('diagnosis_certificate', { file: text }), error => error.code === 'UNSUPPORTED_FILE_TYPE' && /PDF/.test(error.message));
-  await assert.rejects(service.submitManual('bank_passbook', { bankName: null, accountLast4: null }), { code: 'INVALID_INPUT' });
+  await assert.rejects(service.submitManual('bank_passbook', { bankName: null, accountLast4: null }), error => error.code === 'INVALID_INPUT' && error.status === 400);
+});
+
+test('formal mode is real use: a demo server never "recognises" the user\'s own file', async t => {
+  let posted = 0;
+  const baseUrl = await backend(t);
+  const service = createApiJourneyService({
+    baseUrl, storage: memoryStorage(),
+    understand: (message, { signal } = {}) => understandIntent(message, { signal, baseUrl }),
+    fetchImpl: (url, init) => { if (init?.method === 'POST' && String(url).endsWith('/documents')) posted += 1; return fetch(url, init); },
+  });
+  assert.equal(service.capabilities.samples, false, 'the formal UI offers no sample documents');
+  await service.analyze(DEMO_STORY);
+  const photo = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0xff, 0xd9])], 'photo.jpg', { type: 'image/jpeg' });
+  await assert.rejects(service.uploadDocument('diagnosis_certificate', { file: photo }), error => error.code === 'DOCUMENT_RECOGNITION_UNAVAILABLE' && /尚未啟用文件辨識/.test(error.message));
+  assert.equal(posted, 0, 'the file is not sent to a demo server');
+});
+
+test('fixture fields returned for the user\'s own file are withdrawn when the mode header is missing', async t => {
+  const baseUrl = await backend(t);
+  const dropHeader = async (url, init) => {
+    const response = await fetch(url, init);
+    const headers = new Headers(response.headers);
+    headers.delete('X-NAVI-AI-Mode');
+    return new Response(await response.arrayBuffer(), { status: response.status, headers });
+  };
+  const service = createApiJourneyService({
+    baseUrl, storage: memoryStorage(), fetchImpl: dropHeader,
+    understand: (message, { signal } = {}) => understandIntent(message, { signal, baseUrl }),
+  });
+  await service.analyze(DEMO_STORY);
+  const pdf = new File(['%PDF-1.4\nmy own scan\n%%EOF'], 'scan.pdf', { type: 'application/pdf' });
+  await assert.rejects(service.uploadDocument('diagnosis_certificate', { file: pdf }), { code: 'DOCUMENT_RECOGNITION_UNAVAILABLE' });
+  const explanation = await service.explain();
+  assert.equal(explanation.criteria.find(c => c.id === 'diagnosis_certificate').reasonCode, 'DOCUMENT_MISSING', 'the sample fields are not kept');
 });
 
 test('formal-mode manual information is stored as 待確認: no readiness, no document, no review; a verified upload replaces it', async t => {
   const service = client(await backend(t));
-  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true });
+  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: false });
   await service.analyze(DEMO_STORY);
   const typed = await service.submitManual('diagnosis_certificate', { hospitalName: '臺中榮民總醫院', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', reportedInpatientDays: 5 });
   assert.equal(typed.journey.readiness, 35, 'manual information adds no readiness');
