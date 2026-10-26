@@ -111,6 +111,7 @@ npm run knowledge:rollback -- --token-file data/private/knowledge/access-token \
 - 既有 `/api/knowledge/search`、`/api/knowledge/evidence`、Journey Source與postMessage格式不破壞。Search回應及條目新增 `knowledgeVersion`，來源ID保持原樣。
 - 新增 `GET /api/knowledge/version`：版本、發布時間、SHA、Source Manifest、前一版、批准Change IDs；不含private review資料。
 - 新增 `GET /api/knowledge/versioned-evidence?query=...`：`{ knowledgeVersion, evidence }`，evidence仍為既有EvidenceResponseSchema，提供標題、URL、日期與核對過的摘錄。A可在來源卡顯示外層knowledgeVersion，不需修改舊Journey Source Schema。
+- 經A確認，既有SourceEvidence展開區使用相同公開快照的Source ID顯示知識版本，沿用原小字樣式；沒有新增網路呼叫或更動導覽／動畫。
 - `shared/knowledge/index.js` 的 `createKnowledgeEngine(snapshot)` 沿用同一排名與驗證邏輯。候選只在隔離引擎評估；預設前後端引擎只載入正式公開快照。Grounded context也附版本，仍禁止描述成即時官網查核。
 - 未新增公開審核／發布API或後台。這些寫入一律在本機CLI完成。
 
