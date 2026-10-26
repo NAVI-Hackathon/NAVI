@@ -40,8 +40,9 @@ export function createTestSessions(config, repository) {
     if (!['GET', 'HEAD'].includes(req.method) && !config.origins.includes(req.headers.origin)) throw new ApiError('ORIGIN_NOT_ALLOWED', '請從核准的 NAVI 網頁操作。', 403, false);
   }
   function documentUpload(req) {
-    const operator = enabled && sessions.get(current(req))?.operator === true;
-    return { builtInSynthetic: enabled && Boolean(current(req)) && (operator || config.syntheticDocumentHashes.length > 0), userProvidedSynthetic: operator, realPersonalDocuments: false };
+    const session = sessions.get(current(req));
+    const allowed = enabled && Boolean(session) && (config.publicSynthetic || session.operator === true);
+    return { builtInSynthetic: allowed, userProvidedSynthetic: allowed, realPersonalDocuments: false };
   }
   return {
     documentUpload,
@@ -67,12 +68,8 @@ export function createTestSessions(config, repository) {
         next();
       } catch (error) { next(error); }
     },
-    authorizeDocument(req, upload) {
+    authorizeDocument(req) {
       requireSession(req);
-      // The hash authorizes a built-in sample only; an operator may test other synthetic bytes.
-      if (enabled && !documentUpload(req).userProvidedSynthetic && !config.syntheticDocumentHashes.includes(createHash('sha256').update(upload.bytes).digest('hex'))) {
-        throw new ApiError('SYNTHETIC_DOCUMENT_REQUIRED', '此工作階段僅接受內建合成文件；自行提供的合成文件需由工作人員授權，請勿上傳真實醫療或銀行資料。', 422, false);
-      }
     },
     own(req, id) { if (enabled) owners.set(id, current(req)); },
     authorize(req, id) {

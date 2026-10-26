@@ -57,15 +57,18 @@ test('Untrusted or absent origin cannot auto-create a public session or trigger 
   assert.equal(foreign.status, 403); assert.equal(calls, 0);
 });
 
-test('Anonymous documents require approved bytes, not a filename or a browser claim', async t => {
+test('Anonymous upload permission does not bypass content classification or document validation', async t => {
   let calls = 0; const demo = createDemoProvider();
-  const service = await api(t, config(), { ...demo, mode: 'live', analyzeDocument: async upload => { calls++; return demo.analyzeDocument(upload); } });
+  const service = await api(t, config(), { ...demo, mode: 'live', analyzeDocument: async upload => {
+    calls++; return upload.bytes.equals(samplePdf('diagnosis_certificate')) ? demo.analyzeDocument(upload) : { documentType: 'unknown', confidence: .1, fields: {} };
+  } });
   const created = await service.post('/journeys', { message: story }); const cookie = created.headers.get('set-cookie').split(';')[0]; const journey = await created.json();
   const upload = bytes => { const form = new FormData(); form.set('file', new Blob([bytes], { type: 'application/pdf' }), 'NAVI-SYNTHETIC.pdf'); form.set('documentType', 'diagnosis_certificate'); return form; };
   const rejected = await service.post(`/journeys/${journey.id}/documents`, upload(samplePdf('boarding_pass')), cookie);
-  assert.equal(rejected.status, 422); assert.equal((await rejected.json()).error.code, 'SYNTHETIC_DOCUMENT_REQUIRED'); assert.equal(calls, 0);
+  assert.equal(rejected.status, 422); assert.equal((await rejected.json()).error.code, 'DOCUMENT_UNRECOGNIZED'); assert.equal(calls, 1);
+  assert.equal((await (await fetch(service.base + '/journeys/' + journey.id, { headers: { Cookie: cookie } })).json()).readiness, 35);
   const accepted = await service.post(`/journeys/${journey.id}/documents`, upload(samplePdf('diagnosis_certificate')), cookie);
-  assert.equal(accepted.status, 200); const added = await accepted.json(); assert.equal(added.journey.readiness, 70); assert.equal(added.document.isMock, false); assert.equal(calls, 1);
+  assert.equal(accepted.status, 200); const added = await accepted.json(); assert.equal(added.journey.readiness, 70); assert.equal(added.document.isMock, false); assert.equal(calls, 2);
 });
 
 test('A timed-out regular request returns JSON and does not shut down subsequent real-provider requests', async t => {
