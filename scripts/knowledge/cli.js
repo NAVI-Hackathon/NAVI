@@ -4,7 +4,7 @@ import { readFileSync, mkdirSync, writeFileSync, existsSync, lstatSync } from 'n
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { initializeStore, bootstrap, importCandidates, listReviews, decide, publish, rollback, status, compareVersions, atomicJson, sha256 } from './lifecycle.js';
+import { initializeStore, bootstrap, importCandidates, listReviews, decide, approveFaqAppend, publish, rollback, status, compareVersions, atomicJson, sha256 } from './lifecycle.js';
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: Object.fromEntries([
   ...['root','store','token-file','report','snapshot','change','status','reviewer','reason','mapping','version','left','right','out','baseline','from-snapshot','source'].map(name => [name,{type:'string'}]),
@@ -70,6 +70,7 @@ switch (positionals[0]) {
     break;
   }
   case 'publish': result=await publish({root,store,tokenFile,changeIds:values.change?.split(',')}); break;
+  case 'approve-faqs': result=await approveFaqAppend({root,store,tokenFile,plan:json(values.mapping),reviewer:values.reviewer,reason:values.reason,wholePageConfirmed:values['whole-page-confirmed']}); break;
   case 'rollback': result=await rollback({root,store,tokenFile,version:values.version,reviewer:values.reviewer,reason:values.reason}); break;
   case 'diff': result=compareVersions(root,values.left,values.right); break;
   default: throw Error('使用 init / refresh / import / review / publish / status / diff / rollback；寫入需要 --token-file。');

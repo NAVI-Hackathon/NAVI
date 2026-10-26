@@ -6,10 +6,11 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import seed from '../../../data/cardif_seed_data.json' with { type: 'json' };
-import { initializeStore, bootstrap, importCandidates, listReviews, decide, publish, rollback, status, compareVersions, sha256, validateRelease, atomicJson, locked } from '../../../scripts/knowledge/lifecycle.js';
+import { initializeStore, bootstrap, importCandidates, listReviews, decide, approveFaqAppend, publish, rollback, status, compareVersions, sha256, validateRelease, atomicJson, locked } from '../../../scripts/knowledge/lifecycle.js';
 import { createKnowledgeEngine } from '../../../shared/knowledge/index.js';
 import { runDemonstration } from '../../../scripts/knowledge/demo.js';
 import { offlineNetworkStats } from './networkGuard.js';
+import { evaluateKnowledge, loadKnowledgeDataset } from '../eval/knowledge/runner.js';
 
 const repo=fileURLToPath(new URL('../../../',import.meta.url));
 const quickEvaluation=async engine=>({failed:0, sources:engine.knowledgeEntries.length});
@@ -158,5 +159,56 @@ test('Failed atomic serialization preserves the old file and removes temporary f
   const target=join(root,'snapshot.json');atomicJson(target,{version:'previous'});
   assert.throws(()=>atomicJson(target,{invalid:1n}));
   assert.deepEqual(JSON.parse(readFileSync(target)),{version:'previous'});assert.deepEqual(readdirSync(root),['snapshot.json']);
+});
+async function appendFixture(t) {
+  const f=await fixture(t),entries=[{q:'參加這項服務的公司有哪些？',a:'固定測試公司名單。'},{q:'如何查詢這項服務的進度？',a:'固定測試查詢說明。'}];
+  const context='## 固定測試Q&A\n\n'+entries.map(e=>'* '+e.q+'\n'+e.a).join('\n\n');
+  const parts=entries.map((entry,i)=>{const text='* '+entry.q+'\n'+entry.a;return {...f.candidate,changeId:`append:${i}`,category:'Added',old:null,new:{id:`paragraph-${i}`,text,sha256:sha256(text)}};});
+  const whole={...f.candidate,changeId:'append:whole',category:'Requires Manual Review',old:null,new:null};
+  const page={...f.page,content_md:context,normalizedContentSha256:sha256(context)};
+  await importCandidates({...f,report:{changes:[...parts,whole]},pages:[page]});
+  const plan={operation:'append_faq',changeIds:[...parts,whole].map(c=>c.changeId),entries,anchorsConfirmed:['faq-13','faq-14'],workflowCompatibility:'reviewed_no_rule_change'};
+  const approve=(overrides={})=>approveFaqAppend({...f,plan,reviewer:'FIXTURE-REVIEWER',reason:'test the explicitly approved append migration',wholePageConfirmed:true,...overrides});
+  return {...f,plan,approveAppend:approve};
+}
+test('FAQ append requires authority, complete source review, exact quotes and confirmed anchors',async t=>{
+  const f=await appendFixture(t);
+  await assert.rejects(f.approveAppend({tokenFile:undefined}),/未授權/);
+  await assert.rejects(f.approveAppend({wholePageConfirmed:false}),/整頁/);
+  for(const plan of [{...f.plan,changeIds:f.plan.changeIds.slice(1)},{...f.plan,anchorsConfirmed:['faq-999','faq-1000']},{...f.plan,entries:[{q:'憑空的問題',a:'無來源答案'}]}]) await assert.rejects(f.approveAppend({plan}));
+  assert.ok(listReviews(f.store).every(c=>c.status==='PENDING'));
+});
+test('Approved appended FAQs retain old IDs, dates and requirements and support rollback',async t=>{
+  const f=await appendFixture(t),before=JSON.parse(readFileSync(join(f.root,'data/cardif_public_data.json'))),oldEngine=createKnowledgeEngine(before);
+  const approved=await f.approveAppend();assert.equal(approved.approved,3);assert.deepEqual(approved.addedSourceIds,['faq:13','faq:14']);
+  const result=await publish({...f,changeIds:f.plan.changeIds});assert.equal(result.adopted,3);assert.equal(result.addedEntries,2);
+  const after=JSON.parse(readFileSync(join(f.root,'data/cardif_public_data.json'))),engine=createKnowledgeEngine(after);
+  assert.deepEqual(after.faq.slice(0,before.faq.length),before.faq);assert.deepEqual(after.services,before.services);assert.deepEqual(after.claim_document_requirements,before.claim_document_requirements);
+  for(const entry of oldEngine.knowledgeEntries){assert.equal(engine.getKnowledgeEntry(entry.id).retrievedAt,entry.retrievedAt);assert.equal(engine.getKnowledgeEntry(entry.id).dateBasis,entry.dateBasis);}
+  const added=engine.getKnowledgeEntry('faq:13');assert.equal(added.retrievedAt,'2026-10-21');assert.equal(added.navigationDestination.anchor,'faq-13');assert.ok(engine.verifyKnowledgeSource(engine.knowledgeSource(added)));assert.ok(engine.verifyNavigationDestination(added.navigationDestination,added.id));
+  assert.equal((await publish({...f,changeIds:f.plan.changeIds})).adopted,0);
+  await rollback({...f,reviewer:'FIXTURE-REVIEWER',reason:'test restore'});assert.equal(status(f.root).knowledgeVersion,f.before.knowledgeVersion);assert.equal(listReviews(f.store).find(c=>c.changeId==='append:whole').status,'APPROVED');
+});
+test('Revoking a paragraph approval prevents adoption of its whole-page FAQ batch',async t=>{
+  const f=await appendFixture(t);await f.approveAppend();await f.approve({changeId:'append:0',status:'REJECTED',mapping:undefined});
+  await assert.rejects(publish({...f,changeIds:['append:whole']}),/審核已失效/);assert.equal(status(f.root).knowledgeVersion,f.before.knowledgeVersion);
+});
+test('Dataset date changes cannot promote unchanged legacy dates to fresh entry dates',async t=>{
+  const f=await fixture(t),before=createKnowledgeEngine(JSON.parse(readFileSync(join(f.root,'data/cardif_public_data.json'))));await f.approve();await publish({...f,synthetic:true});
+  const snapshot=JSON.parse(readFileSync(join(f.root,'data/cardif_public_data.json'))),after=createKnowledgeEngine(snapshot);
+  assert.equal(snapshot.meta.legacyRetrievedAt,seed.meta.crawled);assert.equal(snapshot.faq[1].retrievedAt,undefined);
+  for(const entry of before.knowledgeEntries)if(entry.id!=='faq:1')assert.equal(after.getKnowledgeEntry(entry.id).retrievedAt,entry.retrievedAt);
+});
+test('Candidate navigation validation remains bound to canonical IDs and source fields',async t=>{
+  const f=await appendFixture(t);await f.approveAppend();await publish({...f,changeIds:f.plan.changeIds});const engine=createKnowledgeEngine(JSON.parse(readFileSync(join(f.root,'data/cardif_public_data.json'))));
+  const entry=engine.getKnowledgeEntry('faq:13'),source=engine.knowledgeSource(entry);assert.ok(engine.verifyKnowledgeSource(source));
+  assert.equal(engine.verifyNavigationDestination({...entry.navigationDestination,anchor:'faq-9999'},entry.id),false);
+  assert.equal(engine.verifyNavigationDestination({...entry.navigationDestination,source:{...entry.navigationDestination.source,url:'https://evil.invalid'}},entry.id),false);
+  assert.equal(engine.verifyKnowledgeSource({...source,url:'https://evil.invalid'}),false);assert.equal(engine.verifyKnowledgeSource({...source,sourceId:'faq:14'}),false);
+});
+test('Pre-adoption rollback evaluates all applicable cases and explicitly reports newer source cases',async t=>{
+  const f=await fixture(t),engine=createKnowledgeEngine(JSON.parse(readFileSync(join(f.root,'data/cardif_public_data.json')))),dataset=await loadKnowledgeDataset();
+  const missing=dataset.filter(item=>item.requiresSourceIds?.some(id=>!engine.getKnowledgeEntry(id))).map(item=>item.id);
+  const result=evaluateKnowledge(dataset,engine);assert.equal(result.failed,0);assert.deepEqual(result.skippedVersionCases,missing);assert.equal(result.total+missing.length,dataset.length);assert.ok(result.total>=111);
 });
 test('No remote Gemini or paid request is emitted by lifecycle tests',()=>{assert.equal(offlineNetworkStats().externalRequests,0);assert.equal(offlineNetworkStats().blockedExternalAttempts,0);});

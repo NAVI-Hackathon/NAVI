@@ -5,7 +5,7 @@ import raw from '../data/cardif_public_data.json' with { type: 'json' };
 const strings = z.array(z.string());
 const officialUrl = z.url().regex(/^https:\/\/life\.cardif\.com\.tw\//);
 export const cardif = z.object({
-  meta: z.object({ crawled: z.iso.date(), knowledgeVersion: z.string().regex(/^kb-[a-z0-9-]+$/).optional(), syntheticDemo: z.literal(true).optional() }),
+  meta: z.object({ crawled: z.iso.date(), legacyRetrievedAt: z.iso.date().optional(), knowledgeVersion: z.string().regex(/^kb-[a-z0-9-]+$/).optional(), syntheticDemo: z.literal(true).optional() }),
   services: z.array(z.object({ id: z.string(), name: z.string(), category: z.string(), url: officialUrl, channels: strings, documents: strings, notes: strings, keywords: strings.optional(), partner_hospitals: strings.optional(), precheck_questions: strings.optional(), requires_login: z.boolean().optional(), related_forms: strings.optional(), apply_time: z.string().nullable().optional(), effective_time: z.string().nullable().optional(), online_available: z.string().nullable().optional(), online_requirements: strings.optional(), retrievedAt: z.iso.date().optional() })),
   forms: z.array(z.object({ id: z.string(), name: z.string(), note: z.string().optional(), page: officialUrl.optional(), url: officialUrl.optional(), retrievedAt: z.iso.date().optional() })),
   faq: z.array(z.object({ q: z.string(), a: z.string(), source: officialUrl, retrievedAt: z.iso.date().optional() })),
@@ -23,7 +23,7 @@ export const sitePaths = Object.freeze({
   'https://life.cardif.com.tw/insurancedictionary': '/glossary',
 });
 const titles = { '/services': '保戶服務', '/services/forms': '常用表單下載', '/services/policy-change': '保單變更', '/services/policy-loan': '保單借款', '/services/claims': '理賠程序介紹', '/services/online': '網路保險服務', '/glossary': '保險名詞' };
-export const officialSource = (url, retrievedAt = cardif.meta.crawled) => ({ url, title: titles[sitePaths[url]] ?? '法國巴黎人壽官網', retrievedAt });
+export const officialSource = (url, retrievedAt = cardif.meta.legacyRetrievedAt ?? cardif.meta.crawled) => ({ url, title: titles[sitePaths[url]] ?? '法國巴黎人壽官網', retrievedAt });
 export const kebab = id => id.replace(/[_.\s]+/g, '-').toLowerCase();
 export function formAnchor(id) {
   const base = id.startsWith('form_') ? kebab(id) : `form-${kebab(id)}`;

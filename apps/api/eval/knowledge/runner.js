@@ -5,7 +5,7 @@ import * as productionEngine from '../../../../shared/knowledge/index.js';
 import { searchPublicKnowledge } from '../../src/services/knowledgeService.js';
 import { offlineNetworkStats } from '../../test/networkGuard.js';
 
-const common = { id: z.string().min(1), synthetic: z.literal(true) };
+const common = { id: z.string().min(1), synthetic: z.literal(true), requiresSourceIds: z.array(z.string()).optional() };
 const datasetSchema = z.array(z.discriminatedUnion('kind', [
   z.object({ ...common, kind: z.literal('query'), query: z.string(), status: z.enum(['answered', 'not_found', 'out_of_scope']), expectedTop1: z.string().nullable(), expectedTop3: z.array(z.string()), group: z.enum(['frontend_baseline', 'new_retrieval', 'unsupported', 'scope']) }).strict(),
   z.object({ ...common, kind: z.literal('navigation'), sourceId: z.string(), patch: z.object({ path: z.string().optional(), anchor: z.string().optional(), sourceUrl: z.string().optional(), retrievedAt: z.string().optional(), sourceId: z.string().optional() }).strict(), accepted: z.boolean() }).strict(),
@@ -18,6 +18,10 @@ export async function loadKnowledgeDataset() {
 }
 export function evaluateKnowledge(cases, engine = productionEngine) {
   const { searchKnowledge, getKnowledgeEntry, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, verifyEvidenceSnippet, verifyNavigationDestination } = engine;
+  // New-source checks cannot invalidate rollback to a release predating those sources.
+  const datasetTotal = cases.length;
+  const skippedVersionCases = cases.filter(item => item.requiresSourceIds?.some(id => !getKnowledgeEntry(id))).map(item => item.id);
+  cases = cases.filter(item => !skippedVersionCases.includes(item.id));
   const counters = Object.fromEntries(['top1Accuracy', 'top3Recall', 'unsupportedQueryRejection', 'outOfScopeDetection', 'navigationAccuracy'].map(k => [k, { passed: 0, total: 0 }]));
   const count = (metric, passed) => { counters[metric].total++; if (passed) counters[metric].passed++; };
   let sourceCount = 0, invalidSources = 0, routeCount = 0, invalidRoutes = 0;
@@ -67,7 +71,7 @@ export function evaluateKnowledge(cases, engine = productionEngine) {
   metrics.latencyMs = { p50: percentile(.5), p95: percentile(.95), samples: latencies.length, scope: 'warm local shared retrieval; excludes HTTP and module initialization' };
   const network = offlineNetworkStats();
   assert.equal(network.blockedExternalAttempts, 0, 'Local evaluation must not even attempt an external request');
-  return { scope: 'local_knowledge', total: results.length, passed: results.filter(r => r.passed).length, failed: results.filter(r => !r.passed).length,
+  return { scope: 'local_knowledge', datasetTotal, skippedVersionCases, total: results.length, passed: results.filter(r => r.passed).length, failed: results.filter(r => !r.passed).length,
     newCases: cases.filter(c => c.kind === 'navigation' || c.group === 'new_retrieval').length,
     newRetrievalCases: cases.filter(c => c.kind === 'query' && c.group === 'new_retrieval').length,
     metrics, geminiRequests: network.externalRequests, paidApiCalls: 0, blockedExternalAttempts: network.blockedExternalAttempts,
