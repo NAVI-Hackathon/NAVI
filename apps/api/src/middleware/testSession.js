@@ -5,7 +5,7 @@ const TTL = 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest();
 const cookieName = '__Host-navi-test';
 
-// Synthetic access only; anonymous cookies are not patient authentication or medical intake.
+// Sessions authorize synthetic testing, never real patient or bank-data intake.
 export function createTestSessions(config, repository) {
   const sessions = new Map(); const owners = new Map();
   const requestSessions = new WeakMap();
@@ -30,7 +30,7 @@ export function createTestSessions(config, repository) {
     sweep();
     if (sessions.size >= 20) throw new ApiError('TEST_SESSION_CAPACITY', '目前使用人數較多，請稍後再試。', 429, true);
     const id = randomBytes(32).toString('hex');
-    sessions.set(id, { expiresAt: Date.now() + TTL, intents: new Map(), operator });
+    sessions.set(id, { expiresAt: Date.now() + TTL, intents: new Map(), operator, aiRequests: 0 });
     requestSessions.set(req, id);
     res.cookie(cookieName, id, { httpOnly: true, secure: true, sameSite: 'strict', path: '/', maxAge: TTL });
   }
@@ -39,13 +39,18 @@ export function createTestSessions(config, repository) {
     if (!current(req)) throw new ApiError('TEST_SESSION_REQUIRED', '此原型目前僅開放經授權的合成資料測試；請使用示範模式。', 403, false);
     if (!['GET', 'HEAD'].includes(req.method) && !config.origins.includes(req.headers.origin)) throw new ApiError('ORIGIN_NOT_ALLOWED', '請從核准的 NAVI 網頁操作。', 403, false);
   }
+  function documentUpload(req) {
+    const operator = enabled && sessions.get(current(req))?.operator === true;
+    return { builtInSynthetic: enabled && Boolean(current(req)), userProvidedSynthetic: operator, realPersonalDocuments: false };
+  }
   return {
+    documentUpload,
     activate(req, res) {
       if (!enabled || config.sessionToken.length < 32) throw new ApiError('AI_UNAVAILABLE', '目前未開放合成資料測試。', 503, false);
       const body = req.body;
       if (!config.origins.includes(req.headers.origin) || !body || Object.keys(body).sort().join(',') !== 'syntheticOnly,token' || body.syntheticOnly !== true || typeof body.token !== 'string' || !timingSafeEqual(hash(body.token), hash(config.sessionToken))) throw new ApiError('TEST_SESSION_DENIED', '無法啟用測試，請確認授權與合成資料聲明。', 403, false);
       issue(req, res, true);
-      res.set('Cache-Control', 'no-store').status(201).json({ syntheticOnly: true, expiresInSeconds: TTL / 1000, disclosure: '僅限合成資料。資料會送至 Google Gemini；免費服務資料可能用於改善產品。不可上傳真實醫療、銀行或個人資料。', documentRetention: '上傳檔案僅於記憶體中分析，不寫入磁碟；結構化測試案件最長保留一小時，重啟即清除。' });
+      res.set('Cache-Control', 'no-store').status(201).json({ syntheticOnly: true, documentUpload: documentUpload(req), expiresInSeconds: TTL / 1000, disclosure: '僅限合成資料。資料會送至 Google Gemini；免費服務資料可能用於改善產品。不可上傳真實醫療、銀行或個人資料。', documentRetention: '上傳檔案僅於記憶體中分析，不寫入磁碟；結構化測試案件最長保留一小時，重啟即清除。' });
     },
     guard(req, res, next) {
       try {
@@ -53,12 +58,20 @@ export function createTestSessions(config, repository) {
           if (!config.origins.includes(req.headers.origin)) throw new ApiError('ORIGIN_NOT_ALLOWED', '請從核准的 NAVI 網頁操作。', 403, false);
           issue(req, res, false);
         }
-        requireSession(req); next();
+        requireSession(req);
+        if (enabled) {
+          const session = sessions.get(current(req));
+          if (session.aiRequests >= (config.sessionRequestLimit ?? 6)) throw new ApiError('AI_SESSION_LIMIT_REACHED', '這個工作階段的 AI 操作次數已用完，請使用示範模式或由工作人員協助。', 429, false);
+          session.aiRequests++;
+        }
+        next();
       } catch (error) { next(error); }
     },
     authorizeDocument(req, upload) {
-      if (enabled && config.publicSynthetic && !sessions.get(current(req))?.operator && !config.syntheticDocumentHashes.includes(createHash('sha256').update(upload.bytes).digest('hex'))) {
-        throw new ApiError('SYNTHETIC_DOCUMENT_REQUIRED', '目前公開原型只接受經核准的合成測試文件，請勿上傳真實醫療或銀行資料。', 422, false);
+      requireSession(req);
+      // The hash authorizes a built-in sample only; an operator may test other synthetic bytes.
+      if (enabled && !documentUpload(req).userProvidedSynthetic && !config.syntheticDocumentHashes.includes(createHash('sha256').update(upload.bytes).digest('hex'))) {
+        throw new ApiError('SYNTHETIC_DOCUMENT_REQUIRED', '此工作階段僅接受內建合成文件；自行提供的合成文件需由工作人員授權，請勿上傳真實醫療或銀行資料。', 422, false);
       }
     },
     own(req, id) { if (enabled) owners.set(id, current(req)); },

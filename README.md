@@ -285,3 +285,5 @@ Release 1 已部署 A 的可信來源 UI 與公開資料安全修正，精確應
 ### Live / Demo Provider Isolation
 
 Backend 的受控合成測試 Session、案件 Cookie、持久化免費額度與錯誤契約見 [Live Production Isolation](docs/live-production-isolation.md)。正式 API 不使用 Demo Fixture 回退，`/demo` 保留前端離線備援。一般民眾真實敏感文件尚未開放。
+
+受控 Session 的自行上傳能力、合成 PDF 位元組／SHA-256 驗證、每 Session 上限及 A 接入契約見 [2026-10-26 文件上傳驗證](docs/live-synthetic-verification-2026-10-26.md)。SHA 白名單只授權內建合成文件，不限制操作員上傳其他合成文件；真實個人文件仍禁止，Live 成功需另行實測。

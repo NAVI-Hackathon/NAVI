@@ -42,13 +42,17 @@ export async function parseUpload(req) {
   if (file.size > MAX_DOCUMENT_BYTES) throw new ApiError('DOCUMENT_TOO_LARGE', '文件超過 10 MB，請選擇較小的文件。', 413);
   if (!DOCUMENT_MIME_TYPES.includes(file.type)) throw new ApiError('UNSUPPORTED_FILE_TYPE', '請選擇 PDF、PNG、JPG 或 WebP。', 415);
   const bytes = Buffer.from(await file.arrayBuffer());
-  if (!matchesSignature(bytes, file.type)) throw new ApiError('UNSUPPORTED_FILE_TYPE', '文件內容與格式不符，請重新選擇。', 415);
-  if (!completeContainer(bytes, file.type)) throw new ApiError('DOCUMENT_INVALID', '文件可能損壞或不完整，請重新選擇清晰的文件。', 422, true);
-  const documentType = form.get('documentType');
-  if (documentType !== null && typeof documentType !== 'string') throw new ApiError('INVALID_INPUT', '請提供有效的 documentType。', 400);
-  if (documentType !== null && !DocumentAnalysisSchema.options.some(schema => schema.shape.documentType.value === documentType)) throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇符合服務需求的文件。', 422, true);
-  const filename = file.name.replace(/\\/g, '/').split('/').at(-1).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 180) || 'document';
-  return { documentType, bytes, filename, mimeType: file.type, size: file.size };
+  try {
+    if (!matchesSignature(bytes, file.type)) throw new ApiError('UNSUPPORTED_FILE_TYPE', '文件內容與格式不符，請重新選擇。', 415);
+    if (!completeContainer(bytes, file.type)) throw new ApiError('DOCUMENT_INVALID', '文件可能損壞或不完整，請重新選擇清晰的文件。', 422, true);
+    const extensions = { 'application/pdf': /\.pdf$/i, 'image/png': /\.png$/i, 'image/jpeg': /\.jpe?g$/i, 'image/webp': /\.webp$/i };
+    if (!extensions[file.type].test(file.name)) throw new ApiError('UNSUPPORTED_FILE_TYPE', '副檔名與文件格式不符，請選擇 PDF、PNG、JPG 或 WebP。', 415);
+    const documentType = form.get('documentType');
+    if (documentType !== null && typeof documentType !== 'string') throw new ApiError('INVALID_INPUT', '請提供有效的 documentType。', 400);
+    if (documentType !== null && !DocumentAnalysisSchema.options.some(schema => schema.shape.documentType.value === documentType)) throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇符合服務需求的文件。', 422, true);
+    const filename = file.name.replace(/\\/g, '/').split('/').at(-1).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 180) || 'document';
+    return { documentType, bytes, filename, mimeType: file.type, size: file.size };
+  } catch (error) { bytes.fill(0); throw error; }
 }
 export async function analyzeDocument(upload, { provider, config, signal }) {
   if (!provider.analyzeDocument) throw new ApiError('DOCUMENT_INTELLIGENCE_NOT_AVAILABLE', '目前僅支援示範文件流程，真實文件辨識尚未開放。', 501, false);
