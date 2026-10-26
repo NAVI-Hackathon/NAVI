@@ -1,4 +1,6 @@
 import express from 'express';
+import { understandTasks } from '../services/taskService.js';
+import { CorrectJourneyIntentRequestSchema, CorrectJourneyIntentResponseSchema } from '../../../../shared/serviceTasks.js';
 import { getKnowledgeVersion } from '../services/knowledgeVersionService.js';
 import { NavigationPlanRequestSchema, HandoffConfirmRequestSchema } from '../../../../shared/competition.js';
 import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
@@ -39,6 +41,16 @@ export function createJourneyRouter({ config, provider, repository, sessions }) 
     res.status(201).json(handoff.preview(req.params.id));
   });
   router.post('/journeys/:id/handoff/confirm', (req, res) => res.json(handoff.confirm(req.params.id, validate(HandoffConfirmRequestSchema, req.body))));
+  router.post('/intelligence/tasks', async (req, res) => {
+    const { message } = validate(RequestSchema, req.body);
+    const result = await understandTasks(message, { config, provider, signal: requestSignal(res) });
+    for (const task of result.tasks) sessions?.remember(req, task.input, task.data);
+    res.json(result);
+  });
+  router.post('/journeys/:id/intent-correction', async (req, res) => {
+    const { message } = validate(CorrectJourneyIntentRequestSchema, req.body);
+    res.json(CorrectJourneyIntentResponseSchema.parse(await service.correctIntent(req.params.id, message, requestSignal(res))));
+  });
   router.post('/analyze-intent', async (req, res) => {
     const { message } = validate(RequestSchema, req.body);
     const result = await understandIntent(message, { config, provider, signal: requestSignal(res) });

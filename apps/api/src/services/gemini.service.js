@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { TASK_PROMPT } from '../ai/prompts/taskPrompt.js';
+import { ProviderTasksSchema, tasksJsonSchema } from './taskService.js';
 import { SYSTEM_PROMPT } from '../ai/prompts/intentPrompt.js';
 import { DOCUMENT_PROMPT } from '../ai/prompts/documentPrompt.js';
 import { KNOWLEDGE_PROMPT, HANDOFF_PROMPT } from '../ai/prompts/knowledgePrompt.js';
@@ -73,6 +75,7 @@ export function createGeminiProvider(config, fetchImpl = fetch, { budget = creat
     getRequestBudget: budget.status,
     getDebugMetadata: () => Object.fromEntries([...metadata].map(([key, value]) => [key, { ...value }])),
     recordFallback(operation) { const value = metadata.get(operation); if (value) metadata.set(operation, { ...value, fallbackUsed: true }); },
+    understandTasks: (message, signal) => generate('tasks', TASK_PROMPT, [{ text: message }], tasksJsonSchema, raw => ProviderTasksSchema.parse(raw), signal),
     understandIntent: (message, signal) => generate('intent', SYSTEM_PROMPT, [{ text: message }], intentJsonSchema, normalizeGeminiIntent, signal),
     analyzeDocument: (upload, signal) => generate('document', DOCUMENT_PROMPT, [{ text: 'Extract the visible facts from this document.' }, { inlineData: { mimeType: upload.mimeType, data: upload.bytes.toString('base64') } }], documentJsonSchema, normalizeGeminiDocument, signal),
     answerKnowledge: (question, context, signal) => generate('knowledge', KNOWLEDGE_PROMPT, [{ text: JSON.stringify({ question, context }) }], z.toJSONSchema(GroundedAnswerSchema), raw => GroundedAnswerSchema.parse(raw), signal),

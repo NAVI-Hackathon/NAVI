@@ -33,8 +33,9 @@ export function determineNextAction(journey, config) {
   return journey.confirmed ? action('PROCEED_TO_SERVICE', null, '前往服務', '資料已準備完成，可接續既有服務；這不代表理賠核准或已送出申請。') : action('REVIEW_INFORMATION', null, '確認案件資料', '請確認航班資訊與已提供的文件。');
 }
 export function deriveJourney(journey, config) {
+  const definition = getJourneyDefinition(journey.serviceType);
   const documents = journey.documents.map(document => {
-    const verified = documentVerified(document, config.journeyConfidenceThreshold);
+    const verified = Boolean(definition && (definition.documentTypes ?? ['boarding_pass', 'delay_certificate']).includes(document.documentType) && documentVerified(document, config.journeyConfidenceThreshold));
     return { ...document, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [document.documentType] : [] };
   });
   const consistencyIssues = checkEvidenceConsistency(documents, journey.extractedData);
@@ -45,7 +46,6 @@ export function deriveJourney(journey, config) {
     for (const doc of documents) if (affected.includes(doc.id)) { doc.status = 'needs_review'; doc.matchedRequirements = []; }
   }
   journey = { ...journey, documents, consistencyIssues };
-  const definition = getJourneyDefinition(journey.serviceType);
   const verified = type => journey.documents.some(doc => doc.documentType === type && doc.status === 'verified');
   const boarding = verified('boarding_pass');
   const delay = verified('delay_certificate');

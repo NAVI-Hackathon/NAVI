@@ -7,8 +7,8 @@ import { samplePdf } from './sampleDocuments.js';
 
 export const HOSPITAL_STORY = '我上週在台中榮總住院五天，要怎麼申請理賠？';
 export const hospitalConfig = { ...loadConfig({ AI_MODE: 'demo', ALLOW_PAID_AI: 'false' }), rateLimit: 1000 };
-export async function startHospitalApi({ provider = createDemoProvider(), repository = new InMemoryJourneyRepository() } = {}) {
-  const server = createApp(hospitalConfig, provider, repository).listen(0, '127.0.0.1');
+export async function startHospitalApi({ provider = createDemoProvider(), repository = new InMemoryJourneyRepository(), config = hospitalConfig } = {}) {
+  const server = createApp(config, provider, repository).listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   const base = `http://127.0.0.1:${server.address().port}/api`;
   const request = (path, body, method = body === undefined ? 'GET' : 'POST') => fetch(base + path, { method, ...(body instanceof FormData ? { body } : body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
