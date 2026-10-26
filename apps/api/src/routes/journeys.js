@@ -1,4 +1,5 @@
 import express from 'express';
+import { getKnowledgeVersion } from '../services/knowledgeVersionService.js';
 import { NavigationPlanRequestSchema, HandoffConfirmRequestSchema } from '../../../../shared/competition.js';
 import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
 import { searchVerifiedKnowledge } from '../../../../shared/knowledge/evidence.js';
@@ -29,6 +30,8 @@ export function createJourneyRouter({ config, provider, repository, sessions }) 
   const service = createJourneyService({ config, provider, repository });
   const handoff = createHandoffConfirmationService({ getJourney: service.get });
   router.post('/navigation/plans', (req, res) => res.json(planNavigation(validate(NavigationPlanRequestSchema, req.body))));
+  router.get('/knowledge/version', (req, res) => res.json(getKnowledgeVersion({ allowSynthetic: !config.production })));
+  router.get('/knowledge/versioned-evidence', (req, res) => res.json({ knowledgeVersion: getKnowledgeVersion({ allowSynthetic: !config.production }).knowledgeVersion, evidence: searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query)) }));
   router.get('/knowledge/evidence', (req, res) => res.json(searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
   router.get('/journeys/:id/explanation', (req, res) => res.json(explainJourney(service.get(req.params.id))));
   router.post('/journeys/:id/handoff/preview', (req, res) => {

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
-import { searchKnowledge, getKnowledgeEntry, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, verifyEvidenceSnippet, verifyNavigationDestination } from '../../../../shared/knowledge/index.js';
+import * as productionEngine from '../../../../shared/knowledge/index.js';
 import { searchPublicKnowledge } from '../../src/services/knowledgeService.js';
 import { offlineNetworkStats } from '../../test/networkGuard.js';
 
@@ -16,7 +16,8 @@ export async function loadKnowledgeDataset() {
   assert.equal(new Set(cases.map(c => c.id)).size, cases.length);
   return cases;
 }
-export function evaluateKnowledge(cases) {
+export function evaluateKnowledge(cases, engine = productionEngine) {
+  const { searchKnowledge, getKnowledgeEntry, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, verifyEvidenceSnippet, verifyNavigationDestination } = engine;
   const counters = Object.fromEntries(['top1Accuracy', 'top3Recall', 'unsupportedQueryRejection', 'outOfScopeDetection', 'navigationAccuracy'].map(k => [k, { passed: 0, total: 0 }]));
   const count = (metric, passed) => { counters[metric].total++; if (passed) counters[metric].passed++; };
   let sourceCount = 0, invalidSources = 0, routeCount = 0, invalidRoutes = 0;
@@ -24,8 +25,7 @@ export function evaluateKnowledge(cases) {
   for (const item of cases) {
     let passed = true;
     if (item.kind === 'navigation') {
-      const original = knowledgeSource(getKnowledgeEntry(item.sourceId));
-      const target = structuredClone(original.navigationDestination);
+      const target = structuredClone(getKnowledgeEntry(item.sourceId).destination);
       const patch = item.patch;
       for (const k of ['path', 'anchor']) if (patch[k] !== undefined) target[k] = patch[k];
       if (patch.sourceUrl !== undefined) target.source.url = patch.sourceUrl;
@@ -37,7 +37,7 @@ export function evaluateKnowledge(cases) {
       const start = performance.now();
       const actual = searchKnowledge(item.query);
       latencies.push(performance.now() - start);
-      assert.deepEqual(searchPublicKnowledge(item.query), actual, 'Backend and browser-capable shared adapter must agree');
+      if (engine === productionEngine) assert.deepEqual(searchPublicKnowledge(item.query), actual, 'Backend and browser-capable shared adapter must agree');
       passed = actual.status === item.status;
       if (item.expectedTop1) {
         const top1 = actual.results[0]?.id === item.expectedTop1;

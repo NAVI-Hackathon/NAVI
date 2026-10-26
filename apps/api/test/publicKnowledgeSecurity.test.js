@@ -9,6 +9,8 @@ import published from '../../../data/cardif_public_data.json' with { type: 'json
 import policy from '../../../scripts/security/excluded-note-fingerprints.json' with { type: 'json' };
 import { fingerprint, inspectPublicText, scanPublicArtifacts } from '../../../scripts/security/public-artifacts.js';
 import { generatePublicKnowledge } from '../../../scripts/knowledge/project-public.js';
+import { validateRelease } from '../../../scripts/knowledge/lifecycle.js';
+import { readFileSync } from 'node:fs';
 import { getKnowledgeEntry, verifyEvidenceSnippet } from '../../../shared/knowledge/index.js';
 
 const canary='NAVI 合成內部筆記僅供安全測試，並非官網原文。PRIVATE CANARY 2026';
@@ -28,7 +30,11 @@ test('mail claim document instructions expose a readable reference without renam
 });
 test('allowlist projection rejects new private fields recursively while preserving public IDs and nested sitemap', async () => {
   const injected=structuredClone(seed);injected.internal_notes=canary;injected.meta.internal_notes=canary;injected.services[0].internal_notes={value:canary};injected.forms[0].privateReview=canary;injected.faq[0].customerData=canary;injected.sitemap[0].internal_notes=canary;
-  assert.deepEqual(projectPublicKnowledge(injected),published);
+  assert.deepEqual(projectPublicKnowledge(injected),projectPublicKnowledge(seed));
+  if (published.meta.knowledgeVersion) {
+    const release=JSON.parse(readFileSync(new URL(`../../../knowledge/releases/${published.meta.knowledgeVersion}.json`,import.meta.url)));
+    assert.deepEqual(published,validateRelease(release).snapshot);
+  } else assert.deepEqual(published,projectPublicKnowledge(seed));
   assert.deepEqual(projectPublicKnowledge(seed),seed);
   assert.deepEqual(published.services.map(s=>s.id),seed.services.map(s=>s.id));
   assert.deepEqual(published.sitemap,seed.sitemap);

@@ -1,0 +1,1908 @@
+{
+  "schemaVersion": 1,
+  "knowledgeVersion": "kb-ba0d6f040c788ecc9b406687",
+  "releasedAt": "2026-10-26T14:38:00.377Z",
+  "approvedChangeIds": [],
+  "previousRelease": null,
+  "snapshotHash": "c40f5c1f1d862e0782309c65352eb79af26aa12d7d3f45efe79bc6f0fa671bfe",
+  "sourceManifest": [
+    {
+      "sourceId": "glossary:insured",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "glossary:policyholder",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "glossary:beneficiary",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "glossary:insurance-age",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "glossary:premium",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "glossary:management-fee",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "glossary:account-value",
+      "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "service:change_address",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-20"
+    },
+    {
+      "sourceId": "service:change_name",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_policyholder",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_insured_id",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_beneficiary",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_dividend_option",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_payment_method",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_payment_frequency",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:change_occupation",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:supplementary_health_disclosure",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:contact_info_chain",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a312",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:policy_loan",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:loan_repayment",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:claim_by_mail",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:claim_union_chain",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:claim_hospital_upload",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:claim_household_registration",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "service:online_service_membership",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_contract_change",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_policyholder_change",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_investment_change",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_risk_confirmation",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_single_topup",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_bank_auth",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_credit_card_auth",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_health_disclosure",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_policy_loan",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_ebill",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_beneficiary_change",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_contact_person",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_online_service",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_kyc",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:form_fx_risk",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.1.1",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.1.2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.1.3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.4",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.5",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_1.6",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_2.1.1",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_2.1.2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_2.1.3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_3.1",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_3.2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_3.3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_3.4",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_3.5",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "form:claim_3.6",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a311",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:1",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:4",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:5",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:6",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:7",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:8",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:9",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:10",
+      "sourceUrl": "https://life.cardif.com.tw/zh/f8",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:11",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "faq:12",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a313",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:1",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:4",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:5",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:6",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:7",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:8",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:9",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:10",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:11",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:12",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:13",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:14",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:15",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:16",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-doc:17",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:1",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:2",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:3",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:4",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:5",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:6",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:7",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:8",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:9",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:10",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    },
+    {
+      "sourceId": "claim-rule:11",
+      "sourceUrl": "https://life.cardif.com.tw/zh/a314",
+      "retrievedAt": "2026-10-06"
+    }
+  ],
+  "syntheticDemo": false,
+  "snapshot": {
+    "meta": {
+      "source": "https://life.cardif.com.tw",
+      "crawled": "2026-10-06",
+      "knowledgeVersion": "kb-ba0d6f040c788ecc9b406687"
+    },
+    "sitemap": [
+      {
+        "name": "關於我們",
+        "url": "https://life.cardif.com.tw/zh/a1",
+        "children": [
+          {
+            "name": "法國巴黎保險簡介",
+            "url": "https://life.cardif.com.tw/zh/a11"
+          },
+          {
+            "name": "法國巴黎銀行集團",
+            "url": "https://life.cardif.com.tw/zh/a12"
+          },
+          {
+            "name": "台灣分公司簡介",
+            "url": "https://life.cardif.com.tw/zh/a13"
+          },
+          {
+            "name": "企業社會責任",
+            "url": "https://life.cardif.com.tw/zh/a14"
+          },
+          {
+            "name": "公平待客專區",
+            "url": "https://life.cardif.com.tw/zh/a15"
+          }
+        ]
+      },
+      {
+        "name": "商品資訊",
+        "url": "https://life.cardif.com.tw/zh/a211",
+        "children": [
+          {
+            "name": "投資型保險",
+            "url": "https://life.cardif.com.tw/zh/a211",
+            "children": [
+              {
+                "name": "約定事項",
+                "url": "https://life.cardif.com.tw/zh/a213"
+              },
+              {
+                "name": "附約",
+                "url": "https://life.cardif.com.tw/zh/a214"
+              },
+              {
+                "name": "投資帳戶專區",
+                "url": "https://life.cardif.com.tw/zh/dmphome"
+              },
+              {
+                "name": "尊榮/臻鑽尊榮服務",
+                "url": "https://life.cardif.com.tw/zh/vipservice"
+              },
+              {
+                "name": "自動調整基本保額介紹",
+                "url": "https://life.cardif.com.tw/zh/atype2"
+              }
+            ]
+          },
+          {
+            "name": "保障型保險",
+            "url": "https://life.cardif.com.tw/zh/a231",
+            "children": [
+              {
+                "name": "人壽保險",
+                "url": "https://life.cardif.com.tw/zh/a231"
+              },
+              {
+                "name": "傷害保險",
+                "url": "https://life.cardif.com.tw/zh/a232"
+              },
+              {
+                "name": "健康保險",
+                "url": "https://life.cardif.com.tw/zh/a233"
+              },
+              {
+                "name": "批註條款",
+                "url": "https://life.cardif.com.tw/zh/a234"
+              }
+            ]
+          },
+          {
+            "name": "信用保障保險",
+            "url": "https://life.cardif.com.tw/zh/a251",
+            "children": [
+              {
+                "name": "人壽保險",
+                "url": "https://life.cardif.com.tw/zh/a251"
+              },
+              {
+                "name": "傷害保險",
+                "url": "https://life.cardif.com.tw/zh/a252"
+              },
+              {
+                "name": "健康保險",
+                "url": "https://life.cardif.com.tw/zh/a253"
+              },
+              {
+                "name": "批註條款",
+                "url": "https://life.cardif.com.tw/zh/a254"
+              }
+            ]
+          },
+          {
+            "name": "分紅保險",
+            "url": "https://life.cardif.com.tw/zh/ntd-participating-insurance",
+            "children": [
+              {
+                "name": "分紅專區",
+                "url": "https://life.cardif.com.tw/participating-insurance"
+              },
+              {
+                "name": "各年度分紅宣告",
+                "url": "https://life.cardif.com.tw/annual-announcement"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "保戶服務",
+        "url": "https://life.cardif.com.tw/zh/a3",
+        "children": [
+          {
+            "name": "常用表單下載",
+            "url": "https://life.cardif.com.tw/zh/a311"
+          },
+          {
+            "name": "保單變更",
+            "url": "https://life.cardif.com.tw/zh/a312"
+          },
+          {
+            "name": "保單借款",
+            "url": "https://life.cardif.com.tw/zh/a313"
+          },
+          {
+            "name": "理賠程序介紹",
+            "url": "https://life.cardif.com.tw/zh/a314"
+          },
+          {
+            "name": "海外急難救援",
+            "url": "https://life.cardif.com.tw/zh/a315"
+          },
+          {
+            "name": "電子單據服務",
+            "url": "https://life.cardif.com.tw/zh/a316"
+          },
+          {
+            "name": "保戶專刊",
+            "url": "https://life.cardif.com.tw/zh/a317"
+          },
+          {
+            "name": "電子化服務專區",
+            "url": "https://life.cardif.com.tw/zh/a318"
+          },
+          {
+            "name": "理賠聯盟鏈/醫起通Q&A",
+            "url": "https://life.cardif.com.tw/zh/a319"
+          },
+          {
+            "name": "網路保險服務",
+            "url": "https://life.cardif.com.tw/zh/f8"
+          },
+          {
+            "name": "金融友善服務園地",
+            "url": "https://life.cardif.com.tw/zh/a329"
+          },
+          {
+            "name": "防詐專區",
+            "url": "https://life.cardif.com.tw/zh/a331"
+          },
+          {
+            "name": "財富管理業務",
+            "url": "https://life.cardif.com.tw/zh/a337"
+          },
+          {
+            "name": "保單強制執行專區",
+            "url": "https://life.cardif.com.tw/zh/a335"
+          },
+          {
+            "name": "保戶須知",
+            "url": "https://life.cardif.com.tw/zh/a32",
+            "children": [
+              {
+                "name": "條款審閱專區",
+                "url": "https://life.cardif.com.tw/zh/a321"
+              },
+              {
+                "name": "職業分類表之適用說明",
+                "url": "https://life.cardif.com.tw/zh/a322"
+              },
+              {
+                "name": "指定銀行及幣別列表",
+                "url": "https://life.cardif.com.tw/zh/a323"
+              },
+              {
+                "name": "如何閱讀對帳單",
+                "url": "https://life.cardif.com.tw/zh/a324"
+              },
+              {
+                "name": "保險法107條問答集",
+                "url": "https://life.cardif.com.tw/zh/a325"
+              },
+              {
+                "name": "實質課稅原則",
+                "url": "https://life.cardif.com.tw/zh/a326"
+              },
+              {
+                "name": "委託代辦概況",
+                "url": "https://life.cardif.com.tw/zh/a327"
+              },
+              {
+                "name": "個人資料告知事項",
+                "url": "https://life.cardif.com.tw/zh/a328"
+              },
+              {
+                "name": "最低保費繳交規範",
+                "url": "https://life.cardif.com.tw/zh/a330"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "投資理財",
+        "url": "https://life.cardif.com.tw/zh/a4",
+        "children": [
+          {
+            "name": "基金通路報酬查詢",
+            "url": "https://life.cardif.com.tw/zh/a41"
+          },
+          {
+            "name": "目標到期債券-投信看法",
+            "url": "https://life.cardif.com.tw/zh/a42"
+          },
+          {
+            "name": "投資教室/認識FATCA",
+            "url": "https://life.cardif.com.tw/zh/a422"
+          }
+        ]
+      },
+      {
+        "name": "公開資訊",
+        "url": "https://life.cardif.com.tw/zh/a5",
+        "children": []
+      },
+      {
+        "name": "其他專區",
+        "url": "https://life.cardif.com.tw/zh/default",
+        "children": [
+          {
+            "name": "聯絡我們",
+            "url": "https://life.cardif.com.tw/zh/i1"
+          },
+          {
+            "name": "企業徵才",
+            "url": "https://life.cardif.com.tw/zh/b1"
+          },
+          {
+            "name": "秒懂保險專有名詞",
+            "url": "https://life.cardif.com.tw/insurancedictionary"
+          },
+          {
+            "name": "法國巴黎人壽App",
+            "url": "https://life.cardif.com.tw/zh/app"
+          },
+          {
+            "name": "銀髮樂活專區",
+            "url": "https://life.cardif.com.tw/zh/g1"
+          },
+          {
+            "name": "度假打工青年專區",
+            "url": "https://life.cardif.com.tw/zh/f1"
+          },
+          {
+            "name": "洗錢防制暨反貪腐專區",
+            "url": "https://life.cardif.com.tw/zh/c1"
+          },
+          {
+            "name": "隱私權政策",
+            "url": "https://life.cardif.com.tw/zh/a332"
+          },
+          {
+            "name": "最新消息",
+            "url": "https://life.cardif.com.tw/zh/k1?p=1"
+          },
+          {
+            "name": "新聞曝光",
+            "url": "https://life.cardif.com.tw/zh/l1?p=1"
+          }
+        ]
+      },
+      {
+        "name": "外部/會員系統（不爬）",
+        "url": "https://my.cardif.com.tw/B2C/",
+        "children": [
+          {
+            "name": "保戶專區登入",
+            "url": "https://my.cardif.com.tw/B2C/"
+          },
+          {
+            "name": "理專專區登入",
+            "url": "https://my.cardif.com.tw/B2B/Login.aspx"
+          },
+          {
+            "name": "投資風險屬性評估",
+            "url": "https://my.cardif.com.tw/KYC/"
+          },
+          {
+            "name": "無障礙網頁專區",
+            "url": "https://easyaccess.life.cardif.com.tw/"
+          },
+          {
+            "name": "投資標的專區(MoneyDJ)",
+            "url": "https://cardif.moneydj.com"
+          },
+          {
+            "name": "常見問題(maac.io，robots禁止)",
+            "url": "https://maac.io/1qgl2"
+          }
+        ]
+      }
+    ],
+    "services": [
+      {
+        "id": "change_address",
+        "name": "變更戶籍地址 / 收費地址",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄"
+        ],
+        "requires_login": false,
+        "apply_time": "週一~ 週五AM09:00~PM18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "保險契約內容變更申請書"
+        ],
+        "notes": [
+          "「要保人」及「被保險人」皆須簽名",
+          "同一要/被保險人僅接受一個地址"
+        ],
+        "related_forms": [
+          "form_contract_change"
+        ],
+        "keywords": [
+          "搬家",
+          "改地址",
+          "住址",
+          "通訊地址"
+        ],
+        "online_available": "巴黎線上My Cardif申請【通訊地址、電子郵件信箱、行動電話、住家電話】變更",
+        "precheck_questions": [],
+        "online_requirements": [
+          "需先註冊為法巴人壽保戶專區有效會員，且已申請並開通網路變更保單資料功能。",
+          "須在本公司仍持有有效保單之要保人"
+        ],
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "change_name",
+        "name": "變更要保人／被保險人姓名",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "週一至週五 09:00–18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "保險契約內容變更申請書",
+          "身分證影本或戶籍謄本"
+        ],
+        "notes": [],
+        "related_forms": [
+          "form_contract_change"
+        ],
+        "keywords": [
+          "改名",
+          "更名"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "change_policyholder",
+        "name": "變更要保人",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "週一至週五 09:00–18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "保險契約內容變更申請書（含新舊要保人簽名）"
+        ],
+        "notes": [
+          "須經被保險人簽章同意",
+          "新要保人對被保險人須有保險利益（保險法第16條：本人或家屬、生活費或教育費所仰給之人、債務人、為本人管理財產或利益之人）",
+          "依險種另有要保人變更專用表單（投資型／保障型／分紅型，含原要保人身故版）"
+        ],
+        "related_forms": [
+          "form_contract_change",
+          "form_policyholder_change"
+        ],
+        "keywords": [
+          "換要保人",
+          "保單過戶",
+          "轉給小孩"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "change_insured_id",
+        "name": "變更被保險人ID／生日／性別",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "週一至週五 09:00–18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "保險契約內容變更申請書",
+          "身分證影本或戶籍謄本"
+        ],
+        "notes": [],
+        "related_forms": [
+          "form_contract_change"
+        ],
+        "keywords": [
+          "身分證字號錯誤",
+          "生日錯誤"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "change_beneficiary",
+        "name": "變更受益人",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "週一至週五 09:00–18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "保險契約內容變更申請書"
+        ],
+        "notes": [
+          "保險事故發生或滿期後不得變更",
+          "失能及醫療保險金受益人限被保險人本人，不受理指定或變更",
+          "團體保險身故受益人限被保險人家屬或法定繼承人",
+          "另有獨立的受益人變更申請書"
+        ],
+        "related_forms": [
+          "form_contract_change",
+          "form_beneficiary_change"
+        ],
+        "keywords": [
+          "改受益人",
+          "身故受益人",
+          "指定受益人"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": [
+          "要改的是身故受益人嗎？（失能、醫療保險金受益人限被保險人本人，不能改）",
+          "保險事故是否已發生或保單已滿期？（是則不得變更）",
+          "是個人保單還是團體保單？"
+        ]
+      },
+      {
+        "id": "change_dividend_option",
+        "name": "變更保單紅利給付方式",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "保單週年日前15日",
+        "effective_time": "次一保單週年日",
+        "documents": [
+          "保險契約內容變更申請書"
+        ],
+        "notes": [
+          "紅利給付方式：現金給付、抵繳保費、增額繳清、儲存生息"
+        ],
+        "related_forms": [
+          "form_contract_change"
+        ],
+        "keywords": [
+          "分紅",
+          "紅利",
+          "增額繳清"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "change_payment_method",
+        "name": "變更繳費方式",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "應繳日前15日",
+        "effective_time": "變更完成後下一應繳日",
+        "documents": [
+          "保險契約內容變更申請書",
+          "信用卡自動轉帳付款授權書或保險費自動轉帳付款授權書"
+        ],
+        "notes": [
+          "接受信用卡及銀行轉帳，美國運通卡及大來卡尚未開放"
+        ],
+        "related_forms": [
+          "form_contract_change",
+          "form_credit_card_auth",
+          "form_bank_auth"
+        ],
+        "keywords": [
+          "信用卡扣款",
+          "轉帳扣款",
+          "換卡"
+        ],
+        "online_available": "部分：同一張信用卡換卡號/效期可線上（信用卡卡效卡號變更）；改用其他扣款方式需紙本授權書",
+        "precheck_questions": [
+          "是同一張信用卡換新卡號/效期，還是要改用別張卡或銀行轉帳？",
+          "是否為美國運通卡或大來卡？（不接受）"
+        ]
+      },
+      {
+        "id": "change_payment_frequency",
+        "name": "變更繳別",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "年繳件：下一保單週年日應繳日前一個月；月繳件：應繳日前15日",
+        "effective_time": "變更完成後下一應繳日",
+        "documents": [
+          "保險契約內容變更申請書"
+        ],
+        "notes": [],
+        "related_forms": [
+          "form_contract_change"
+        ],
+        "keywords": [
+          "年繳改月繳",
+          "月繳",
+          "季繳"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "change_occupation",
+        "name": "變更職業內容",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "週一至週五 09:00–18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "職業告知問卷"
+        ],
+        "notes": [
+          "傷害險保費依職業等級計算，職業異動應通知重新核定，以免影響理賠權益",
+          "變更後若累計保額超過該職業類別限制或達拒保範圍，需減額或退保"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "換工作",
+          "職業等級",
+          "職業類別"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "supplementary_health_disclosure",
+        "name": "補充健康告知",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "郵寄",
+          "聯絡我們留資料由專人聯繫"
+        ],
+        "requires_login": false,
+        "apply_time": "週一至週五 09:00–18:00",
+        "effective_time": "收到變更資料翌日零時",
+        "documents": [
+          "被保險人健康告知暨聲明書"
+        ],
+        "notes": [
+          "告知事項足以影響危險評估時，依契約條款及投保規則辦理"
+        ],
+        "related_forms": [
+          "form_health_disclosure"
+        ],
+        "keywords": [
+          "健康告知",
+          "漏告知"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "contact_info_chain",
+        "name": "保全聯盟鏈（一次變更多家保險公司聯絡資料）",
+        "category": "保單變更",
+        "url": "https://life.cardif.com.tw/zh/a312",
+        "channels": [
+          "巴黎線上My Cardif：變更及理賠查詢 > 申請保全聯盟鏈"
+        ],
+        "requires_login": true,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [],
+        "notes": [
+          "可變更項目：通訊地址、電子郵件、行動電話、住家電話",
+          "需為保戶專區有效會員並已開通網路變更保單功能",
+          "須為仍持有有效保單之要保人，限個人人身保險契約"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "一次改多家",
+          "聯盟鏈",
+          "換手機號碼",
+          "換email"
+        ],
+        "online_available": "可：僅限 My Cardif",
+        "precheck_questions": []
+      },
+      {
+        "id": "policy_loan",
+        "name": "保單借款",
+        "category": "保單借款",
+        "url": "https://life.cardif.com.tw/zh/a313",
+        "channels": [
+          "郵寄",
+          "親自臨櫃",
+          "巴黎線上My Cardif線上借款（24小時）"
+        ],
+        "requires_login": false,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [
+          "保險單借款合約書",
+          "要保人身分證影本",
+          "要保人銀行活期儲蓄帳戶存摺影本（指定匯款時）",
+          "委託他人代辦另需：借款委託書＋受託人身分證影本"
+        ],
+        "notes": [
+          "審核無誤後約5–7個工作天撥款，免手續費、無提前清償罰款",
+          "本息超過保單價值準備金時契約效力停止",
+          "一張保單一份借款合約書",
+          "委託代辦不受理郵寄",
+          "線上借款限要/被保險人同一人之台幣保單，單筆上限新台幣50萬元，工作日17:30前受理",
+          "借款利率依險種不同，需至利率看板查詢"
+        ],
+        "related_forms": [
+          "form_policy_loan"
+        ],
+        "keywords": [
+          "保單貸款",
+          "借錢",
+          "週轉",
+          "可借金額",
+          "借款利率"
+        ],
+        "online_available": "可：My Cardif/App 線上借款（限要被保同一人台幣保單、單筆≤50萬）",
+        "precheck_questions": []
+      },
+      {
+        "id": "loan_repayment",
+        "name": "保單借款還款",
+        "category": "保單借款",
+        "url": "https://life.cardif.com.tw/zh/a313",
+        "channels": [
+          "匯款",
+          "郵局劃撥"
+        ],
+        "requires_login": false,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [
+          "還款憑證（交易成功畫面或明細）"
+        ],
+        "notes": [
+          "須以要保人帳戶轉帳匯款，勿以現金或支票存入",
+          "匯款後將保單號碼、還款日期金額、要保人資料、付款人資料、資金來源等資訊 email 或傳真給公司",
+          "ATM 或網銀轉帳需另附存摺封面影本",
+          "還款作業約3–5日，完成後簡訊通知",
+          "外幣保單非透過第一銀行跨行匯款需註明全額到達"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "還款",
+          "償還借款",
+          "墊繳"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "claim_by_mail",
+        "name": "理賠申請（郵寄）",
+        "category": "理賠",
+        "url": "https://life.cardif.com.tw/zh/a314",
+        "channels": [
+          "郵寄至理賠部",
+          "0800-012-899 客服說明"
+        ],
+        "requires_login": false,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [
+          "保險金申請書",
+          "依事故類型檢附文件（請參閱「理賠應備文件」）"
+        ],
+        "notes": [
+          "先確認投保險種（保單首頁）",
+          "文件齊備後保險人應於15天內給付，逾期依年息一分給付延遲利息"
+        ],
+        "related_forms": [
+          "claim_1.1.1",
+          "claim_1.1.3"
+        ],
+        "keywords": [
+          "申請理賠",
+          "怎麼理賠",
+          "寄理賠文件"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "claim_union_chain",
+        "name": "理賠聯盟鏈（線上申請，一家申請多家理賠）",
+        "category": "理賠",
+        "url": "https://life.cardif.com.tw/zh/a314",
+        "channels": [
+          "巴黎線上My Cardif"
+        ],
+        "requires_login": true,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [
+          "身分證資料（字號、生日、發證日期地點、領補換類別）",
+          "被保險人本人電信門號",
+          "診斷證明書及收據（拍照上傳）",
+          "意外事故證明（意外事故才需）",
+          "被保險人本人銀行或郵局帳號"
+        ],
+        "notes": [
+          "限具完全行為能力之被保險人本人，以匯款給付本人帳戶",
+          "需先註冊巴黎線上會員",
+          "適用健康險、傷害險醫療保險金、失能險、重大/特定傷病，不含旅平險、團體險、待記名保單",
+          "影像送件後10日內須寄回正本，否則日後不再享有此服務",
+          "單次核付金額超過新台幣30萬元需等正本寄達才核付",
+          "適用無須調閱病歷且符合給付條件之案件"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "線上理賠",
+          "手機申請理賠",
+          "多家保險公司",
+          "拍照理賠"
+        ],
+        "online_available": "可（線上服務）",
+        "precheck_questions": []
+      },
+      {
+        "id": "claim_hospital_upload",
+        "name": "保險理賠醫起通（醫院直接上傳文件）",
+        "category": "理賠",
+        "url": "https://life.cardif.com.tw/zh/a314",
+        "channels": [
+          "巴黎線上My Cardif"
+        ],
+        "requires_login": true,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [
+          "身分證資料",
+          "被保險人本人電信門號",
+          "被保險人本人銀行或郵局帳號"
+        ],
+        "notes": [
+          "仍需向醫院申請開立診斷書，但紙本無須寄回",
+          "以收到醫院影像日為文件受理日",
+          "10個工作天內未取得醫院單據視為文件未齊備",
+          "僅限合作醫療院所"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "醫院上傳",
+          "免跑醫院",
+          "醫起通"
+        ],
+        "online_available": "可（線上服務）",
+        "precheck_questions": [],
+        "partner_hospitals": [
+          "三軍總醫院附設民眾診療服務處",
+          "臺北市立萬芳醫院",
+          "臺北市立聯合醫院",
+          "國泰綜合醫院",
+          "新光吳火獅紀念醫院",
+          "振興醫院",
+          "衛生福利部雙和醫院",
+          "臺大醫院",
+          "臺北榮民總醫院",
+          "三軍總醫院北投分院",
+          "三軍總醫院松山分院",
+          "三軍總醫院基隆分院",
+          "亞東紀念醫院",
+          "臺北榮民總醫院桃園分院",
+          "聯新國際醫院",
+          "國軍桃園總醫院",
+          "臺北榮民總醫院新竹分院",
+          "國軍桃園總醫院新竹分院",
+          "臺中榮民總醫院",
+          "國軍臺中總醫院",
+          "中山醫學大學附設醫院",
+          "童綜合醫院",
+          "國軍臺中總醫院中清分院",
+          "秀傳紀念醫院",
+          "彰濱秀傳紀念醫院",
+          "竹山秀傳醫院",
+          "員榮醫院",
+          "臺中榮民總醫院埔里分院",
+          "臺中榮民總醫院灣橋分院",
+          "臺中榮民總醫院嘉義分院",
+          "台南市立醫院",
+          "高雄榮民總醫院臺南分院",
+          "高雄市立岡山醫院",
+          "高雄榮民總醫院",
+          "國軍左營總醫院",
+          "高雄市立聯合醫院",
+          "國軍高雄總醫院",
+          "國軍左營總醫院岡山分院",
+          "高雄市立中醫醫院",
+          "高雄市立民生醫院",
+          "國軍高雄總醫院屏東分院",
+          "屏東榮民總醫院",
+          "屏東榮民總醫院龍泉分院",
+          "臺北榮民總醫院蘇澳分院",
+          "臺北榮民總醫院員山分院",
+          "國軍花蓮總醫院",
+          "臺北榮民總醫院玉里分院",
+          "臺北榮民總醫院鳳林分院",
+          "臺北榮民總醫院臺東分院",
+          "三軍總醫院澎湖分院"
+        ]
+      },
+      {
+        "id": "claim_household_registration",
+        "name": "戶政連線‧理賠免奔波",
+        "category": "理賠",
+        "url": "https://life.cardif.com.tw/zh/a314",
+        "channels": [
+          "戶政事務所辦理死亡登記時同時申請"
+        ],
+        "requires_login": false,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [],
+        "notes": [
+          "由壽險公會轉交保險公司清查承保情形，主動通知受益人申請理賠"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "家人過世",
+          "不知道有沒有保險",
+          "死亡登記"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      },
+      {
+        "id": "online_service_membership",
+        "name": "巴黎線上My Cardif 網路保險服務會員",
+        "category": "網路服務",
+        "url": "https://life.cardif.com.tw/zh/f8",
+        "channels": [
+          "https://my.cardif.com.tw/B2C/Register/Register_01.aspx",
+          "法國巴黎人壽APP（同一組帳密）"
+        ],
+        "requires_login": false,
+        "apply_time": null,
+        "effective_time": null,
+        "documents": [
+          "身分證號",
+          "生日",
+          "最新保單約定之手機號碼（接收OTP）"
+        ],
+        "notes": [
+          "須為持有至少一張有效保單、具行為能力之要保人",
+          "需閱覽並同意3份法規文件、身分驗證及一次性密碼",
+          "國外手機號碼無法接收OTP",
+          "密碼錯誤5次鎖定，需來電解鎖",
+          "超過5年未登入需重新註冊",
+          "密碼需8–16位英數混合、區分大小寫"
+        ],
+        "related_forms": [],
+        "keywords": [
+          "註冊會員",
+          "加入會員",
+          "登入",
+          "忘記密碼",
+          "帳號鎖住",
+          "APP"
+        ],
+        "online_available": "頁面未說明可線上辦理，依頁面為紙本郵寄",
+        "precheck_questions": []
+      }
+    ],
+    "online_service_features": {
+      "保單查詢服務": [
+        "我的投資表現",
+        "我的保單內容",
+        "保單績效通知",
+        "標的變更紀錄/標的交易紀錄",
+        "保單變更進度及理賠進度查詢",
+        "配息歷史紀錄及配息歸戶查詢",
+        "繳費明細查詢"
+      ],
+      "保單變更服務": [
+        "保單基本資料變更",
+        "電子單據服務申請",
+        "標的轉換",
+        "變更下期投資標的",
+        "每月扣除額扣除順序變更",
+        "單筆增額申購",
+        "暫停扣款/恢復扣款",
+        "保單價值部分提領",
+        "保戶投資風險屬性變更",
+        "保單貸款",
+        "信用卡卡效卡號變更"
+      ]
+    },
+    "claim_document_requirements": {
+      "醫療門診": [
+        "保險金申請書",
+        "診斷書或住院證明",
+        "門診收據正本"
+      ],
+      "住院醫療": [
+        "保險金申請書",
+        "診斷書或住院證明",
+        "病理組織檢查報告（依病況）",
+        "外科手術證明文件（依病況）"
+      ],
+      "防癌或重疾": [
+        "保險金申請書",
+        "診斷書或住院證明",
+        "病理組織檢查報告",
+        "外科手術證明文件"
+      ],
+      "失能(含意外)": [
+        "保險金申請書",
+        "失能診斷書"
+      ],
+      "身故(含意外)": [
+        "保險金申請書",
+        "相驗屍體證明書或死亡診斷書",
+        "被保險人除戶戶籍謄本",
+        "受益人身分證明",
+        "保險單或其謄本"
+      ],
+      "借貸身故": [
+        "保險金申請書",
+        "相驗屍體證明書或死亡診斷書",
+        "被保險人除戶戶籍謄本",
+        "受益人身分證明",
+        "債權債務證明文件",
+        "保險單或其謄本"
+      ],
+      "借貸失能": [
+        "保險金申請書",
+        "失能診斷書",
+        "債權債務證明文件",
+        "保險單或其謄本"
+      ],
+      "暫時喪失工作能力": [
+        "保險金申請書",
+        "診斷書或住院證明",
+        "債權債務證明文件",
+        "服務單位病假證明書或事故時在職證明書"
+      ],
+      "傷害失能補助": [
+        "保險金申請書",
+        "失能診斷書",
+        "保險單或其謄本"
+      ],
+      "特定傷害身故": [
+        "保險金申請書",
+        "相驗屍體證明書或死亡診斷書",
+        "被保險人除戶戶籍謄本",
+        "受益人身分證明",
+        "保險單或其謄本"
+      ],
+      "完全失能扶助": [
+        "保險金申請書",
+        "被保險人生存證明文件",
+        "受益人文件"
+      ],
+      "重大傷害失能安養": [
+        "保險金申請書",
+        "失能診斷書",
+        "保險單或其謄本"
+      ],
+      "返還保單價值": [
+        "保險金申請書",
+        "相驗屍體證明書或死亡診斷書",
+        "被保險人除戶戶籍謄本",
+        "受益人身分證明",
+        "保險單或其謄本"
+      ],
+      "未支領年金": [
+        "保險金申請書",
+        "相驗屍體證明書或死亡診斷書",
+        "被保險人除戶戶籍謄本",
+        "受益人身分證明",
+        "保險單或其謄本"
+      ],
+      "投資型壽險": [
+        "保險金申請書",
+        "相驗屍體證明書或死亡診斷書",
+        "被保險人除戶戶籍謄本",
+        "受益人身分證明",
+        "保險單或其謄本"
+      ],
+      "投資型完全失能": [
+        "保險金申請書",
+        "失能診斷書",
+        "保險單或其謄本"
+      ],
+      "無理賠事故": [
+        "保險金申請書",
+        "保險單或其謄本"
+      ]
+    },
+    "claim_general_rules": [
+      "診斷證明書須為正本或加蓋醫院紅色印章之副本，不收影印本",
+      "失能理賠需事故180天後開立之失能診斷證明書",
+      "意外死亡須報警並由檢察官相驗",
+      "骨折或截肢需提供X光片（骨折未住院需矯正前X光片，角落需有姓名、病歷號、日期）",
+      "身故及完全失能給付需提供完整保單正本",
+      "受益人為法定繼承人時才需繼承系統表",
+      "匯款給付需提供存摺影本",
+      "非身故保險金受益人為被保險人本人",
+      "海外事故文件需經我國駐外單位認證，中國大陸文件需經海基會及海協會認證",
+      "寬限期內發生事故，自理賠金扣除保費後給付",
+      "身故／完全失能受益人須配合 FATCA／CRS 申報"
+    ],
+    "forms": [
+      {
+        "id": "form_contract_change",
+        "name": "保險契約內容變更申請書",
+        "note": "投資型／保障型／分紅型各有版本，有唯一文件編號不得影印",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_policyholder_change",
+        "name": "要保人變更專用表單（投資型／保障型／分紅型，含原要保人身故版）",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_investment_change",
+        "name": "投資內容異動申請書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_risk_confirmation",
+        "name": "保戶風險確認表",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_single_topup",
+        "name": "單筆增額申請書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_bank_auth",
+        "name": "委託金融機構代繳保險費約定條款",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_credit_card_auth",
+        "name": "信用卡代繳保險費授權書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_health_disclosure",
+        "name": "健康告知暨聲明書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_policy_loan",
+        "name": "保險單借款合約書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_ebill",
+        "name": "電子單據服務申請書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_beneficiary_change",
+        "name": "受益人變更申請書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_contact_person",
+        "name": "指定聯絡人服務申請書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_online_service",
+        "name": "網路保險服務申請書",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_kyc",
+        "name": "保戶投資風險屬性評估表（線上版：my.cardif.com.tw/KYC/）",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "form_fx_risk",
+        "name": "外幣收付之人身保險匯率風險說明書（投資型10幣別／非投資型美元）",
+        "page": "https://life.cardif.com.tw/zh/a311"
+      },
+      {
+        "id": "claim_1.1.1",
+        "name": "保險金申請書",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.1.1.pdf"
+      },
+      {
+        "id": "claim_1.1.2",
+        "name": "申請身故(完全失能)理賠應檢附文件",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.1.2.pdf"
+      },
+      {
+        "id": "claim_1.1.3",
+        "name": "申請一般理賠應檢附文件",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.1.3.pdf"
+      },
+      {
+        "id": "claim_1.2",
+        "name": "病歷資料調閱授權書",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.2.pdf"
+      },
+      {
+        "id": "claim_1.3",
+        "name": "調查同意書(意外事故填寫)",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.3.pdf"
+      },
+      {
+        "id": "claim_1.4",
+        "name": "全民健康保險保險人提供資料申請書",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.4.pdf"
+      },
+      {
+        "id": "claim_1.5",
+        "name": "繼承人聲明(依繼承人順位領取)同意書",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.5.pdf"
+      },
+      {
+        "id": "claim_1.6",
+        "name": "繼承人聲明(依推派領取)同意書",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-1.6.pdf"
+      },
+      {
+        "id": "claim_2.1.1",
+        "name": "保險金申請書(身故/完全失能)填寫範例",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-2.1.1.pdf"
+      },
+      {
+        "id": "claim_2.1.2",
+        "name": "保險金申請書(一般)填寫範例",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-2.1.2.pdf"
+      },
+      {
+        "id": "claim_2.1.3",
+        "name": "保險金申請書(門診)填寫範例",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-2.1.3.pdf"
+      },
+      {
+        "id": "claim_3.1",
+        "name": "壽險身故申請須知",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-3.1.pdf"
+      },
+      {
+        "id": "claim_3.2",
+        "name": "壽險完全失能申請須知",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-3.2.pdf"
+      },
+      {
+        "id": "claim_3.3",
+        "name": "投資年金身故申請須知",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-3.3.pdf"
+      },
+      {
+        "id": "claim_3.4",
+        "name": "健康險門診保險金申請注意須知",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-3.4.pdf"
+      },
+      {
+        "id": "claim_3.5",
+        "name": "住院醫療日額申請注意須知",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-3.5.pdf"
+      },
+      {
+        "id": "claim_3.6",
+        "name": "重大疾病或防癌險申請須知",
+        "url": "https://life.cardif.com.tw/documents/418719/461809/CLAIM-3.6.pdf"
+      }
+    ],
+    "faq": [
+      {
+        "q": "要符合什麼條件才能申請網路保險服務會員？",
+        "a": "持有至少一張有效保單、具行為能力的要保人即可申請。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "已有保單查詢權限，想加開網路變更服務？",
+        "a": "登入新版巴黎線上，同意會員權益告知條款並完成身分驗證即可。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "網路申請會員要注意什麼？",
+        "a": "需閱覽並同意網路保險服務定型化契約、聲明事項暨會員條款、個資告知事項共3份文件，並完成身分認證與一次性密碼驗證。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "身分驗證怎麼進行？",
+        "a": "提供身分證號及生日，系統發送簡訊OTP到最新保單約定的手機；申請過程中不能改手機號碼，號碼有變需先打客服0800-012-899。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "人在國外收不到簡訊OTP？",
+        "a": "公司不提供國外手機簡訊，需聯絡客服0800-012-899。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "密碼規則？",
+        "a": "需8–16位英數混合，英文區分大小寫。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "密碼輸錯幾次會鎖住？",
+        "a": "錯誤5次鎖定帳號，需打客服解鎖。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "收不到密碼重設email？",
+        "a": "先檢查垃圾郵件匣，仍沒有請聯絡客服。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "很久沒登入進不去？",
+        "a": "超過五年未登入需依法規重新註冊。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "客服時間？",
+        "a": "週一至週五09:00–20:00、週六09:00–12:00、連續假期09:00–18:00；服務／申訴專線0800-012-899。",
+        "source": "https://life.cardif.com.tw/zh/f8"
+      },
+      {
+        "q": "理賠要多久？",
+        "a": "文件齊備後15天內給付；可歸責於公司致逾期，依年息10%給付延遲利息。",
+        "source": "https://life.cardif.com.tw/zh/a314"
+      },
+      {
+        "q": "保單借款多久撥款？",
+        "a": "審核無誤後約5–7個工作天，免手續費、無提前清償罰款。",
+        "source": "https://life.cardif.com.tw/zh/a313"
+      }
+    ],
+    "contacts": {
+      "hotline": "0800-012-899",
+      "address": "110615 台北市信義區信義路五段7號79樓",
+      "outbound_call_number": "0982-947-912"
+    },
+    "glossary": [
+      {
+        "id": "insured",
+        "term": "被保險人",
+        "definition": "被保險公司作為保障對象的人",
+        "category": "契約關係",
+        "keywords": [
+          "被保險人",
+          "insured"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "policyholder",
+        "term": "要保人",
+        "definition": "跟保險公司簽約並繳交保險費的人",
+        "category": "契約關係",
+        "keywords": [
+          "要保人",
+          "policyholder"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "beneficiary",
+        "term": "受益人",
+        "definition": "領取保險金的人",
+        "category": "契約關係",
+        "keywords": [
+          "受益人",
+          "beneficiary"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "insurance-age",
+        "term": "保險年齡",
+        "definition": "以「足歲」來計算年齡，但超過六個月且未滿一歲時，加一歲計算。",
+        "category": "契約用語",
+        "keywords": [
+          "保險年齡"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "premium",
+        "term": "保險費",
+        "definition": "要保人每次繳交至保險公司之金額，用以提供被保險人身故、完全失能保障…等需求",
+        "category": "費用相關",
+        "keywords": [
+          "保費",
+          "保險費",
+          "premium"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "management-fee",
+        "term": "保單管理費",
+        "definition": "為維持保險契約每月管理所產生且自保單帳戶價值中扣除之費用",
+        "category": "費用相關",
+        "keywords": [
+          "保單管理費"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      },
+      {
+        "id": "account-value",
+        "term": "保單帳戶價值",
+        "definition": "契約所有投資標的之投資標的價值總和加上尚未投入投資標的之金額",
+        "category": "投資型保險",
+        "keywords": [
+          "保單帳戶價值"
+        ],
+        "sourceType": "public_site_snapshot",
+        "sourceTitle": "法國巴黎人壽｜秒懂保險專有名詞",
+        "sourceUrl": "https://life.cardif.com.tw/insurancedictionary",
+        "retrievedAt": "2026-10-20"
+      }
+    ]
+  }
+}

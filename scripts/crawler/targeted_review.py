@@ -63,7 +63,7 @@ def page_diff(old, new, impact):
     def add(kind, before=None, after=None, **extra):
         change_id = 'change:' + digest(json.dumps([common['sourceUrl'], kind, before, after], ensure_ascii=False, sort_keys=True))[:24]
         changes.append({**common, 'changeId': change_id, 'category': kind, 'old': before, 'new': after,
-                        'reviewStatus': 'pending' if kind != 'Unchanged' else None,
+                        'reviewStatus': 'pending' if kind != 'Unchanged' else None, 'stableParagraphId': (before or after or {}).get('id'),
                         'recommendation': '逐筆核對原文、條件與對應知識；未批准不可採用。', **extra})
 
     if new['extractionStatus'] != 'ok':
@@ -94,6 +94,9 @@ def page_diff(old, new, impact):
         add('Added', after=row)
     old_order = [row['id'] for row in before]
     new_order = [row['id'] for row in after]
+    duplicates = [row['sha256'] for row in after if sum(item['sha256'] == row['sha256'] for item in after) > 1]
+    if duplicates:
+        changes.append({**common, 'changeId': 'duplicate:' + digest(str(sorted(set(duplicates))))[:24], 'category': 'Duplicate Content', 'old': None, 'new': None, 'reviewStatus': None, 'recommendation': '重複內容保留來源位置，不重複建立審核候選。'})
     if old_order != new_order:
         add('Requires Manual Review', reason='段落內容或順序不同；包含抽取器差異，不能直接視為官方規則變更。',
             oldOrder=old_order, newOrder=new_order)
@@ -110,7 +113,7 @@ def inventory(old_pages):
     return urls
 
 
-def fetch_page(session, rp, url, delay):
+def fetch_page(session, rp, url, delay, raw_dir=None, allowed_urls=None):
     page = {'sourceId': 'snapshot:' + digest(url)[:20], 'sourceUrl': url, 'url': url,
             'sourceType': 'public_site_snapshot', 'reviewStatus': 'pending', 'title': None,
             'httpStatus': None, 'rawContentSha256': None, 'normalizedContentSha256': None,
@@ -118,12 +121,16 @@ def fetch_page(session, rp, url, delay):
     for attempt in range(2):
         page['attempts'] = attempt + 1
         try:
-            response = public_get(session, url, rp, delay, html_only=True)
+            response = public_get(session, url, rp, delay, html_only=True, allowed_urls=allowed_urls)
             page['httpStatus'] = response.status_code
             if response.status_code in (502, 503, 504) and attempt == 0:
                 continue
             page['retrievedAt'] = datetime.now(timezone.utc).isoformat()
             page['rawContentSha256'] = digest(response.content)
+            if raw_dir is not None and 'text/html' in response.headers.get('Content-Type', '').lower():
+                raw_path = raw_dir / (page['sourceId'].replace(':', '-') + '.html')
+                raw_path.write_bytes(response.content)
+                page['rawSnapshot'] = str(raw_path.name)
             if response.status_code != 200:
                 raise ValueError('HTTP ' + str(response.status_code))
             if 'text/html' not in response.headers.get('Content-Type', '').lower():
@@ -190,17 +197,34 @@ def render_report(report):
     return '\n'.join(lines)
 
 
+def load_pages(path):
+    text = path.read_text(encoding='utf-8').strip()
+    return json.loads(text) if text.startswith('[') else [json.loads(line) for line in text.splitlines() if line.strip()]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', required=True)
     parser.add_argument('--report', required=True, help='Markdown output; JSON sibling is also written')
+    parser.add_argument('--only-source', help='One URL already present in the fixed inventory')
+    parser.add_argument('--baseline', default=str(BASELINE), help='Prior immutable pages.jsonl; source inventory remains fixed')
     parser.add_argument('--from-snapshot', help='Rebuild derived IDs/diff offline from a prior capture; no network or date refresh')
     args = parser.parse_args()
     out, report_path = Path(args.out), Path(args.report)
     if out.exists() or report_path.exists() or report_path.with_suffix('.json').exists():
         parser.error('Use fresh paths; existing snapshots/reports are never overwritten')
-    old_pages = [json.loads(line) for line in BASELINE.read_text().splitlines() if line.strip()]
-    urls = inventory(old_pages)
+    baseline_path = Path(args.baseline)
+    old_pages = load_pages(baseline_path)
+    for page in old_pages:
+        page.setdefault('url', page.get('sourceUrl'))
+    # a319 is already present in later incremental snapshots.
+    urls = list(dict.fromkeys([p['url'] for p in old_pages] + [EXTRA]))
+    if set(urls) != set(inventory([json.loads(line) for line in BASELINE.read_text().splitlines() if line.strip()])):
+        raise ValueError('Unexpected incremental source inventory')
+    if args.only_source:
+        if args.only_source not in urls:
+            raise ValueError('Source is outside fixed inventory')
+        urls = [args.only_source]
     mappings = json.loads(subprocess.check_output(['node', '--input-type=module', '-e',
         "import {knowledgeEntries} from './shared/knowledge/index.js'; console.log(JSON.stringify(knowledgeEntries.map(e=>({id:e.id,url:e.sourceUrl,target:e.navigationDestination}))));"], cwd=ROOT, text=True))
     impacts = defaultdict(lambda: {'knowledgeIds': [], 'navigationTargets': []})
@@ -211,7 +235,7 @@ def main():
     out.mkdir(parents=True)
     if args.from_snapshot:
         capture = Path(args.from_snapshot)
-        pages = [json.loads(line) for line in (capture / 'pages.jsonl').read_text().splitlines()]
+        pages = load_pages(capture / 'pages.jsonl')
         if [p['sourceUrl'] for p in pages] != urls:
             raise ValueError('Snapshot inventory mismatch')
         for page in pages:
@@ -227,6 +251,16 @@ def main():
                 page['normalizedContentSha256'] = digest(page['content_md'])
                 page['paragraphs'] = paragraphs(page['content_md'])
                 page['sectionIds'] = list(dict.fromkeys(r['sectionId'] for r in page['paragraphs']))
+        for page in pages:
+            if page.get('rawSnapshot'):
+                name = page['rawSnapshot']
+                if not re.fullmatch(r'[a-z0-9-]+\.html', name):
+                    raise ValueError('Unsafe raw snapshot path')
+                raw_file = capture / 'raw' / name
+                if raw_file.is_symlink() or digest(raw_file.read_bytes()) != page['rawContentSha256']:
+                    raise ValueError('Raw snapshot hash mismatch')
+                (out / 'raw').mkdir(exist_ok=True)
+                (out / 'raw' / name).write_bytes(raw_file.read_bytes())
         robots_bytes = (capture / 'robots.txt').read_bytes()
         (out / 'robots.txt').write_bytes(robots_bytes)
         delay = None
@@ -244,7 +278,9 @@ def main():
         time.sleep(delay)
         pages = []
         for url in urls:
-            page = fetch_page(session, rp, url, delay)
+            raw_dir = out / 'raw'
+            raw_dir.mkdir(exist_ok=True)
+            page = fetch_page(session, rp, url, delay, raw_dir, set(urls))
             pages.append(page)
             print(page['extractionStatus'], page['httpStatus'], url, flush=True)
     (out / 'pages.jsonl').write_text(''.join(json.dumps(p, ensure_ascii=False) + '\n' for p in pages), encoding='utf-8')
@@ -255,17 +291,17 @@ def main():
         old = previous.get(page['sourceUrl'])
         old_normalized = digest(normalize(old['content_md'])) if old else None
         page_metadata.append({**{k: v for k, v in page.items() if k not in ('content_md', 'paragraphs', 'links', 'pdfs')},
-                              'previousRawContentSha256': old.get('sha256') if old else None,
+                              'previousRawContentSha256': old.get('rawContentSha256', old.get('sha256')) if old else None,
                               'previousNormalizedContentSha256': old_normalized,
                               'normalizedContentChanged': old_normalized != page['normalizedContentSha256'] if old and page['extractionStatus'] == 'ok' else None})
     summary = {'pages': len(pages), 'successful': sum(p['extractionStatus'] == 'ok' for p in pages),
                'failed': sum(p['extractionStatus'] != 'ok' for p in pages),
                'categories': {key: sum(c['category'] == key for c in changes) for key in
-                              ('Added', 'Modified', 'Removed', 'Unchanged', 'Fetch Failed', 'Extraction Failed', 'Requires Manual Review')},
+                              ('Added', 'Modified', 'Removed', 'Unchanged', 'Fetch Failed', 'Extraction Failed', 'Requires Manual Review', 'Duplicate Content')},
                'pendingReview': sum(c['reviewStatus'] == 'pending' for c in changes),
                'adopted': 0, 'liveGeminiRequests': 0, 'paidApiCalls': 0, 'pdfDownloads': 0}
-    report = {'generatedAt': datetime.now(timezone.utc).isoformat(), 'baseline': str(BASELINE.relative_to(ROOT)),
-              'baselineSha256': digest(BASELINE.read_bytes()), 'sourceCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+    report = {'generatedAt': datetime.now(timezone.utc).isoformat(), 'baseline': str(baseline_path),
+              'baselineSha256': digest(baseline_path.read_bytes()), 'sourceCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'robotsSha256': digest(robots_bytes), 'userAgent': UA, 'delaySeconds': delay,
               'derivedFromSnapshot': args.from_snapshot, 'runnerSha256': digest(Path(__file__).read_bytes()),
               'summary': summary, 'pages': page_metadata,

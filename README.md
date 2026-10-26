@@ -4,6 +4,8 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
+Knowledge 的定向更新、受權限保護的本機審核、版本發布與回滾，見 [Knowledge Lifecycle 操作指南](docs/knowledge-lifecycle.md)。既有23項候選仍需逐筆人工審核；版本機制完成不代表候選已採用。
+
 **Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 首頁答案與助手面板也已改用（`38934f4`）。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
 
 ## 線上 Demo

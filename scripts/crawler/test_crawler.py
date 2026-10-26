@@ -34,3 +34,9 @@ class Tests(unittest.TestCase):
   with patch.object(c.time,'sleep'),self.assertRaises(c.NonHtmlResponse):c.public_get(session,c.BASE+'/zh/a312',rp,1.5,html_only=True)
   response.iter_content.assert_not_called()
   response.close.assert_called_once()
+
+ def test_targeted_redirect_cannot_leave_explicit_inventory(self):
+  session=Mock();session.get.return_value=Mock(is_redirect=True,headers={'Location':c.BASE+'/zh/a999'})
+  rp=Mock();rp.can_fetch.return_value=True
+  with patch.object(c.time,'sleep'),self.assertRaises(ValueError):c.public_get(session,c.BASE+'/zh/a312',rp,1.5,html_only=True,allowed_urls={c.BASE+'/zh/a312'})
+  self.assertEqual(session.get.call_count,1)
