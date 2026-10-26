@@ -4,7 +4,7 @@
  * NAVI 浮動元件：右下角按鈕 → 側邊面板（手機全螢幕）以 iframe 載入 NAVI 嵌入模式。
  * 只接受來自 NEXT_PUBLIC_NAVI_EMBED_URL 同源、且來自該 iframe 的 postMessage。
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   NaviMessageSchema, hostMessage, isAllowedOrigin, originOf, readMessage,
 } from "../../../../shared/embed.js";
@@ -16,6 +16,19 @@ const DEMO_URL = (() => {
   try { const url = new URL(EMBED_URL); url.searchParams.set("mode", "demo"); return url.toString(); } catch { return ""; }
 })();
 const CONNECT_TIMEOUT_MS = 8000;
+
+// 使用者任務測試的對照組：?navi=off 隱藏 NAVI。記在 sessionStorage，站內換頁仍維持隱藏；
+// 開新分頁、?navi=on 或 ?navi=demo 會恢復。
+const OFF_KEY = "navi.off";
+function naviOff() {
+  try {
+    const query = new URLSearchParams(window.location.search).get("navi");
+    if (query === "off") sessionStorage.setItem(OFF_KEY, "1");
+    else if (query === "on" || query === "demo") sessionStorage.removeItem(OFF_KEY);
+    return sessionStorage.getItem(OFF_KEY) === "1";
+  } catch { return false; }
+}
+const noSubscription = () => () => {};
 
 export type NaviDestination = { kind: string; path: string; anchor: string | null; label: string };
 
@@ -31,6 +44,7 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
   const [timedOut, setTimedOut] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
+  const off = useSyncExternalStore(noSubscription, naviOff, () => false);
 
   const sayHello = useCallback(() => {
     if (NAVI_ORIGIN) frame.current?.contentWindow?.postMessage(hostMessage("host:hello"), NAVI_ORIGIN);
@@ -75,7 +89,7 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  if (!NAVI_ORIGIN) return null;
+  if (!NAVI_ORIGIN || off) return null;
 
   return (
     <>
