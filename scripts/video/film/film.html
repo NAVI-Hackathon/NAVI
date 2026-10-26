@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>NAVI demo film</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=DM+Sans:wght@500;700&display=swap">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0A0B0D; }
+  body { font-family: 'Noto Sans TC', 'PingFang TC', sans-serif; color: #EEEFE9; }
+  #bg { position: absolute; inset: 0; background: radial-gradient(1200px 700px at 70% 20%, #16201C 0%, #0A0B0D 60%); }
+  .scene { position: absolute; inset: 0; will-change: transform, opacity, filter; }
+  .cam { position: absolute; inset: 0; }
+  .stage { position: absolute; inset: 104px 96px 210px; display: flex; gap: 56px; align-items: center; justify-content: center; }
+  .device { position: relative; flex: none; }
+  .browser { border-radius: 18px; overflow: hidden; background: #0F1113; box-shadow: 0 40px 120px #000c, 0 0 0 1px #ffffff14; }
+  .browser .bar { height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 18px; background: #1A1D20; }
+  .browser .bar i { width: 12px; height: 12px; border-radius: 50%; background: #3A3F44; display: block; }
+  .browser .bar span { margin-left: 18px; font: 18px 'DM Sans', sans-serif; color: #8D969B; background: #0F1113; border-radius: 8px; padding: 4px 16px; }
+  .phone { border-radius: 58px; padding: 14px; background: #1B1E21; box-shadow: 0 40px 120px #000c, inset 0 0 0 2px #2C3135; }
+  .phone .screen { border-radius: 46px; overflow: hidden; position: relative; }
+  .phone .notch { position: absolute; top: 12px; left: 50%; width: 120px; height: 34px; margin-left: -60px; border-radius: 20px; background: #000; z-index: 2; }
+  .shot { display: block; position: relative; }
+  .shot img { display: block; width: 100%; height: 100%; }
+  .shot svg { position: absolute; inset: 0; overflow: visible; }
+  .veil { position: absolute; inset: 0; background: #050706; opacity: 0; border-radius: inherit; }
+  .label { position: absolute; z-index: 5; font-size: 30px; font-weight: 700; line-height: 1.35; color: #0A0B0D; background: #EEEFE9; border-radius: 14px; padding: 14px 22px; box-shadow: 0 12px 40px #0008; white-space: nowrap; opacity: 0; }
+  .label::before { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #00B26E; box-shadow: 0 0 0 5px #00B26E44; }
+  .label.right::before { left: -38px; top: 50%; margin-top: -7px; }
+  .label.left::before { right: -38px; top: 50%; margin-top: -7px; }
+  .label.below::before { left: 26px; top: -34px; }
+  .label.above::before { left: 26px; bottom: -34px; }
+  .caption { position: absolute; left: 96px; bottom: 72px; opacity: 0; display: flex; align-items: flex-end; gap: 30px; }
+  .chip { width: 104px; height: 104px; flex: none; border-radius: 28px; background: #18201D; box-shadow: inset 0 0 0 1px #97C9B333, 0 18px 50px #0007; display: grid; place-items: center; }
+  .chip svg { width: 60px; height: 60px; }
+  .stepper { position: absolute; right: 96px; bottom: 70px; opacity: 0; }
+  .stepper text { font: 500 20px 'Noto Sans TC', sans-serif; fill: #8D969B; letter-spacing: 1px; }
+  .stepper text.on { fill: #EEEFE9; font-weight: 700; }
+  .object { position: absolute; width: 190px; height: 240px; border-radius: 16px; background: #F7F6F1; box-shadow: 0 30px 80px #000b; opacity: 0; overflow: hidden; z-index: 6; }
+  .object .head { height: 46px; background: #00744A; color: #F7F6F1; font-size: 24px; font-weight: 700; display: flex; align-items: center; padding: 0 18px; letter-spacing: 2px; }
+  .object .rows { padding: 18px; display: grid; gap: 12px; }
+  .object .rows i { display: block; height: 10px; border-radius: 5px; background: #D9D6CF; }
+  .object .tagline { position: absolute; left: 18px; bottom: 16px; font-size: 16px; color: #8D969B; }
+  .object .stamp { position: absolute; right: 16px; bottom: 14px; width: 54px; height: 54px; border-radius: 50%; border: 3px solid #00915A; color: #00915A; font-size: 14px; font-weight: 900; display: grid; place-items: center; transform: rotate(-14deg); }
+  .story { position: absolute; inset: 60px 0 200px; display: grid; place-items: center; }
+  .bubble { transform-box: fill-box; transform-origin: 50% 100%; }
+  .flow { position: absolute; inset: 120px 96px 230px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 64px; }
+  .flow .row { display: flex; align-items: flex-start; gap: 18px; }
+  .flow .node { width: 250px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; opacity: 0; }
+  .flow .disc { width: 132px; height: 132px; border-radius: 50%; background: #18201D; box-shadow: inset 0 0 0 2px #97C9B344, 0 24px 60px #0008; display: grid; place-items: center; }
+  .flow .disc.end { background: #00B26E; box-shadow: 0 0 0 8px #00B26E33, 0 24px 60px #0008; }
+  .flow .disc svg { width: 64px; height: 64px; }
+  .flow .node b { font-size: 32px; } .flow .node small { font-size: 22px; color: #8D969B; }
+  .flow .arrow { margin-top: 54px; flex: none; }
+  .flow .stats { display: grid; grid-template-columns: repeat(4, 260px); gap: 28px; }
+  .flow .stat { border-top: 4px solid #00B26E; padding-top: 16px; opacity: 0; } .flow .stat b { font: 700 72px 'DM Sans', sans-serif; display: block; } .flow .stat small { font-size: 22px; color: #8D969B; }
+  .flow .note { font-size: 30px; color: #B9C7C0; max-width: 1300px; text-align: center; line-height: 1.5; opacity: 0; }
+  .caption .section { font-size: 24px; letter-spacing: 6px; color: #97C9B3; margin-bottom: 14px; }
+  .caption .line { font-size: 56px; font-weight: 700; letter-spacing: 1px; }
+  #badge { position: absolute; top: 44px; right: 56px; font-size: 22px; letter-spacing: 2px; color: #97C9B3; border: 1px solid #97C9B355; border-radius: 999px; padding: 8px 18px; }
+  #subtitle { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); max-width: 1500px; font-size: 30px; font-weight: 500; line-height: 1.4; color: #EEEFE9; background: #0A0B0Dcc; border-radius: 10px; padding: 6px 18px; white-space: nowrap; opacity: 0; }
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 28px; }
+  .mark-logo { position: relative; width: 150px; height: 150px; border-radius: 40px; background: #EEEFE9; display: grid; place-items: center; }
+  .mark-logo path { stroke-dasharray: 1; }
+  .mark-logo .flash { position: absolute; inset: -12px; border-radius: 50px; border: 3px solid #00B26E; opacity: 0; }
+  .name { font: 700 140px 'DM Sans', sans-serif; letter-spacing: 28px; margin-right: -28px; display: flex; }
+  .name span { display: inline-block; }
+  .tag { font-size: 40px; letter-spacing: 14px; color: #97C9B3; }
+  .sub { font-size: 30px; color: #8D969B; letter-spacing: 2px; }
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; width: 1680px; margin-top: 20px; }
+  .tile { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  .tile .pic { width: 100%; height: 520px; border-radius: 22px; overflow: hidden; background: #0F1113; box-shadow: 0 0 0 1px #ffffff1a; }
+  .tile .pic img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .tile b { font-size: 30px; display: flex; align-items: center; gap: 10px; } .tile b svg { width: 34px; height: 34px; } .tile small { font-size: 22px; color: #8D969B; }
+  #cursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; z-index: 20; filter: drop-shadow(0 3px 6px #0009); opacity: 0; }
+  #ripple { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid #00B26E; z-index: 19; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="scenes"></div>
+<div id="badge">示範模式・合成資料</div>
+<div id="subtitle"></div>
+<div id="ripple"></div>
+<svg id="cursor" viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 7z" fill="#EEEFE9" stroke="#0A0B0D" stroke-width="1.4" stroke-linejoin="round"/></svg>
+<script>
+const params = new URLSearchParams(location.search);
+// ───────── Timing: 110 BPM, 4/4. Every scene starts on a bar; every action lands on a beat. ─────────
+const BPM = Number(params.get('bpm') ?? 110), BEAT = 60 / BPM, BAR = 4 * BEAT; // 110 BPM: 0.545 s, 2.18 s
+const at = (bar, beat = 1) => (bar - 1) * BAR + (beat - 1) * BEAT;
+const VERSION = params.get('version') === 'vo' ? 'vo' : 'text';
+const DATA = window.FILM_DATA;                               // B-roll report, injected by render.js
+const shotOf = key => { const s = DATA.shots[key]; if (!s) throw new Error(`Missing shot ${key}`); return s; };
+
+// Scenes in bars. `vo` is the narration line (read at ~4.6 characters a second; each fits its scene).
+const SCENES = [
+  { bars: 3, card: 'story', section: '情境', caption: '出院了，接下來要怎麼辦？' },
+  { bars: 4, card: 'concept', vo: '理賠要準備什麼？該去哪裡辦？NAVI 是嵌在保險官網裡的智慧服務導航助手：理解、檢核、帶你去。' },
+  { bars: 2, section: '01　痛點', caption: '資訊都在，卻散在不同分頁', icon: 'tabs', shots: [['desktop/claims']], vo: '官網資訊很完整，卻分散在不同分頁。' },
+  { bars: 3, section: '01　痛點', caption: '看完還是不確定要準備什麼', icon: 'docs', shots: [['desktop/claims-documents']], vo: '十七類理賠各有文件規定，看完還是不確定要準備什麼。' },
+  { bars: 2, section: '02　遇見 NAVI', caption: '不用離開官網，說出你的情況', icon: 'chat', shots: [['desktop/navi-welcome']], vo: '打開 NAVI，不用離開官網。', enter: 'zoom' },
+  { bars: 4, section: '02　核心介面', caption: '五個核心介面，一起帶你完成', icon: 'grid', card: 'interfaces', vo: '聊天室、旅程卡、工作區、導覽卡，加上官網高亮，一起帶你完成。' },
+  { bars: 3, section: '03　理解', caption: '問得太籠統？先問清楚', icon: 'options', shots: [['desktop/navi-follow-up']], click: true, vo: '問得太籠統時，NAVI 會先問清楚，選一個就好。' },
+  { bars: 4, section: '03　理解', caption: '每個答案都能追溯官網原文', icon: 'source', shots: [['desktop/navi-answer-source']], vo: '每個答案都附官網原文和擷取日期，不讓 AI 自己編。' },
+  { bars: 3, section: '03　理解', caption: '官網改了什麼，先比對、再審核', icon: 'hash', card: 'flow', flow: 'refresh' },
+  { bars: 2, section: '04　帶你去', caption: '先給答案，再一鍵帶你去', icon: 'chat', shots: [['desktop/navi-address-answer']], enter: 'whip', vo: '要改地址？NAVI 先給答案，再一步一步帶你到官網的正確位置。' },
+  { bars: 2, section: '04　帶你去', caption: '一步一步帶到正確位置', icon: 'stairs', guide: 1, shots: [['desktop/guide-step-1']], enter: 'whip' },
+  { bars: 2, section: '04　帶你去', caption: '官網跟著換頁、框出目標', icon: 'stairs', guide: 2, shots: [['desktop/guide-step-2']], enter: 'whip' },
+  { bars: 3, section: '04　帶你去', caption: '手機也一樣順', icon: 'phone', guide: 3, shots: [['desktop/guide-step-3', { marks: false }], ['mobile/guide-step-3-card', { side: 'above' }]], enter: 'zoom', vo: '在手機上也一樣，收合後隨時回到下一步。' },
+  { bars: 3, section: '05　檢核', caption: '一句話建立住院理賠旅程', icon: 'hospital', shots: [['mobile/journey-card'], ['desktop/workspace-35', { marks: false }]], click: true, enter: 'whip', vo: '說一句「我住院五天要申請理賠」，就建立服務旅程。' },
+  { bars: 2, section: '05　檢核', caption: '上傳診斷書，準備度 70%', icon: 'upload', object: ['診斷書', '住院 5 天'], shots: [['mobile/workspace-70']], vo: '上傳診斷書，準備度 70%；缺什麼、為什麼、怎麼補，一眼看懂。' },
+  { bars: 2, section: '05　檢核', caption: '缺什麼、為什麼、怎麼補', icon: 'checklist', shots: [['mobile/workspace-preflight']] },
+  { bars: 2, section: '05　檢核', caption: '補上存摺，準備度 90%', icon: 'upload', object: ['存摺影本', '末四碼 1234'], shots: [['mobile/workspace-90']] },
+  { bars: 2, section: '05　檢核', caption: '確認資料，才算準備完成', icon: 'source', shots: [['desktop/review-dialog']], click: true },
+  { bars: 3, section: '05　檢核', caption: '資料準備完成 100%', icon: 'badge', shots: [['desktop/workspace-100']], enter: 'zoom', drop: true, vo: '百分之百只代表資料備齊，不代表理賠核准。' },
+  { bars: 3, section: '06　可信', caption: 'AI 理解，系統決定', icon: 'spark', card: 'flow', flow: 'principle', vo: 'AI 只負責理解，計分、答案和導覽都由規則與官網資料決定。' },
+  { bars: 2, section: '06　可信', caption: '不給投保建議，不判斷能否理賠', icon: 'shield', shots: [['desktop/navi-guardrail']], vo: 'NAVI 不給投保建議，也不判斷能否理賠。' },
+  { bars: 2, section: '06　可信', caption: '需要真人時，確認後才取得摘要', icon: 'headset', shots: [['mobile/handoff']], vo: '需要真人時，確認後才取得交接摘要。' },
+  { bars: 6, card: 'logo', vo: 'NAVI 智慧服務導航助手。理解、檢核、帶你去。' },
+];
+let bar = 1;
+for (const s of SCENES) { s.bar = bar; s.start = at(bar); s.end = at(bar + s.bars); bar += s.bars; }
+const TOTAL_BARS = bar - 1;                                   // 64 bars ≈ 2:20 at 110 BPM
+const DURATION = at(TOTAL_BARS + 1);
+// Music sections (bars), read by the audio generator.
+// Music sections (bars) follow the scenes, so adding or removing a scene keeps the score in step.
+const span = pick => { const xs = SCENES.filter(pick); return [xs[0].bar, xs.at(-1).bar + xs.at(-1).bars - 1]; };
+const chapter = n => s => s.section?.startsWith(n);
+const MUSIC = {
+  bpm: BPM, bars: TOTAL_BARS, intro: span(s => s.card === 'story' || s.card === 'concept'), pain: span(chapter('01')),
+  groove: span(s => chapter('02')(s) || chapter('03')(s)), lift: span(chapter('04')), build: span(s => chapter('05')(s) && !s.drop),
+  drop: span(s => s.drop), breakdown: span(chapter('06')), outro: span(s => s.card === 'logo'),
+};
+
+// ───────── Motion helpers ─────────
+function step(t, freq = 1.6, zeta = 0.9) {
+  if (t <= 0) return 0;
+  const w = 2 * Math.PI * freq, wd = w * Math.sqrt(1 - zeta * zeta);
+  return 1 - Math.exp(-zeta * w * t) * (Math.cos(wd * t) + (zeta * w / wd) * Math.sin(wd * t));
+}
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const ease = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const TRANS = 0.36;                                           // half a transition, centred on the bar line
+
+// ───────── Build the scenes once ─────────
+const $ = id => document.getElementById(id);
+// ───────── Art: line icons, the opening illustration, document objects, the guide stepper (all drawn here) ─────────
+const ICONS = {
+  tabs: '<path d="M3 9h18v11H3z"/><path d="M3 9V5.5h5.5V9M8.5 9V5.5H14V9"/><path d="M6.5 13h8M6.5 16h5"/>',
+  docs: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M10.4 11a2.1 2.1 0 1 1 2.7 2c-.6.2-1.1.7-1.1 1.4v.6"/><path d="M12 18.2h.01"/>',
+  chat: '<path d="M4 5h16v11H9.5L4 20z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>',
+  options: '<path d="M4 3.5h16v8.5H9l-5 3.5z"/><rect x="3" y="17" width="5.5" height="4" rx="2"/><rect x="9.25" y="17" width="5.5" height="4" rx="2"/><rect x="15.5" y="17" width="5.5" height="4" rx="2"/>',
+  source: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 14l2 2 4-4.2"/>',
+  stairs: '<path d="M4.5 19.5v-5h5v-5h5v-5h5"/><path d="M16.5 4.5h3v3"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.6"/><path d="M11 18.6h2"/>',
+  hospital: '<path d="M4.5 21V7.5h15V21"/><path d="M2.5 21h19"/><path d="M12 9.6v5M9.5 12.1h5"/><path d="M9.5 21v-3h5v3"/>',
+  upload: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M12 17.5V11M9.4 13.6 12 11l2.6 2.6"/>',
+  checklist: '<rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4V2.8h6V4"/><path d="M8 10.2l1.5 1.5 2.6-2.6M8 15.8l1.5 1.5 2.6-2.6M14.4 10.6h2M14.4 16.2h2"/>',
+  badge: '<circle cx="12" cy="12" r="8.6"/><path d="M8.4 12.2l2.5 2.5 4.8-5"/>',
+  shield: '<path d="M12 2.8l7.2 3v5.3c0 4.6-3.1 8.1-7.2 10.1-4.1-2-7.2-5.5-7.2-10.1V5.8z"/><path d="M9.2 12.1l2 2 3.8-4"/>',
+  headset: '<path d="M5 14v-2a7 7 0 0 1 14 0v2"/><rect x="3.4" y="13" width="3.6" height="6" rx="1.6"/><rect x="17" y="13" width="3.6" height="6" rx="1.6"/><path d="M19 19c0 1.6-2 2.6-5 2.6"/>',
+  spark: '<path d="M12 2.8l1.9 5.6 5.6 1.9-5.6 1.9L12 17.8l-1.9-5.6-5.6-1.9 5.6-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+  person: '<circle cx="12" cy="7.6" r="3.8"/><path d="M4.8 20.6c0-4 3.2-7.2 7.2-7.2s7.2 3.2 7.2 7.2"/>',
+  rules: '<path d="M12 3v17.5M7 20.5h10M5 7h14"/><path d="M5 7l-2.8 6a2.8 2.8 0 0 0 5.6 0zM19 7l-2.8 6a2.8 2.8 0 0 0 5.6 0z"/>',
+  globe: '<circle cx="12" cy="12" r="8.8"/><path d="M3.2 12h17.6M12 3.2c2.4 2.6 3.7 5.6 3.7 8.8s-1.3 6.2-3.7 8.8c-2.4-2.6-3.7-5.6-3.7-8.8S9.6 5.8 12 3.2z"/>',
+  layers: '<path d="M12 3.2l8.8 4.8-8.8 4.8L3.2 8z"/><path d="M3.2 12.4l8.8 4.8 8.8-4.8M3.2 16.4l8.8 4.8 8.8-4.8"/>',
+  hash: '<path d="M9.5 3 7.5 21M16.5 3l-2 18M4.5 8.5h16M3.5 15.5h16"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  target: '<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.6"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3"/>',
+};
+const icon = (name, stroke = '#97C9B3', width = 1.6) => `<svg viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+
+// Opening scene: someone just out of hospital, papers in one hand and a phone in the other, with the questions
+// everyone has. Flat shapes in the film's palette; the bubbles pop one per beat.
+const STORY_BUBBLES = [['理賠要準備什麼？', 232, 120], ['要去哪裡辦？', 828, 96], ['要帶哪些文件？', 846, 262]];
+const STORY = `<svg viewBox="0 0 1200 660" width="1200" height="660">
+  <defs><radialGradient id="glow" cx="50%" cy="55%" r="50%"><stop offset="0" stop-color="#97C9B3" stop-opacity=".18"/><stop offset="1" stop-color="#97C9B3" stop-opacity="0"/></radialGradient></defs>
+  <circle cx="600" cy="360" r="330" fill="url(#glow)"/>
+  <g class="hospital" opacity=".9">
+    <rect x="150" y="250" width="300" height="330" rx="10" fill="#151C19" stroke="#97C9B333"/>
+    ${Array.from({ length: 12 }, (_, k) => `<rect x="${180 + (k % 4) * 66}" y="${300 + Math.floor(k / 4) * 70}" width="40" height="40" rx="6" fill="#97C9B3" opacity="${[0.16, 0.3, 0.12][k % 3]}"/>`).join('')}
+    <rect x="262" y="510" width="76" height="70" rx="6" fill="#0F1513" stroke="#97C9B344"/>
+    <rect x="270" y="196" width="60" height="60" rx="14" fill="#00915A"/><path d="M300 210v32M284 226h32" stroke="#F7F6F1" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <ellipse cx="690" cy="610" rx="170" ry="18" fill="#000" opacity=".35"/>
+  <g class="person">
+    <rect x="640" y="440" width="40" height="160" rx="18" fill="#2C3135"/><rect x="700" y="440" width="40" height="160" rx="18" fill="#2C3135"/>
+    <rect x="612" y="270" width="156" height="200" rx="60" fill="#97C9B3"/>
+    <path d="M612 330c-40 30-70 70-80 110" stroke="#97C9B3" stroke-width="34" stroke-linecap="round" fill="none"/>
+    <g class="papers"><rect x="470" y="400" width="92" height="118" rx="8" fill="#F7F6F1" transform="rotate(-12 516 459)"/><rect x="488" y="394" width="92" height="118" rx="8" fill="#ECEAE3" transform="rotate(6 534 453)"/>
+      <path d="M506 424h52M506 440h40M506 456h46" stroke="#C9C5BB" stroke-width="6" stroke-linecap="round" transform="rotate(6 534 453)"/></g>
+    <path d="M768 330c30 10 58 20 70 6" stroke="#97C9B3" stroke-width="34" stroke-linecap="round" fill="none"/>
+    <g class="phone-hand"><rect x="812" y="268" width="62" height="108" rx="12" fill="#0F1113" stroke="#3A3F44" stroke-width="3"/><rect x="820" y="280" width="46" height="84" rx="6" fill="#00915A" opacity=".85"/><circle cx="843" cy="330" r="10" fill="#E3B892"/></g>
+    <circle cx="690" cy="214" r="56" fill="#E3B892"/>
+    <path d="M636 206c0-40 26-62 58-62s56 20 54 56c-10-14-30-22-52-20-24 2-44 12-60 26z" fill="#2B2F33"/>
+    <circle cx="712" cy="222" r="5" fill="#2B2F33"/><path d="M700 246c8 4 16 4 22-2" stroke="#2B2F33" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </g>
+  ${STORY_BUBBLES.map(([text, x, y], k) => `<g class="bubble" data-k="${k}"><rect x="${x}" y="${y}" width="${text.length * 34 + 56}" height="76" rx="38" fill="#EEEFE9"/><path d="M${x + 48} ${y + 72}l-8 26 34-24z" fill="#EEEFE9"/><text x="${x + 28}" y="${y + 50}" font-size="34" font-weight="700" fill="#0A0B0D" font-family="Noto Sans TC, sans-serif">${text}</text></g>`).join('')}
+</svg>`;
+
+const FLOWS = {
+  principle: {
+    nodes: [['person', '保戶', '用自己的話描述'], ['spark', 'AI 判讀', '理解需求、抽取欄位'], ['shield', '資料契約', '格式驗證，不合就擋'], ['rules', '規則＋官網資料', '計分、答案、導覽']],
+    note: '保險流程、金額與期限不能被編造：答案一律追溯官網原文，資訊不足就轉客服',
+  },
+  refresh: {
+    nodes: [['globe', '定向擷取', '只讀公開頁、限速'], ['layers', '結構化快照', '保留網址與時間'], ['hash', 'SHA-256 比對', '新增・變更・移除'], ['eye', '人工審核', '逐筆批准才採用'], ['badge', '更新知識庫', 'NAVI 只引用審核過的']],
+    stats: [['8/8', '官方頁面擷取成功'], ['22', '新增段落待審'], ['662', '段落比對無變更'], ['0', '未審核就採用']],
+  },
+};
+function flowHtml(name) {
+  const f = FLOWS[name], last = f.nodes.length - 1;
+  const nodes = f.nodes.map(([ic, title, sub], k) => `<div class="node" data-k="${k}">
+      <div class="disc${k === last ? ' end' : ''}">${icon(ic, k === last ? '#0A0B0D' : '#97C9B3', 1.5)}</div><b>${title}</b><small>${sub}</small></div>
+    ${k < last ? `<svg class="arrow" data-k="${k}" width="70" height="24" viewBox="0 0 70 24"><path pathLength="1" d="M4 12h56M50 4l10 8-10 8" fill="none" stroke="#00B26E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"/></svg>` : ''}`).join('');
+  const stats = f.stats ? `<div class="stats">${f.stats.map(([n, l], k) => `<div class="stat" data-k="${k}"><b data-n="${n}">${n}</b><small>${l}</small></div>`).join('')}</div>` : '';
+  const note = f.note ? `<p class="note">${f.note}</p>` : '';
+  return `<div class="flow"><div class="row">${nodes}</div>${stats}${note}</div>`;
+}
+const flowTimes = (s, k) => s.start + BEAT * (1 + k);             // one node per beat
+const statTimes = (s, k) => s.start + BAR * 1.75 + BEAT * k;       // stats count up from the second half
+
+/** The guide's three places as a little staircase: done (sage), here (green, pulsing), next (grey). */
+const GUIDE_STOPS = ['變更說明', '申請書', '服務入口'];
+function stepperHtml(current) {
+  const pts = [[24, 92], [160, 58], [296, 24]];
+  return `<svg class="stepper" width="420" height="140" viewBox="0 0 420 140" overflow="visible">
+    <path class="track" d="M24 92h68v-34h68v-34h68v0h68" fill="none" stroke="#3A3F44" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path class="done" pathLength="1" d="M24 92h68v-34h68v-34h68v0h68" fill="none" stroke="#00B26E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"/>
+    ${pts.map(([x, y], k) => `<circle class="node" data-k="${k}" cx="${x}" cy="${y}" r="13" fill="${k + 1 < current ? '#97C9B3' : k + 1 === current ? '#00B26E' : '#3A3F44'}"/>
+      <text x="${x - 12}" y="${y + 44}" class="${k + 1 === current ? 'on' : ''}">${GUIDE_STOPS[k]}</text>`).join('')}
+  </svg>`;
+}
+// Fraction of the stepper path that reaches each stop (the path has 3 equal-ish legs; stop k at k/3 of 4 legs).
+const STOP_AT = [0, 0.5, 1];
+
+// The mark is a staircase that ends in an arrow corner: NAVI takes you there step by step.
+// In the film a green dot (the user) climbs it one beat per step, drawing the line; the hook snaps on arrival.
+const LOGO = '<div class="flash"></div><svg viewBox="0 0 40 40" width="96" height="96" overflow="visible"><path class="stair" pathLength="1" d="M11 29V20h9v-9h9" fill="none" stroke="#0a0b0d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dashoffset="1"/><path class="hook" pathLength="1" d="M29 11v5" fill="none" stroke="#0a0b0d" stroke-width="2.6" stroke-linecap="round" stroke-dashoffset="1"/><circle class="dot" cx="11" cy="29" r="0" fill="#00B26E" stroke="#00B26E55" stroke-width="2.4"/></svg>';
+const STAIR = [[11, 29], [11, 20], [20, 20], [20, 11], [29, 11]];
+const STEP_NOTES = [76, 79, 81, 84];                         // E5 G5 A5 C6: the film's motif, one note per step
+/** Icon timeline from the card's first beat: pop, four steps on beats 2–5, the hook on the and of beat 5, then the name. */
+const iconTimes = s => ({ pop: s.start, steps: [1, 2, 3, 4].map(k => s.start + k * BEAT), hook: s.start + 4.5 * BEAT, letter: k => s.start + (5 + k) * BEAT, tag: s.start + 8 * BEAT, sub: s.start + 12 * BEAT });
+
+function deviceHtml([key, options = {}], maxW, maxH, sceneIndex, shotIndex) {
+  const entry = shotOf(key), kind = key.split('/')[0], name = key.split('/')[1];
+  const vw = entry.viewport.width, vh = entry.viewport.height;
+  const chrome = kind === 'desktop' ? 40 : 28;
+  const scale = Math.min(maxW / vw, (maxH - chrome) / vh);
+  const w = Math.round(vw * scale), h = Math.round(vh * scale);
+  const marks = options.marks === false ? [] : entry.marks.filter(m => m.box);
+  const rings = marks.map((m, i) => {
+    const b = m.box, pad = 10;
+    return { id: `s${sceneIndex}d${shotIndex}m${i}`, x: b.x * scale - pad, y: b.y * scale - pad, w: b.width * scale + pad * 2, h: b.height * scale + pad * 2, label: m.label, side: options.side };
+  });
+  const mask = `mask-${sceneIndex}-${shotIndex}`;
+  const svg = `<svg width="${w}" height="${h}"><defs><mask id="${mask}"><rect width="100%" height="100%" fill="white"/>${rings.map(r => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="14" fill="black"/>`).join('')}</mask></defs>
+    <rect class="dim" width="100%" height="100%" fill="#050706" opacity="0" mask="url(#${mask})"/>
+    ${rings.map(r => `<rect id="${r.id}" class="ring" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="14" fill="none" stroke="#00B26E" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="filter:drop-shadow(0 0 14px #00B26E88)"/>`).join('')}</svg>`;
+  const shot = `<div class="shot" style="width:${w}px;height:${h}px"><img src="${entry.url}">${svg}<div class="veil"></div></div>`;
+  const device = kind === 'desktop'
+    ? `<div class="device browser"><div class="bar"><i></i><i></i><i></i><span>${entry.host}${entry.path}</span></div>${shot}</div>`
+    : `<div class="device phone"><div class="screen"><div class="notch"></div>${shot}</div></div>`;
+  return { html: device, rings };
+}
+
+function cardHtml(scene) {
+  if (scene.card === 'story') return `<div class="story">${STORY}</div>`;
+  if (scene.card === 'flow') return flowHtml(scene.flow);
+  if (scene.card === 'concept' || scene.card === 'logo') {
+    const logo = scene.card === 'logo';
+    return `<div class="card"><div class="mark-logo">${LOGO}</div><div class="name">${[...'NAVI'].map(c => `<span>${c}</span>`).join('')}</div>
+      <div class="tag">${logo ? '智慧服務導航助手' : '理解・檢核・帶你去'}</div>
+      <div class="sub">${logo ? '理解・檢核・帶你去　｜　AfterZero・靜宜大學 資訊管理學系' : '像聊天一樣說出你的情況，NAVI 先問清楚、找到官網依據，再帶你到正確的地方'}</div></div>`;
+  }
+  const tiles = [['mobile/navi-welcome', '聊天室', '說出情況、點選項', 'chat'], ['mobile/journey-card', '旅程卡', '一句話建立服務旅程', 'hospital'], ['mobile/workspace-70', '工作區', '準備度與文件健檢', 'badge'], ['mobile/guide-step-1-card', '導覽卡', '一步一步帶你去', 'stairs'], ['mobile/guide-step-2', '官網高亮', '框出正確位置', 'target']];
+  return `<div class="card"><div class="tiles">${tiles.map(([key, title, sub, ic]) => `<div class="tile"><div class="pic"><img src="${shotOf(key).url}"></div><b>${icon(ic, '#00B26E', 1.8)}${title}</b><small>${sub}</small></div>`).join('')}</div></div>`;
+}
+
+function build() {
+  const root = $('scenes');
+  SCENES.forEach((scene, i) => {
+    const el = document.createElement('div');
+    el.className = 'scene';
+    let inner = '';
+    scene.rings = [];
+    if (scene.card) inner = cardHtml(scene);
+    else {
+      const both = scene.shots.length > 1;
+      const parts = scene.shots.map((spec, j) => deviceHtml(spec, spec[0].startsWith('desktop') ? (both ? 1180 : 1560) : 400, 760, i, j));
+      scene.rings = parts.flatMap(p => p.rings);
+      inner = `<div class="stage">${parts.map(p => p.html).join('')}</div>`;
+    }
+    const chip = scene.icon ? `<div class="chip">${icon(scene.icon)}</div>` : '';
+    const caption = scene.caption ? `<div class="caption">${chip}<div><div class="section">${scene.section}</div><div class="line">${scene.caption}</div></div></div>` : '';
+    const stepper = scene.guide ? stepperHtml(scene.guide) : '';
+    const object = scene.object ? `<div class="object"><div class="head">${scene.object[0]}</div><div class="rows"><i style="width:80%"></i><i style="width:62%"></i><i style="width:72%"></i><i style="width:48%"></i></div><div class="tagline">${scene.object[1]}</div><div class="stamp">合成</div></div>` : '';
+    el.innerHTML = `<div class="cam">${inner}${scene.rings.map(r => `<div class="label" id="${r.id}-label">${r.label}</div>`).join('')}${object}</div>${caption}${stepper}`;
+    root.append(el);
+    scene.el = el;
+  });
+}
+
+/** Labels beside their outline on the side with room; measured once, in scene coordinates. */
+function placeLabels() {
+  for (const scene of SCENES) {
+    scene.el.style.display = 'block';
+    for (const r of scene.rings) {
+      const ring = $(r.id).getBoundingClientRect(), label = $(`${r.id}-label`);
+      const lw = label.offsetWidth, lh = label.offsetHeight, gap = 48, edge = 40;
+      const room = { right: ring.right + gap + lw < 1920 - edge, left: ring.left - gap - lw > edge, below: ring.bottom + gap + lh < 1080 - 230, above: ring.top - gap - lh > 110 };
+      const side = (r.side && room[r.side]) ? r.side : ['right', 'left', 'below', 'above'].find(s => room[s]) ?? 'above';
+      const x = { right: ring.right + gap, left: ring.left - gap - lw }[side] ?? ring.left;
+      const y = { below: ring.bottom + gap, above: ring.top - gap - lh }[side] ?? ring.top + ring.height / 2 - lh / 2;
+      label.classList.add(side);
+      label.style.left = `${clamp(x, edge, 1920 - lw - edge)}px`;
+      label.style.top = `${clamp(y, 110, 1080 - lh - 230)}px`;
+      r.center = [ring.left + ring.width / 2, ring.top + ring.height / 2];
+    }
+    const device = scene.el.querySelector('.device');
+    if (device) { const d = device.getBoundingClientRect(); scene.device = { x: d.left, y: d.top, w: d.width, h: d.height }; }
+    scene.el.style.display = 'none';
+  }
+}
+
+// When each outline draws on and its label arrives: the first one bar in, the next one bar later.
+// A scene with a document waits one more beat, so the card can be read before it flies into the phone.
+function markTimes(scene, k) { const t = scene.start + BEAT * (scene.object ? 3 : 2) + k * BAR; return { ring: t, label: t + BEAT }; }
+
+// ───────── Score: every sound, from the same timeline. Also read by the audio generator. ─────────
+function makeScore() {
+  const ev = [];
+  SCENES.forEach((s, i) => {
+    if (i > 0) ev.push({ time: s.start, sfx: 'whoosh', hit: s.enter === 'zoom' || s.section?.slice(0, 2) !== SCENES[i - 1].section?.slice(0, 2) });
+    s.rings.forEach((r, k) => { const m = markTimes(s, k); ev.push({ time: m.ring, sfx: 'tick' }, { time: m.label, sfx: 'pop' }); if (s.click && k === 0) ev.push({ time: m.ring - BEAT, sfx: 'click' }); });
+    if (s.card === 'interfaces') for (let k = 0; k < 5; k++) ev.push({ time: s.start + BEAT * (k + 1), sfx: 'pop' });
+    if (s.card === 'flow') {
+      FLOWS[s.flow].nodes.forEach((_, k) => ev.push({ time: flowTimes(s, k), sfx: k === FLOWS[s.flow].nodes.length - 1 ? 'success' : 'pop' }));
+      (FLOWS[s.flow].stats ?? []).forEach((_, k) => ev.push({ time: statTimes(s, k), sfx: 'tick' }));
+    }
+    if (s.card === 'story') STORY_BUBBLES.forEach((_, k) => ev.push({ time: storyBubble(s, k), sfx: 'pop' }));
+    if (s.guide) ev.push({ time: s.start + BEAT, sfx: 'step', note: STEP_NOTES[s.guide - 1] });
+    if (s.object) ev.push({ time: objectTimes(s).fly, sfx: 'scrub' });
+    if (s.card === 'concept' || s.card === 'logo') {
+      const it = iconTimes(s);
+      ev.push({ time: it.pop + 0.02, sfx: 'boom' }, { time: it.hook, sfx: 'success' });
+      it.steps.forEach((time, k) => ev.push({ time, sfx: 'step', note: STEP_NOTES[k] }));
+      [...'NAVI'].forEach((_, k) => ev.push({ time: it.letter(k), sfx: 'type' }));
+      if (s.card === 'logo') ev.push({ time: at(s.bar + 4), sfx: 'boom' });
+    }
+    if (s.drop) ev.push({ time: s.start, sfx: 'boom' }, { time: s.start + BEAT, sfx: 'success' });
+  });
+  return ev.sort((a, b) => a.time - b.time).map(e => ({ time: +e.time.toFixed(4), sfx: e.sfx, hit: Boolean(e.hit), ...(e.note ? { note: e.note } : {}) }));
+}
+function storyBubble(s, k) { return s.start + BEAT * (3 + 2 * k); }
+function objectTimes(s) { return { in: s.start + BEAT * 0.25, fly: s.start + BEAT * 2, gone: s.start + BEAT * 2.7 }; }
+// Narration windows: for subtitles (.srt) and ducking the music in the narrated version.
+// A line may run over into the next scene (the guide line spans two); it always ends before the next line.
+const VO = SCENES.filter(s => s.vo).map(s => ({ start: +(s.start + 0.4).toFixed(2), end: +(s.start + 0.4 + [...s.vo].length / 4.6 + 0.4).toFixed(2), text: s.vo }));
+VO.forEach((v, i) => { v.end = +Math.min(v.end, (VO[i + 1]?.start ?? DURATION) - 0.2).toFixed(2); });
+
+// ───────── seek(t): the only thing that changes the picture ─────────
+function sceneVisibility(s, i, t) {
+  const inStart = i === 0 ? -1 : s.start - TRANS, outEnd = i === SCENES.length - 1 ? DURATION + 1 : s.end + TRANS;
+  if (t < inStart || t > outEnd) return null;
+  const pin = i === 0 ? 1 : smooth((t - inStart) / (2 * TRANS)), pout = i === SCENES.length - 1 ? 0 : smooth((t - (s.end - TRANS)) / (2 * TRANS));
+  return { pin, pout };
+}
+
+function seek(time) {
+  const t = clamp(time, 0, DURATION);
+  let cursor = null;
+  SCENES.forEach((s, i) => {
+    const v = sceneVisibility(s, i, t);
+    if (!v) { s.el.style.display = 'none'; return; }
+    s.el.style.display = 'block';
+    const next = SCENES[i + 1], kind = s.enter ?? 'fade', outKind = next?.enter ?? 'fade';
+    // Enter / leave: fade (soft push), zoom (through the screen) or whip (sideways with blur).
+    let opacity = v.pin * (1 - v.pout), scale = 1, x = 0, blur = 0;
+    const a = 1 - v.pin, b = v.pout;
+    if (kind === 'zoom') { scale *= 0.86 + 0.14 * ease(v.pin); blur += a * 10; }
+    else if (kind === 'whip') { x += 260 * a; blur += a * 14; }
+    else { scale *= 0.97 + 0.03 * ease(v.pin); blur += a * 6; }
+    if (outKind === 'zoom') { scale *= 1 + 0.3 * b * b; blur += b * 12; }
+    else if (outKind === 'whip') { x -= 260 * b; blur += b * 14; }
+    else { scale *= 1 + 0.03 * b; blur += b * 6; }
+    s.el.style.opacity = opacity.toFixed(4);
+    s.el.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : 'none';
+    s.el.style.transform = `translate(${x.toFixed(2)}px,0) scale(${scale.toFixed(5)})`;
+
+    const local = t - s.start;
+    // Camera: a slow drift for the whole scene, plus a gentle push toward the first outline.
+    const cam = s.el.querySelector('.cam');
+    const drift = 1 + 0.025 * clamp(local / (s.end - s.start));
+    if (s.rings.length) {
+      const [cx, cy] = s.rings[0].center;
+      const push = 1 + 0.07 * step(t - markTimes(s, 0).ring, 0.7, 1);
+      cam.style.transformOrigin = `${cx}px ${cy}px`;
+      cam.style.transform = `scale(${(drift * push).toFixed(5)})`;
+    } else cam.style.transform = `scale(${drift.toFixed(5)})`;
+
+    // Outlines draw on, the rest dims, then the label rises.
+    let dimLevel = 0;
+    s.rings.forEach((r, k) => {
+      const m = markTimes(s, k);
+      const draw = ease((t - m.ring) / 0.55);
+      $(r.id).setAttribute('stroke-dashoffset', (1 - draw).toFixed(4));
+      dimLevel = Math.max(dimLevel, smooth((t - m.ring) / 0.4));
+      const lab = $(`${r.id}-label`), lo = smooth((t - m.label) / 0.3);
+      lab.style.opacity = lo.toFixed(3);
+      lab.style.transform = `translateY(${(14 * (1 - ease((t - m.label) / 0.45))).toFixed(2)}px)`;
+    });
+    s.el.querySelectorAll('.dim').forEach(d => {
+      const hasRing = d.closest('svg').querySelector('.ring');
+      d.setAttribute('opacity', (hasRing ? 0.62 * dimLevel : 0).toFixed(3));
+    });
+    // A device without outlines steps back while another one is being explained.
+    s.el.querySelectorAll('.shot').forEach(shot => { shot.querySelector('.veil').style.opacity = shot.querySelector('.ring') ? '0' : (0.55 * dimLevel).toFixed(3); });
+
+    // Cards.
+    if (s.card === 'concept' || s.card === 'logo') {
+      const it = iconTimes(s), box = s.el.querySelector('.mark-logo');
+      // The square pops in, then bumps when the hook lands.
+      const pop = clamp(step(t - it.pop - 0.02, 1.4, 0.62), 0, 1.3);
+      const bump = t > it.hook ? Math.exp(-(t - it.hook) * 7) * Math.sin((t - it.hook) * 22) * 0.07 : 0;
+      box.style.transform = `scale(${(pop * (1 + bump)).toFixed(4)})`;
+      const flash = clamp((t - it.hook) / 0.6);
+      Object.assign(box.querySelector('.flash').style, { opacity: (t < it.hook ? 0 : (1 - flash) * 0.9).toFixed(3), transform: `scale(${(1 + 0.18 * ease(flash)).toFixed(3)})` });
+      // Climb: each step moves on its beat (a quick, settled glide) and leaves the line behind it.
+      const progress = it.steps.reduce((sum, time) => sum + 0.25 * ease((t - time) / 0.26), 0);
+      box.querySelector('.stair').style.strokeDashoffset = (1 - progress).toFixed(4);
+      box.querySelector('.hook').style.strokeDashoffset = (1 - ease((t - it.hook) / 0.14)).toFixed(4);
+      const seg = Math.min(3, Math.floor(progress * 4)), f = progress * 4 - seg;
+      const [x0, y0] = STAIR[seg], [x1, y1] = STAIR[seg + 1];
+      const dot = box.querySelector('.dot');
+      dot.setAttribute('cx', (x0 + (x1 - x0) * f).toFixed(3));
+      dot.setAttribute('cy', (y0 + (y1 - y0) * f).toFixed(3));
+      // The dot appears with the square and is absorbed into the hook when it arrives.
+      const r = 2.2 * smooth((t - it.pop - 0.25) / 0.2) * (1 - smooth((t - it.hook) / 0.15));
+      dot.setAttribute('r', r.toFixed(3));
+      s.el.querySelectorAll('.name span').forEach((sp, k) => {
+        const at0 = it.letter(k), o = smooth((t - at0) / 0.25);
+        sp.style.opacity = o.toFixed(3);
+        sp.style.transform = `translateY(${(30 * (1 - ease((t - at0) / 0.5))).toFixed(2)}px)`;
+      });
+      const tag = s.el.querySelector('.tag'), sub = s.el.querySelector('.sub');
+      const tagAt = it.tag, subAt = it.sub;
+      tag.style.opacity = smooth((t - tagAt) / 0.4).toFixed(3);
+      tag.style.letterSpacing = `${(14 + 10 * (1 - ease((t - tagAt) / 1.2))).toFixed(2)}px`;
+      sub.style.opacity = smooth((t - subAt) / 0.5).toFixed(3);
+      if (s.card === 'logo') {
+        // Final bar: everything settles and fades to black on the held chord.
+        const out = smooth((t - (DURATION - 1.2)) / 1.1);
+        s.el.querySelector('.card').style.opacity = (1 - out).toFixed(3);
+      }
+    }
+    if (s.card === 'flow') {
+      s.el.querySelectorAll('.flow .node').forEach(node => {
+        const k = Number(node.dataset.k), t0 = flowTimes(s, k);
+        node.style.opacity = smooth((t - t0) / 0.25).toFixed(3);
+        const p = clamp(step(t - t0, 1.9, 0.6), 0, 1.2);
+        node.querySelector('.disc').style.transform = `scale(${p.toFixed(4)})`;
+        node.style.transform = `translateY(${(26 * (1 - ease((t - t0) / 0.5))).toFixed(2)}px)`;
+      });
+      s.el.querySelectorAll('.flow .arrow').forEach(arrow => {
+        const k = Number(arrow.dataset.k), t0 = flowTimes(s, k) + BEAT * 0.45;
+        arrow.querySelector('path').style.strokeDashoffset = (1 - ease((t - t0) / 0.4)).toFixed(4);
+      });
+      s.el.querySelectorAll('.flow .stat').forEach(stat => {
+        const k = Number(stat.dataset.k), t0 = statTimes(s, k), b = stat.querySelector('b');
+        stat.style.opacity = smooth((t - t0) / 0.25).toFixed(3);
+        const [num, den] = b.dataset.n.split('/');
+        const v = Math.round(Number(num) * ease((t - t0) / 0.7));
+        b.textContent = den ? `${v}/${den}` : String(v);
+      });
+      const note = s.el.querySelector('.flow .note');
+      if (note) note.style.opacity = smooth((t - flowTimes(s, FLOWS[s.flow].nodes.length) - BEAT) / 0.5).toFixed(3);
+    }
+    if (s.card === 'story') {
+      const svg = s.el.querySelector('.story svg');
+      const rise = ease((t - s.start) / 0.9);
+      svg.querySelector('.person').style.transform = `translateY(${(50 * (1 - rise)).toFixed(2)}px)`;
+      svg.querySelector('.person').style.opacity = smooth((t - s.start) / 0.5).toFixed(3);
+      svg.querySelector('.hospital').style.transform = `translateX(${(-40 * (1 - rise) - 12 * clamp(local / (s.end - s.start))).toFixed(2)}px)`;
+      svg.querySelector('.papers').style.transform = `rotate(${(Math.sin(t * 2.4) * 2.2).toFixed(3)}deg)`;
+      svg.querySelector('.papers').style.transformOrigin = '520px 460px';
+      svg.querySelector('.phone-hand').style.transform = `translateY(${(Math.sin(t * 1.8 + 1) * 3).toFixed(2)}px)`;
+      svg.querySelectorAll('.bubble').forEach(b => {
+        const k = Number(b.dataset.k), t0 = storyBubble(s, k);
+        const p = clamp(step(t - t0, 2.2, 0.55), 0, 1.25);
+        b.style.opacity = smooth((t - t0) / 0.12).toFixed(3);
+        b.style.transform = `scale(${p.toFixed(4)}) translateY(${(Math.sin((t - t0) * 2 + k) * 4).toFixed(2)}px)`;
+      });
+    }
+    // Icon chip pops with the caption.
+    const chipEl = s.el.querySelector('.chip');
+    if (chipEl) {
+      const c0 = s.start + BEAT * 0.5, p = clamp(step(t - c0, 1.8, 0.6), 0, 1.25);
+      chipEl.style.transform = `scale(${p.toFixed(4)}) rotate(${(-8 * (1 - clamp(p))).toFixed(2)}deg)`;
+    }
+    // Guide stepper: the path grows from the last stop to this one on beat 2; this stop pulses.
+    const stepperEl = s.el.querySelector('.stepper');
+    if (stepperEl) {
+      stepperEl.style.opacity = smooth((t - s.start - BEAT * 0.5) / 0.3).toFixed(3);
+      const from = STOP_AT[s.guide - 2] ?? 0, to = STOP_AT[s.guide - 1];
+      const g = from + (to - from) * ease((t - s.start - BEAT) / 0.35);
+      stepperEl.querySelector('.done').style.strokeDashoffset = (1 - g).toFixed(4);
+      const node = stepperEl.querySelector(`.node[data-k="${s.guide - 1}"]`);
+      const pulse = 1 + 0.18 * Math.max(0, Math.sin((t - s.start) * Math.PI * 2 / (BEAT * 2)));
+      node.setAttribute('r', (13 * (t > s.start + BEAT ? pulse : 1)).toFixed(2));
+    }
+    // A document card slides in beside the phone, then flies into it just before the outline draws.
+    const obj = s.el.querySelector('.object');
+    if (obj && s.device) {
+      const ot = objectTimes(s), d = s.device;
+      const start = [d.x - 330, d.y + d.h * 0.35], end = [d.x + d.w / 2 - 95, d.y + d.h * 0.45];
+      const fly = ease((t - ot.fly) / (ot.gone - ot.fly));
+      const x = start[0] + (end[0] - start[0]) * fly, y = start[1] + (end[1] - start[1]) * fly - 60 * Math.sin(Math.PI * fly);
+      const appear = smooth((t - ot.in) / 0.35);
+      obj.style.left = `${x.toFixed(1)}px`; obj.style.top = `${y.toFixed(1)}px`;
+      obj.style.opacity = (appear * (1 - smooth((t - ot.gone + 0.12) / 0.18))).toFixed(3);
+      obj.style.transform = `translateX(${(-40 * (1 - ease((t - ot.in) / 0.5))).toFixed(1)}px) scale(${(1 - 0.65 * fly).toFixed(4)}) rotate(${(-6 + 6 * fly).toFixed(2)}deg)`;
+    }
+    if (s.card === 'interfaces') {
+      s.el.querySelectorAll('.tile').forEach((tile, k) => {
+        const t0 = s.start + BEAT * (k + 1), o = smooth((t - t0) / 0.3);
+        tile.style.opacity = o.toFixed(3);
+        tile.style.transform = `translateY(${(40 * (1 - ease((t - t0) / 0.6))).toFixed(2)}px)`;
+      });
+    }
+    // Caption: one beat after the scene starts; it stays to be read.
+    const cap = s.el.querySelector('.caption');
+    if (cap) {
+      const c = smooth((t - s.start - BEAT * 0.5) / 0.4);
+      cap.style.opacity = c.toFixed(3);
+      cap.style.transform = `translateY(${(16 * (1 - ease((t - s.start - BEAT * 0.5) / 0.6))).toFixed(2)}px)`;
+    }
+    // Cursor: glides to the first outline and clicks one beat before it draws (scenes with an action).
+    if (s.click && s.rings.length && v.pout < 0.5) {
+      const m = markTimes(s, 0), r = $(s.rings[0].id).getBoundingClientRect();
+      const target = [r.left + r.width / 2, r.top + r.height / 2], from = [target[0] + 260, target[1] + 220];
+      const g = ease((t - (m.ring - BEAT * 2.5)) / (BEAT * 1.4));
+      cursor = { x: from[0] + (target[0] - from[0]) * g, y: from[1] + (target[1] - from[1]) * g, o: v.pin * (1 - smooth((t - (m.label + BEAT)) / 0.4)), click: m.ring - BEAT };
+    }
+  });
+  const cur = $('cursor'), rip = $('ripple');
+  if (cursor) {
+    const press = Math.exp(-Math.max(0, t - cursor.click) * 10) * (t >= cursor.click ? 1 : 0);
+    cur.style.opacity = clamp(cursor.o).toFixed(3);
+    cur.style.transform = `translate(${(cursor.x - 6).toFixed(1)}px, ${(cursor.y - 4).toFixed(1)}px) scale(${(1 - 0.15 * press).toFixed(3)})`;
+    const rp = clamp((t - cursor.click) / 0.5);
+    rip.style.left = `${cursor.x}px`; rip.style.top = `${cursor.y}px`;
+    rip.style.opacity = (t < cursor.click || rp >= 1 ? 0 : (1 - rp) * 0.9).toFixed(3);
+    rip.style.transform = `scale(${(0.3 + rp).toFixed(3)})`;
+  } else { cur.style.opacity = '0'; rip.style.opacity = '0'; }
+
+  // The badge leaves for the logo; subtitles only in the narrated version.
+  $('badge').style.opacity = (1 - smooth((t - (SCENES.at(-1).start - TRANS)) / (2 * TRANS))).toFixed(3);
+  const sub = $('subtitle');
+  const line = VERSION === 'vo' ? VO.find(v => t >= v.start - 0.15 && t <= v.end + 0.15) : null;
+  if (line) {
+    sub.textContent = line.text;
+    sub.style.opacity = (smooth((t - line.start + 0.15) / 0.15) * (1 - smooth((t - line.end) / 0.15))).toFixed(3);
+  } else sub.style.opacity = '0';
+  return t;
+}
+
+build();
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => { placeLabels(); seek(Number(params.get('t') ?? 0)); });
+window.seek = seek;
+window.SCORE = makeScore();
+window.DURATION = DURATION;
+window.MUSIC = MUSIC;
+window.VO = VO;
+window.SCENE_STARTS = SCENES.map(s => ({ bar: s.bar, start: s.start, label: s.caption ?? s.card }));
+</script>
+</body>
+</html>
