@@ -76,15 +76,16 @@ test('A whitelisted document can still be rejected as unknown by the model, with
   assert.equal((await (await service.request(`/journeys/${journey.id}`, null, cookie)).json()).readiness, 35);
 });
 
-test('Changing PDF bytes or sending a claimed hash cannot bypass the server fingerprint', async t => {
+test('Custom PDF bytes reach analysis; a browser-supplied hash never grants verification', async t => {
   let calls = 0; const demo = createDemoProvider();
-  const service = await api(t, settings(), { ...demo, mode: 'live', analyzeDocument: async () => { calls++; assert.fail('Must not reach the provider'); } });
+  const service = await api(t, settings(), { ...demo, mode: 'live', analyzeDocument: async () => { calls++; return { documentType: 'unknown', confidence: .1, fields: {} }; } });
   const created = await service.request('/journeys', { message: story }); const cookie = cookieOf(created), journey = await created.json();
   const changed = new FormData(); changed.set('file', new File([samplePdf('diagnosis_certificate'), ' '], 'diagnosis_certificate-sample.pdf', { type: 'application/pdf' })); changed.set('documentType', 'diagnosis_certificate');
   const denied = await service.request(`/journeys/${journey.id}/documents`, changed, cookie);
-  assert.equal(denied.status, 422); assert.equal((await denied.json()).error.code, 'SYNTHETIC_DOCUMENT_REQUIRED');
+  assert.equal(denied.status, 422); assert.equal((await denied.json()).error.code, 'DOCUMENT_UNRECOGNIZED');
   const claimed = await multipart('diagnosis_certificate'); claimed.set('sha256', cases[0][2]);
-  assert.equal((await service.request(`/journeys/${journey.id}/documents`, claimed, cookie)).status, 400); assert.equal(calls, 0);
+  assert.equal((await service.request(`/journeys/${journey.id}/documents`, claimed, cookie)).status, 400); assert.equal(calls, 1);
+  assert.equal((await (await service.request(`/journeys/${journey.id}`, null, cookie)).json()).readiness, 35);
 });
 
 test('Session AI-operation cap includes uploads and re-submissions; deterministic case operations still work', async t => {
@@ -134,7 +135,7 @@ function fileForm(bytes, mime = 'application/pdf', filename = 'custom.pdf', type
 }
 async function controlled(t, respond, overrides = {}) {
   // Transport is injected, not a real API call; durable quota behavior has separate restart/race tests.
-  const config = { ...settings(), usageFile: '', sessionToken: operatorToken, sessionRequestLimit: 20, ...overrides };
+  const config = { ...settings(), publicSynthetic: false, usageFile: '', sessionToken: operatorToken, sessionRequestLimit: 20, ...overrides };
   const requests = []; const buffers = [];
   const gemini = createGeminiProvider(config, async (_url, init) => {
     const body = JSON.parse(init.body), media = body.contents[0].parts[1].inlineData;
@@ -253,17 +254,18 @@ test('Document timeout leaves no verified evidence and never starts a second tra
 });
 
 
-test('Empty built-in hash configuration is reflected in capabilities without blocking authorized custom uploads', async t => {
+test('Public session upload capability does not depend on a built-in hash list', async t => {
   const demo = createDemoProvider();
   const config = { ...settings(), syntheticDocumentHashes: [], sessionToken: operatorToken };
   const service = await api(t, config, { ...demo, mode: 'live', analyzeDocument: async () => ({ documentType: 'unknown', confidence: .1, fields: {} }) });
   const created = await service.request('/journeys', { message: story });
   const cookie = cookieOf(created), journey = await created.json();
+  const noSession = await (await service.request('/ai/status')).json();
+  assert.deepEqual(noSession.documentUpload, { builtInSynthetic: false, userProvidedSynthetic: false, realPersonalDocuments: false });
   const publicStatus = await (await service.request('/ai/status', null, cookie)).json();
-  assert.equal(publicStatus.documentUpload.builtInSynthetic, false);
-  assert.equal(publicStatus.documentUpload.userProvidedSynthetic, false);
+  assert.deepEqual(publicStatus.documentUpload, { builtInSynthetic: true, userProvidedSynthetic: true, realPersonalDocuments: false });
   const denied = await service.request(`/journeys/${journey.id}/documents`, await multipart('diagnosis_certificate'), cookie);
-  assert.equal(denied.status, 422); assert.equal((await denied.json()).error.code, 'SYNTHETIC_DOCUMENT_REQUIRED');
+  assert.equal(denied.status, 422); assert.equal((await denied.json()).error.code, 'DOCUMENT_UNRECOGNIZED');
   const activated = await service.request('/test-sessions', { token: operatorToken, syntheticOnly: true });
   assert.equal(activated.status, 201);
   const authorized = await activated.json();
@@ -273,4 +275,43 @@ test('Empty built-in hash configuration is reflected in capabilities without blo
   const next = await controlledService.create();
   const uploaded = await controlledService.request(`/journeys/${next.id}/documents`, fileForm(customPdf('NAVI TEST PERSON A')), controlledService.cookie);
   assert.equal(uploaded.status, 200); assert.equal(controlledService.requests.length, 1);
+});
+
+test('Public visitors upload different custom PDFs without an operator token or approved fingerprints', async t => {
+  // This test isolates upload contents; durable quota pacing/restart has dedicated coverage.
+  const config = { ...settings(), usageFile: '', syntheticDocumentHashes: [] }, requests = [];
+  const gemini = createGeminiProvider(config, async (_url, init) => {
+    const media = JSON.parse(init.body).contents[0].parts[1].inlineData;
+    const bytes = Buffer.from(media.data, 'base64'); requests.push(bytes);
+    return jsonResponse(medical(bytes.includes(Buffer.from('PERSON B')) ? 'NAVI TEST PERSON B' : 'NAVI TEST PERSON A'));
+  });
+  const service = await api(t, config, { ...gemini, understandIntent: async () => result('hospitalization_claim') });
+  let cookie;
+  for (const name of ['NAVI TEST PERSON A', 'NAVI TEST PERSON B']) {
+    const created = await service.request('/journeys', { message: manualStory }, cookie);
+    assert.equal(created.status, 201); cookie ??= cookieOf(created); const journey = await created.json();
+    const bytes = customPdf(name);
+    const response = await service.request(`/journeys/${journey.id}/documents`, fileForm(bytes), cookie);
+    assert.equal(response.status, 200); assert.equal(response.headers.get('X-NAVI-AI-Mode'), 'live');
+    const data = await response.json(); assert.equal(data.document.isMock, false);
+    assert.equal(data.document.fields.patientName, name); assert.equal(data.journey.readiness, 70);
+    assert.ok(requests.at(-1).equals(bytes));
+  }
+  assert.equal(requests.length, 2); assert.ok(!requests[0].equals(requests[1]));
+  assert.equal(offlineNetworkStats().externalRequests, 0);
+});
+
+for (const [mime, base64] of Object.entries(syntheticImages)) test(`Public ${mime} upload is analyzed from its bytes; unrelated imagery stays unverified`, async t => {
+  const config = { ...transportSettings(t), syntheticDocumentHashes: [] }, bytes = Buffer.from(base64, 'base64'); let calls = 0;
+  const gemini = createGeminiProvider(config, async (_url, init) => {
+    const media = JSON.parse(init.body).contents[0].parts[1].inlineData;
+    assert.equal(media.mimeType, mime); assert.ok(Buffer.from(media.data, 'base64').equals(bytes)); calls++;
+    return jsonResponse({ documentType: 'unknown', confidence: .1, fields: nullableFields });
+  });
+  const service = await api(t, config, { ...gemini, understandIntent: async () => result('hospitalization_claim') });
+  const created = await service.request('/journeys', { message: manualStory }); const cookie = cookieOf(created), journey = await created.json();
+  const response = await service.request(`/journeys/${journey.id}/documents`, fileForm(bytes, mime, `synthetic.${mime.split('/')[1]}`), cookie);
+  assert.equal(response.status, 422); assert.equal((await response.json()).error.code, 'DOCUMENT_UNRECOGNIZED'); assert.equal(calls, 1);
+  const after = await (await service.request(`/journeys/${journey.id}`, null, cookie)).json();
+  assert.equal(after.readiness, 35); assert.deepEqual(after.documents, []);
 });
