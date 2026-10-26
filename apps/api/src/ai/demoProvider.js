@@ -6,6 +6,11 @@ import { findHospitalMention, reportedStayDays, hasNegatedHospitalization } from
 export function createDemoProvider() {
   return {
     mode: 'demo', requiresPaidTier: false,
+    async understandTasks(message, signal) {
+      const parts = message.split(/(?:，?也想|，?另外|；|;)/).map(part => part.trim()).filter(Boolean);
+      const inputs = parts.length > 4 ? [message] : parts;
+      return { tasks: await Promise.all(inputs.map(async input => ({ input, data: await this.understandIntent(input, signal) }))) };
+    },
     async answerKnowledge(question, context) { return { answer: context.answer, confidence: 1, supported: true, sourceIds: context.sourceIds }; },
     // ponytail: scripted keyword demo only; use the existing live provider for actual language understanding.
     async understandIntent(message, signal) {
@@ -14,7 +19,7 @@ export function createDemoProvider() {
         [/(?:flight|plane|airline|班機|航班|飛機).*(?:delay|延誤)|(?:delay|延誤).*(?:flight|plane|班機|航班|飛機)/i, 'flight_delay'],
         [/車禍|車輛事故|(?:car|vehicle).*(?:accident|crash)/i, 'vehicle_accident'],
         [/(?:換|變更|更改|修改|change|update).*(?:信用卡|扣款|繳費|payment|credit card)/i, 'payment_method_change'],
-        [/(?:變更|更改|改|change|update).*(?:保單|受益人|地址|beneficiary|address)/i, 'policy_change'],
+        [/搬家|moved (?:house|home)|(?:變更|更改|改|change|update).*(?:保單|受益人|地址|beneficiary|address)/i, 'policy_change'],
         [/住院|出院|inpatient|hospitali[sz]|admitted.{0,20}hospital|stayed.{0,30}hospital/i, 'hospitalization_claim'],
         [/保單資訊|查詢保單|保單借款|密碼|網路服務|policy information|policy loan|password/i, 'policy_information'],
       ].filter(([pattern]) => pattern.test(message));

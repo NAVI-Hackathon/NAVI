@@ -92,7 +92,7 @@ test('Retry failures count durably; a provider restart cannot regain consumed qu
 test('Session required, hostile origins denied, browser mode headers ignored; unavailable never returns fixture', async t => {
   let calls = 0; const provider = { mode: 'live', understandIntent: async () => { calls++; return result(); } };
   const api = await serve(t, restricted(), provider);
-  for (const path of ['/intelligence/understand', '/intelligence/understand/', '/ANALYZE-INTENT/', '/knowledge/answer/']) assert.equal((await api.post(path, { message: story })).status, 403);
+  for (const path of ['/intelligence/understand', '/intelligence/tasks', '/intelligence/tasks/', '/intelligence/understand/', '/ANALYZE-INTENT/', '/knowledge/answer/']) assert.equal((await api.post(path, { message: story })).status, 403);
   const denied = await api.post('/test-sessions', { token, syntheticOnly: true }, null, { Origin: 'https://evil.invalid' }); assert.equal(denied.status, 403);
   const cookie = await api.session();
   const res = await api.post('/intelligence/understand', { message: '班機延誤' }, cookie, { 'X-NAVI-AI-Mode': 'demo' });

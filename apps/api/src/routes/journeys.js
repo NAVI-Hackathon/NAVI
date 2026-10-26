@@ -1,7 +1,9 @@
 import express from 'express';
+import { understandTasks } from '../services/taskService.js';
+import { CorrectJourneyIntentRequestSchema, CorrectJourneyIntentResponseSchema } from '../../../../shared/serviceTasks.js';
 import { getKnowledgeVersion } from '../services/knowledgeVersionService.js';
 import { NavigationPlanRequestSchema, HandoffConfirmRequestSchema } from '../../../../shared/competition.js';
-import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
+import { createNavigationService } from '../services/navigationService.js';
 import { searchVerifiedKnowledge } from '../../../../shared/knowledge/evidence.js';
 import { explainJourney, createHandoffConfirmationService } from '../services/competitionService.js';
 import { z } from 'zod';
@@ -28,8 +30,9 @@ function requestSignal(res) {
 export function createJourneyRouter({ config, provider, repository, sessions }) {
   const router = express.Router();
   const service = createJourneyService({ config, provider, repository });
+  const navigation = createNavigationService(config);
   const handoff = createHandoffConfirmationService({ getJourney: service.get });
-  router.post('/navigation/plans', (req, res) => res.json(planNavigation(validate(NavigationPlanRequestSchema, req.body))));
+  router.post('/navigation/plans', (req, res) => res.json(navigation(validate(NavigationPlanRequestSchema, req.body))));
   router.get('/knowledge/version', (req, res) => res.json(getKnowledgeVersion({ allowSynthetic: !config.production })));
   router.get('/knowledge/versioned-evidence', (req, res) => res.json({ knowledgeVersion: getKnowledgeVersion({ allowSynthetic: !config.production }).knowledgeVersion, evidence: searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query)) }));
   router.get('/knowledge/evidence', (req, res) => res.json(searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
@@ -39,6 +42,16 @@ export function createJourneyRouter({ config, provider, repository, sessions }) 
     res.status(201).json(handoff.preview(req.params.id));
   });
   router.post('/journeys/:id/handoff/confirm', (req, res) => res.json(handoff.confirm(req.params.id, validate(HandoffConfirmRequestSchema, req.body))));
+  router.post('/intelligence/tasks', async (req, res) => {
+    const { message } = validate(RequestSchema, req.body);
+    const result = await understandTasks(message, { config, provider, signal: requestSignal(res) });
+    for (const task of result.tasks) sessions?.remember(req, task.input, task.data);
+    res.json(result);
+  });
+  router.post('/journeys/:id/intent-correction', async (req, res) => {
+    const { message } = validate(CorrectJourneyIntentRequestSchema, req.body);
+    res.json(CorrectJourneyIntentResponseSchema.parse(await service.correctIntent(req.params.id, message, requestSignal(res))));
+  });
   router.post('/analyze-intent', async (req, res) => {
     const { message } = validate(RequestSchema, req.body);
     const result = await understandIntent(message, { config, provider, signal: requestSignal(res) });
