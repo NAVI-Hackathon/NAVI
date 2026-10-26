@@ -251,3 +251,26 @@ test('Document timeout leaves no verified evidence and never starts a second tra
   const after = await (await service.request(`/journeys/${journey.id}`, null, service.cookie)).json();
   assert.equal(after.readiness, 35); assert.deepEqual(after.documents, []);
 });
+
+
+test('Empty built-in hash configuration is reflected in capabilities without blocking authorized custom uploads', async t => {
+  const demo = createDemoProvider();
+  const config = { ...settings(), syntheticDocumentHashes: [], sessionToken: operatorToken };
+  const service = await api(t, config, { ...demo, mode: 'live', analyzeDocument: async () => ({ documentType: 'unknown', confidence: .1, fields: {} }) });
+  const created = await service.request('/journeys', { message: story });
+  const cookie = cookieOf(created), journey = await created.json();
+  const publicStatus = await (await service.request('/ai/status', null, cookie)).json();
+  assert.equal(publicStatus.documentUpload.builtInSynthetic, false);
+  assert.equal(publicStatus.documentUpload.userProvidedSynthetic, false);
+  const denied = await service.request(`/journeys/${journey.id}/documents`, await multipart('diagnosis_certificate'), cookie);
+  assert.equal(denied.status, 422); assert.equal((await denied.json()).error.code, 'SYNTHETIC_DOCUMENT_REQUIRED');
+  const activated = await service.request('/test-sessions', { token: operatorToken, syntheticOnly: true });
+  assert.equal(activated.status, 201);
+  const authorized = await activated.json();
+  assert.equal(authorized.documentUpload.builtInSynthetic, true);
+  assert.equal(authorized.documentUpload.userProvidedSynthetic, true);
+  const controlledService = await controlled(t, () => medical('NAVI TEST PERSON A'), { syntheticDocumentHashes: [] });
+  const next = await controlledService.create();
+  const uploaded = await controlledService.request(`/journeys/${next.id}/documents`, fileForm(customPdf('NAVI TEST PERSON A')), controlledService.cookie);
+  assert.equal(uploaded.status, 200); assert.equal(controlledService.requests.length, 1);
+});

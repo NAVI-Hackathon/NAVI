@@ -41,7 +41,7 @@ export function createTestSessions(config, repository) {
   }
   function documentUpload(req) {
     const operator = enabled && sessions.get(current(req))?.operator === true;
-    return { builtInSynthetic: enabled && Boolean(current(req)), userProvidedSynthetic: operator, realPersonalDocuments: false };
+    return { builtInSynthetic: enabled && Boolean(current(req)) && (operator || config.syntheticDocumentHashes.length > 0), userProvidedSynthetic: operator, realPersonalDocuments: false };
   }
   return {
     documentUpload,
