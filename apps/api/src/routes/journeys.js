@@ -45,7 +45,7 @@ export function createJourneyRouter({ config, provider, repository, sessions }) 
   router.post('/intelligence/tasks', async (req, res) => {
     const { message } = validate(RequestSchema, req.body);
     const result = await understandTasks(message, { config, provider, signal: requestSignal(res) });
-    for (const task of result.tasks) sessions?.remember(req, task.input, task.data);
+    for (const task of result.tasks) sessions?.remember(req, task.input, task.data, task.id);
     res.json(result);
   });
   router.post('/journeys/:id/intent-correction', async (req, res) => {
@@ -60,7 +60,8 @@ export function createJourneyRouter({ config, provider, repository, sessions }) 
   });
   router.post('/journeys', async (req, res) => {
     const input = validate(CreateJourneyRequestSchema, req.body);
-    const journey = await service.create(input, requestSignal(res), sessions?.intent(req, input.message));
+    const signal = requestSignal(res);
+    const journey = await sessions.createJourney(req, input, trusted => service.create(input, signal, trusted));
     sessions?.own(req, journey.id);
     res.status(201).json(journey);
   });

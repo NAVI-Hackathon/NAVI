@@ -27,6 +27,7 @@ export async function answerKnowledge(question, { provider, config, signal }) {
     if (!result.supported) return insufficient();
     return { answer: result.answer, confidence: result.confidence, sources: getSources(result.sourceIds), supported: true, isMock: context.isMock !== false, answerMode: provider.mode === 'demo' ? 'demo' : 'grounded_extract' };
   } catch (error) {
+    if (error.code === 'AI_SESSION_LIMIT_REACHED' || error.code?.startsWith('TEST_SESSION_')) throw error;
     if (['AI_UNAVAILABLE', 'AI_USAGE_UNAVAILABLE', 'AI_DAILY_LIMIT_REACHED', 'AI_BUSY', 'AI_RATE_LIMITED', 'AI_REQUEST_BUDGET_REACHED', 'FREE_TIER_NOT_CONFIRMED', 'LIVE_AI_DISABLED_IN_CI', 'PAID_AI_DISABLED'].includes(error.code)) throw error;
     if (signal?.aborted || error.code === 'REQUEST_CANCELLED' || !(error instanceof ApiError)) throw error;
     // Non-critical wording can fall back to the actual retrieved template, never to demo facts.

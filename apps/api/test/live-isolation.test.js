@@ -112,7 +112,10 @@ test('Server intent receipt avoids duplicate calls; forged intentResult cannot c
   const otherCookie = await api.session();
   for (const suffix of ['', '/explanation', '/handoff-summary']) assert.equal((await fetch(`${api.base}/journeys/${journey.id}${suffix}`, { headers: { Cookie: otherCookie } })).status, 404);
   assert.equal((await api.post(`/journeys/${journey.id}/review`, { confirmed: true }, otherCookie)).status, 404);
-  const direct = await api.post('/journeys', { message: '另一個住院案件', intentResult: forged }, cookie); assert.equal(direct.status, 201); assert.equal((await direct.json()).serviceType, 'hospitalization_claim'); assert.equal(calls, 2);
+  const modified = await api.post('/journeys', { message: '另一個住院案件', intentResult: forged }, cookie);
+  assert.equal(modified.status, 409); assert.equal((await modified.json()).error.code, 'INTENT_RECEIPT_REQUIRED'); assert.equal(calls, 1);
+  // Legacy direct creation remains possible, but never trusts browser-supplied analysis.
+  const direct = await api.post('/journeys', { message: '另一個住院案件' }, cookie); assert.equal(direct.status, 201); assert.equal((await direct.json()).serviceType, 'hospitalization_claim'); assert.equal(calls, 2);
 });
 test('Actual bytes reach the transport; classification and isMock come from the provider, not declared type', async () => {
   const bytes = samplePdf('bank_passbook'); let calls = 0;
