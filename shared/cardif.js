@@ -5,7 +5,7 @@ import raw from '../data/cardif_public_data.json' with { type: 'json' };
 const strings = z.array(z.string());
 const officialUrl = z.url().regex(/^https:\/\/life\.cardif\.com\.tw\//);
 export const cardif = z.object({
-  meta: z.object({ crawled: z.iso.date() }),
+  meta: z.object({ crawled: z.iso.date(), knowledgeVersion: z.string().regex(/^kb-[a-z0-9-]+$/).optional(), syntheticDemo: z.literal(true).optional() }),
   services: z.array(z.object({ id: z.string(), name: z.string(), category: z.string(), url: officialUrl, channels: strings, documents: strings, notes: strings, keywords: strings.optional(), partner_hospitals: strings.optional(), precheck_questions: strings.optional(), requires_login: z.boolean().optional(), related_forms: strings.optional(), apply_time: z.string().nullable().optional(), effective_time: z.string().nullable().optional(), online_available: z.string().nullable().optional(), online_requirements: strings.optional(), retrievedAt: z.iso.date().optional() })),
   forms: z.array(z.object({ id: z.string(), name: z.string(), note: z.string().optional(), page: officialUrl.optional(), url: officialUrl.optional(), retrievedAt: z.iso.date().optional() })),
   faq: z.array(z.object({ q: z.string(), a: z.string(), source: officialUrl, retrievedAt: z.iso.date().optional() })),

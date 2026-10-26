@@ -111,5 +111,38 @@ class ReviewTests(unittest.TestCase):
         self.assertTrue(self.diff('old valid rule', result)[0]['oldContentRetained'])
 
 
+class LifecycleDiffTests(unittest.TestCase):
+    def test_whitespace_only_changes_do_not_create_review(self):
+        old = {'content_md': '# 文件\n\n10 日內須寄回正本。', 'retrievedAt': '2026-10-20'}
+        text = '# 文件  \n\n  10 日內須寄回正本。  '
+        page = {'sourceId': 'snapshot:test', 'sourceUrl': review.BASE+'/zh/a314', 'retrievedAt': '2026-10-26T00:00:00Z', 'extractionStatus': 'ok', 'paragraphs': review.paragraphs(text)}
+        changes=review.page_diff(old,page,{'knowledgeIds':[],'navigationTargets':[]})
+        self.assertTrue(all(c['category']=='Unchanged' for c in changes))
+
+    def test_duplicate_content_is_reported_without_duplicate_review_candidate(self):
+        text='# 文件\n\n原文\n\n原文'
+        page={'sourceId':'snapshot:test','sourceUrl':review.BASE+'/zh/a314','retrievedAt':'2026-10-26T00:00:00Z','extractionStatus':'ok','paragraphs':review.paragraphs(text)}
+        changes=review.page_diff({'content_md':text},page,{'knowledgeIds':[],'navigationTargets':[]})
+        duplicate=next(c for c in changes if c['category']=='Duplicate Content')
+        self.assertIsNone(duplicate['reviewStatus'])
+        self.assertFalse(any(c['reviewStatus']=='pending' for c in changes))
+
+    def test_removed_content_requires_review_and_preserves_previous_text(self):
+        page={'sourceId':'snapshot:test','sourceUrl':review.BASE+'/zh/a314','retrievedAt':'2026-10-26T00:00:00Z','extractionStatus':'ok','paragraphs':review.paragraphs('# 文件\n\n保留')}
+        changes=review.page_diff({'content_md':'# 文件\n\n保留\n\n待刪除'},page,{'knowledgeIds':[],'navigationTargets':[]})
+        removed=next(c for c in changes if c['category']=='Removed')
+        self.assertEqual(removed['old']['text'],'待刪除')
+        self.assertEqual(removed['reviewStatus'],'pending')
+        self.assertEqual(removed['stableParagraphId'],removed['old']['id'])
+
+    def test_raw_html_is_preserved_separately_from_normalized_snapshot(self):
+        response=Mock(status_code=200,content=b'<html>raw exact bytes</html>',headers={'Content-Type':'text/html'})
+        with tempfile.TemporaryDirectory() as temp, patch.object(review,'public_get',return_value=response), patch.object(review,'extract',return_value={'title':'公開文件','content_md':'# 文件\n\n這是足夠長度的公開文件內容，不得省略申請條件與數字，十日內須寄回正本。'}):
+            result=review.fetch_page(Mock(),Mock(),review.BASE+'/zh/a314',1.5,Path(temp))
+            self.assertEqual(result['extractionStatus'],'ok')
+            self.assertEqual((Path(temp)/result['rawSnapshot']).read_bytes(),response.content)
+            self.assertEqual(result['rawContentSha256'],review.digest(response.content))
+            self.assertNotEqual(result['rawContentSha256'],result['normalizedContentSha256'])
+
 if __name__ == '__main__':
     unittest.main()

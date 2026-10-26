@@ -54,6 +54,9 @@ dist/
 .DS_Store
 artifacts/
 
+# Presentation sources, exports and recording materials stay local.
+/docs/presentation/
+
 .env.local
 apps/api/.env
 

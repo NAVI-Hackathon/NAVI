@@ -41,7 +41,17 @@
     "knowledge:project": "node scripts/knowledge/project-public.js",
     "knowledge:check": "node scripts/knowledge/project-public.js --check",
     "security:public": "node scripts/security/public-artifacts.js apps/web/dist apps/mock-site/.next/static apps/mock-site/.next/server/app",
-    "test:layout": "playwright test -c tests/layout/playwright.config.js"
+    "test:layout": "playwright test -c tests/layout/playwright.config.js",
+    "knowledge:init": "node scripts/knowledge/cli.js init",
+    "knowledge:refresh": "node scripts/knowledge/cli.js refresh",
+    "knowledge:import": "node scripts/knowledge/cli.js import",
+    "knowledge:review": "node scripts/knowledge/cli.js review",
+    "knowledge:publish": "node scripts/knowledge/cli.js publish",
+    "knowledge:status": "node scripts/knowledge/cli.js status",
+    "knowledge:diff": "node scripts/knowledge/cli.js diff",
+    "knowledge:rollback": "node scripts/knowledge/cli.js rollback",
+    "test:knowledge-lifecycle": "node --import ./apps/api/test/networkGuard.js --test apps/api/test/knowledgeLifecycle.test.js",
+    "knowledge:demo": "node scripts/knowledge/demo.js"
   },
   "engines": {
     "node": ">=22.12"

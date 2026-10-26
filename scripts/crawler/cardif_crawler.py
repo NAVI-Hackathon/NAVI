@@ -139,11 +139,17 @@ class NonHtmlResponse(ValueError):
         self.status_code, self.content_type = status_code, content_type
 
 
-def public_get(session, url, rp, delay, *, html_only=False):
+def public_get(session, url, rp, delay, *, html_only=False, allowed_urls=None):
     """Check every redirect against the host and robots before making the next request."""
     for _ in range(4):
-        if not norm(url) or not rp.can_fetch(UA, url) or (html_only and is_pdf(url)):
-            raise ValueError("非允許的公開來源或 robots 禁止")
+        if not norm(url):
+            raise ValueError("非允許的官方公開來源")
+        if allowed_urls is not None and norm(url) not in allowed_urls:
+            raise ValueError("重新導向目的地未列入核准來源白名單")
+        if not rp.can_fetch(UA, url):
+            raise ValueError("robots.txt 禁止擷取此來源")
+        if html_only and is_pdf(url):
+            raise ValueError("PDF 僅記錄連結，不讀取內容")
         try:
             response = session.get(url, timeout=(5, 15), allow_redirects=False, stream=True)
             if response.is_redirect:
