@@ -9,10 +9,14 @@ export function buildNavigationPlan(sourceId, options) {
   if (!root) return null;
   // Relationships come from the snapshot, not a model or caller-provided URL.
   const related = root.relatedIds.map(getKnowledgeEntry).filter(Boolean);
-  const entries = [root, ...related.slice(0, root.type === 'service' ? 2 : 3)];
-  // Services explain first, then show their linked forms, then return to the service entry.
-  if (root.type === 'service' && related.length) entries.push(root);
-  const selected = entries.slice(0, 4);
+  // Form reverse-links and FAQ page neighbours describe other services, not additional user actions.
+  const forward = root.type === 'service' ? related.filter(entry => entry.type === 'form') : root.type === 'claim_documents' ? related : [];
+  const seen = new Set();
+  const selected = [root, ...forward].filter(entry => {
+    const key = `${entry.destination.path}#${entry.destination.anchor ?? ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }).slice(0, 4);
   const steps = selected.map((entry, index) => {
     const evidence = verifiedEvidence(entry.id, options);
     if (!evidence || !verifyNavigationDestination(entry.destination, entry.id)) return null;

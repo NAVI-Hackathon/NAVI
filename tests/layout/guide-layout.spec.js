@@ -57,7 +57,7 @@ for (const size of SIZES) {
     const guide = page.locator('.guide-card');
     await expect(guide).toBeVisible();
 
-    const total = 3;
+    const total = 2; // service information → linked form; no redundant return to the first destination
     for (let step = 1; step <= total; step += 1) {
       await expect(page.locator('.guide-count')).toHaveText(`第 ${step} / ${total} 步`);
       await page.waitForTimeout(400); // let the step transition settle before measuring

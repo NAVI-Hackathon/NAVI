@@ -44,7 +44,7 @@ test('multi-step navigation preserves source relationships, exact excerpts and c
     const plan = buildNavigationPlan(id, options);
     assert.ok(plan, id); NavigationPlanSchema.parse(plan);
     assert.equal(verifyNavigationPlan(plan, options), true);
-    assert.ok(plan.steps.length >= 2, id);
+    assert.ok(plan.steps.length >= 1, id);
     for (const [index, step] of plan.steps.entries()) {
       assert.equal(step.order, index + 1); assert.equal(verifyKnowledgeSource(step.source), true);
       assert.equal(verifyNavigationDestination(step.destination, step.sourceId), true);
