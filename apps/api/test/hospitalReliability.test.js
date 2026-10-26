@@ -39,7 +39,7 @@ test('hospitalization certificate spelling normalizes to the existing proof enum
 test('multipart accepts real synthetic PDF/PNG/JPEG/WebP containers and keeps all Demo outcomes labeled Mock', async t => {
   const api = await apiFor(t); const journey = await api.create();
   for (const [mime, bytes] of [['application/pdf', samplePdf('diagnosis_certificate')], ...Object.entries(syntheticImages).map(([mime, data]) => [mime, Buffer.from(data, 'base64')])]) {
-    const result = await json(await api.upload(journey.id, 'diagnosis_certificate', { mime, bytes, filename: '../SYNTHETIC-SECRET-00000000001234.pdf' }));
+    const result = await json(await api.upload(journey.id, 'diagnosis_certificate', { mime, bytes, filename: `../SYNTHETIC-SECRET-00000000001234.${mime === 'application/pdf' ? 'pdf' : mime.split('/')[1]}` }));
     assert.equal(result.document.isMock, true); assert.equal(result.document.source, 'demo');
     assert.equal(result.journey.readiness, 70); assert.equal(result.journey.documents.length, 1);
     assert.doesNotMatch(result.document.filename, /SECRET|1234|\.\./);

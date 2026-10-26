@@ -7,6 +7,10 @@ export function samplePdf(documentType) {
     : documentType === 'boarding_pass'
     ? ['NAVI TEST - BOARDING PASS', 'SYNTHETIC SAMPLE - NOT VALID FOR TRAVEL', 'Passenger: NAVI TEST PASSENGER', 'Flight: BR 196', 'From: NRT (Tokyo)', 'To: TPE (Taipei)', 'Departure date: 2026-10-07', 'Scheduled departure: 14:20']
     : ['NAVI TEST - AIRLINE DELAY CERTIFICATE', 'SYNTHETIC SAMPLE - NOT AN OFFICIAL DOCUMENT', 'Flight: BR 196', 'From: NRT (Tokyo)', 'To: TPE (Taipei)', 'Departure date: 2026-10-07', 'Actual departure date: 2026-10-07', 'Scheduled departure: 14:20', 'Actual departure: 21:43'];
+  return syntheticPdf(lines);
+}
+
+export function syntheticPdf(lines) {
   const escape = value => value.replace(/[\\()]/g, '\\$&');
   const stream = `BT /F1 16 Tf 48 750 Td 26 TL\n${lines.map(line => `(${escape(line)}) Tj T*`).join('\n')}\nET`;
   const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`];

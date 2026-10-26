@@ -16,21 +16,25 @@ export function loadConfig(env = process.env) {
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid GEMINI_MODEL configuration');
   const requestLimit = numeric(env, 'LIVE_AI_REQUEST_LIMIT', env.MAX_LIVE_EVAL_REQUESTS_PER_RUN ? Number(env.MAX_LIVE_EVAL_REQUESTS_PER_RUN) : DEFAULT_LIVE_REQUEST_LIMIT, 1, 1000);
   const publicSynthetic = env.AI_PUBLIC_SYNTHETIC === 'true';
+  const restrictedLive = env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true';
+  const aiMaxAttempts = numeric(env, 'AI_MAX_ATTEMPTS', restrictedLive ? 1 : 2, 1, 2);
+  if (restrictedLive && aiMaxAttempts !== 1) throw new Error('Restricted Live requests cannot automatically retry');
   const syntheticDocumentHashes = (env.AI_SYNTHETIC_DOCUMENT_SHA256 || '').split(',').map(value => value.trim()).filter(Boolean);
   if (syntheticDocumentHashes.some(value => !/^[a-f0-9]{64}$/.test(value))) throw new Error('Invalid synthetic document fingerprint');
   if (publicSynthetic && env.NODE_ENV !== 'production' && env.AI_SYNTHETIC_TEST_ONLY !== 'true') throw new Error('Public synthetic access requires session isolation');
   if (!Number.isSafeInteger(requestLimit)) throw new Error('Invalid live AI request limit');
-  for (const name of ['AI_DAILY_REQUEST_LIMIT', 'AI_MAX_CONCURRENT', 'AI_MAX_ATTEMPTS']) if (env[name] && !Number.isSafeInteger(Number(env[name]))) throw new Error(`Invalid ${name} configuration`);
+  for (const name of ['AI_DAILY_REQUEST_LIMIT', 'AI_MAX_CONCURRENT', 'AI_MAX_ATTEMPTS', 'AI_SESSION_REQUEST_LIMIT']) if (env[name] && !Number.isSafeInteger(Number(env[name]))) throw new Error(`Invalid ${name} configuration`);
   return {
     aiMode,
     production: env.NODE_ENV === 'production',
-    restrictedLive: env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true',
+    restrictedLive,
     publicSynthetic, syntheticDocumentHashes,
     sessionToken: env.NAVI_TEST_SESSION_TOKEN?.trim() || '',
     usageFile: env.AI_USAGE_FILE?.trim() || '',
     dailyLimit: numeric(env, 'AI_DAILY_REQUEST_LIMIT', 12, 1, 100),
+    sessionRequestLimit: numeric(env, 'AI_SESSION_REQUEST_LIMIT', 6, 1, 20),
     maxConcurrent: numeric(env, 'AI_MAX_CONCURRENT', 1, 1, 2),
-    aiMaxAttempts: numeric(env, 'AI_MAX_ATTEMPTS', env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true' ? 1 : 2, 1, 2),
+    aiMaxAttempts,
     apiKey: env.GEMINI_API_KEY?.trim() || '', model,
     thinkingLevel: model === FREE_TIER_MODEL ? 'MINIMAL' : undefined,
     allowPaidAI: false, freeTierConfirmed: env.GEMINI_FREE_TIER_CONFIRMED === 'true',
