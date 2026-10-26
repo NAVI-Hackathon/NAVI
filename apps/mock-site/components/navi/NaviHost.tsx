@@ -74,17 +74,32 @@ function TourController({ pending }: { pending: Pending | null }) {
   const pathname = usePathname();
   const [announcement, setAnnouncement] = useState("");
   const [spot, setSpot] = useState<Spot | null>(null);
+  // A target that never appears is said out loud; the visitor is not left wondering where NAVI took them.
+  const [missing, setMissing] = useState<string | null>(null);
   const done = useRef<number | null>(null);
   const close = useCallback(() => setSpot(null), []);
+
+  useEffect(() => {
+    if (!missing) return;
+    const timer = setTimeout(() => setMissing(null), 6000);
+    return () => clearTimeout(timer);
+  }, [missing]);
 
   useEffect(() => {
     if (!pending || done.current === pending.id) return;
     let cancelled = false;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setSpot(null); // the previous step's mark goes away as soon as the next one starts
+    setMissing(null);
     void (async () => {
       const target = await waitForElement(`[data-tour-id="${pending.anchor}"]`, FIND_TIMEOUT_MS);
-      if (cancelled || !target) return;
+      if (cancelled) return;
+      if (!target) {
+        done.current = pending.id;
+        setMissing(pending.label);
+        setAnnouncement(`這一頁找不到「${pending.label}」`);
+        return;
+      }
       done.current = pending.id;
       revealTabPanels(target);
       // Let the tab panel become visible before measuring/scrolling.
@@ -99,6 +114,13 @@ function TourController({ pending }: { pending: Pending | null }) {
   return (
     <>
       {spot && <Spotlight key={spot.id} spot={spot} onClose={close} />}
+      {missing && (
+        <div className="fixed left-1/2 top-24 z-[60] w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-[#97c9b3]/40 bg-[#0a0b0d] px-5 py-4 text-sm leading-relaxed text-[#eeefe9] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+          <p className="font-medium">NAVI 在這一頁找不到「{missing}」</p>
+          <p className="mt-1 text-xs text-[#b9c7c0]">請在這一頁查看相關內容，或回到 NAVI 改選其他方式、轉由真人客服協助。</p>
+          <button type="button" onClick={() => setMissing(null)} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full text-[#eeefe9] hover:bg-white/10" aria-label="關閉提示">×</button>
+        </div>
+      )}
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
     </>
   );

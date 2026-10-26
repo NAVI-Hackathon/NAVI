@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { searchKnowledge } from '../../../../shared/knowledge/index.js';
-import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './followUps.js';
+import { STARTERS, followUpForAnswers, followUpForClarification, followUpForRefusal } from './followUps.js';
 
 test('a broad claim question becomes a follow-up question, and each choice narrows the search', () => {
   const asked = '理賠要準備什麼文件';
@@ -21,6 +21,16 @@ test('a specific answer is shown, with related entries and a human option as nex
   assert.equal(followUp.showAnswers, true);
   assert.deepEqual(followUp.options.map(o => o.label), ['保險契約內容變更申請書', '找真人客服']);
   assert.equal(searchKnowledge(followUp.options[0].send).results[0].title, '保險契約內容變更申請書');
+});
+
+test('the opening options cover three services, each answered from official data with a place to go', () => {
+  assert.deepEqual(STARTERS.map(s => s.label).slice(0, 3), ['我住院了，想申請理賠', '我搬家了，想改地址', '下載契約變更申請書']);
+  const form = searchKnowledge(STARTERS[2].send);
+  assert.equal(form.status, 'answered');
+  assert.equal(form.results[0].title, '保險契約內容變更申請書');
+  assert.equal(form.results[0].destination.path, '/services/forms');
+  const address = searchKnowledge(STARTERS[1].send);
+  assert.equal(address.results[0].destination.anchor, 'service-change-address');
 });
 
 test('clarification keeps the context; refusals offer starters and a human', () => {

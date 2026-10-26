@@ -148,6 +148,8 @@ export default function App() {
     }).catch(error => {
       if (ctl.signal.aborted) return;
       if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      // Any other failure keeps the stored journey: say so instead of opening on an empty chat.
+      else say({ kind: 'note', tone: 'error', title: '暫時無法讀回你的服務旅程', body: '請確認網路連線後重新整理頁面；旅程會在建立後 1 小時內保留。也可以直接重新描述你的情況。' });
       setResuming(false);
     });
     return () => ctl.abort();
@@ -221,7 +223,8 @@ export default function App() {
     } catch (error) {
       if (ctl.signal.aborted) return;
       // The official answers do not depend on the AI service, so they still help when it is down.
-      if (answered) { reply(answers('AI 分析暫時無法使用，以下是官網資料中的相關說明。')); return; }
+      // The analysis can still be retried (manually: a timeout is never re-sent on its own).
+      if (answered) { reply({ ...answers('AI 分析暫時無法使用，以下是官網資料中的相關說明。'), retry: { text, label } }); return; }
       const [title, body] = errorCopy[error?.code] ?? errorCopy.DEFAULT;
       reply({ kind: 'note', tone: 'error', title, body, retry: { text, label } });
     }
@@ -235,11 +238,14 @@ export default function App() {
       setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       const added = next.journey.documents.find(d => d.documentType === type);
-      notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有資料需要確認，已轉由專員協助。` : `${documentSpecs[type].title}已辨識，準備完成度已更新。`);
+      notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有資料需要確認：可重新上傳較清楚的文件，或轉由專員協助確認。` : `${documentSpecs[type].title}已辨識，準備完成度已更新。`);
     } catch (error) {
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
       // Server messages (e.g. 文件類型與目前服務需求不同) are written for the user.
-      setDocStates(s => ({ ...s, [type]: { status: 'failed', message: error?.code && error.message ? error.message : null } }));
+      const message = error?.code && error.message ? error.message : null;
+      setDocStates(s => ({ ...s, [type]: { status: 'failed', message } }));
+      // The document card may be off screen (the upload started from 下一步), so say it where the user is too.
+      notify(`${documentSpecs[type].title}沒有完成辨識，準備完成度未改變。${message ?? '請稍後再試，或改為先提供資訊。'}`);
     } finally {
       setFailNext(false);
     }
@@ -443,7 +449,7 @@ export default function App() {
               onConfirm={async () => {
                 const next = await attempt(() => service.confirm());
                 if (!next) return;
-                setSnapshot(next); setDialog(null); notify('資料已確認，準備完成度已達 100%。');
+                setSnapshot(next); setDialog(null); notify('資料已確認：NAVI 資料初步準備完成（100%），尚未送件。');
               }}
               onProceed={() => setDialog('proceed')} />
           )}

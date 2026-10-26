@@ -18,7 +18,7 @@ const mobileTabs = [
 ];
 
 function readinessCaption(journey) {
-  if (journey.currentStage === 'READY_TO_PROCEED') return '資料已準備完成';
+  if (journey.currentStage === 'READY_TO_PROCEED') return '資料初步準備完成・尚未送件';
   const missing = journey.requirements.filter(r => r.required && r.status !== 'verified').length;
   return missing ? `還有 ${missing} 項資料待補齊` : '必要文件已備齊，請確認資料';
 }
@@ -27,7 +27,7 @@ function stateLabel(journey) {
   return {
     EVIDENCE_COLLECTION: '正在準備資料',
     READY_FOR_REVIEW: '可以進行確認',
-    READY_TO_PROCEED: '資料已準備完成',
+    READY_TO_PROCEED: '資料初步準備完成',
     HUMAN_REVIEW: '需要專員確認',
     SERVICE_IDENTIFIED: '已找到相關服務',
   }[journey.currentStage] ?? '旅程已建立';

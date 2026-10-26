@@ -71,8 +71,8 @@ export function ProceedDialog({ snapshot, onClose, onDone, onNavigate }) {
         <motion.span className="proceed-mark" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1, transition: transition.enter }}>
           <CheckDraw size={26} strokeWidth={2.2} delay={0.1} />
         </motion.span>
-        <h3>你的資料已準備完成</h3>
-        <p>NAVI 已整理好案件資料與 {journey.documents.length} 份文件。接下來由法國巴黎人壽的理賠服務接續處理，並依保單條款審核。</p>
+        <h3>資料初步準備完成</h3>
+        <p>NAVI 已整理好案件資料與 {journey.documents.length} 份文件，<strong>尚未送件</strong>。請透過下方建議管道向法國巴黎人壽提出申請，理賠服務會依保單條款審核。</p>
         <ul className="proceed-summary">
           <li><span>建議管道</span><strong>{channel?.name ?? '理賠服務'}</strong></li>
           <li><span>準備完成度</span><strong>{journey.readiness}%</strong></li>
@@ -92,7 +92,7 @@ export function ProceedDialog({ snapshot, onClose, onDone, onNavigate }) {
 
 function summaryText(summary) {
   return [
-    'NAVI 交接摘要（使用者已確認；示範，尚未傳送給專員）',
+    'NAVI 交接摘要（使用者已確認；尚未傳送給客服或專員）',
     `需求：${summary.issue}`,
     `已取得：${summary.collected.join('、') || '尚未取得'}`,
     `尚待補齊：${summary.missing.join('、') || '無'}`,
