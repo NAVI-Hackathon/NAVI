@@ -44,7 +44,7 @@ export function SiteHeader({ groups, hotline }: { groups: NavGroup[]; hotline: s
       </div>
 
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href={SITE_ROUTES.home} data-tour-id="header-logo" className="flex items-baseline gap-2">
+        <Link href={SITE_ROUTES.home} data-tour-id="header-logo" className="flex items-baseline gap-2 py-1">
           <span className="text-xl font-bold tracking-wide text-brand md:text-2xl">法國巴黎人壽</span>
           <span className="rounded border border-brand px-1 text-[11px] text-brand">模擬</span>
         </Link>
@@ -75,7 +75,7 @@ export function SiteHeader({ groups, hotline }: { groups: NavGroup[]; hotline: s
           <Link
             href={`${SITE_ROUTES.online}#online-membership`}
             data-tour-id="header-login"
-            className="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-dark"
+            className="inline-flex min-h-9 items-center rounded-full bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark"
           >
             保戶專區登入
           </Link>

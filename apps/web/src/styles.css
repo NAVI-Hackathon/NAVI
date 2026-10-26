@@ -402,9 +402,9 @@ button:active:not(:disabled) { transform: scale(0.98); }
 
 /* Toast */
 .toast-region { position: fixed; left: 50%; bottom: 25px; z-index: 70; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); }
-.toast { display: flex; align-items: center; gap: 10px; padding: 9px 11px 9px 16px; background: rgba(34, 42, 42, 0.97); border: 1px solid rgba(151, 201, 179, 0.2); border-radius: 10px; box-shadow: var(--shadow); font-size: 12px; color: var(--color-text-secondary); }
+.toast { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 16px; background: rgba(34, 42, 42, 0.97); border: 1px solid rgba(151, 201, 179, 0.2); border-radius: 10px; box-shadow: var(--shadow); font-size: 12px; color: var(--color-text-secondary); }
 .toast-mark { color: var(--color-accent); display: inline-flex; }
-.toast .icon-button { width: 30px; height: 30px; }
+.toast .icon-button { width: 36px; height: 36px; }
 
 /* ───────── Responsive ───────── */
 @media (min-width: 1500px) {
@@ -541,7 +541,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .preflight-action:hover:not(:disabled) { background: var(--color-surface-sunken); }
 .preflight-clear { display: flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 11px; color: var(--color-accent); }
 .preflight-optional { margin-top: 10px; font-size: 11px; color: var(--color-text-muted); }
-.preflight-optional summary { display: flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; list-style: none; }
+.preflight-optional summary { display: flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; list-style: none; }
 .preflight-optional summary::-webkit-details-marker { display: none; }
 .preflight-optional[open] summary svg { transform: rotate(90deg); }
 .preflight-optional ul { padding-left: 16px; list-style: disc; line-height: 1.9; }
@@ -587,7 +587,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .guide-head { display: flex; align-items: center; gap: 10px; }
 .guide-eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: var(--color-accent); letter-spacing: 0.04em; }
 .guide-count { margin-left: auto; font-size: 11px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.guide-close { width: 32px; height: 32px; margin-right: -8px; }
+.guide-close { width: 36px; height: 36px; margin-right: -10px; }
 .guide-progress { display: flex; gap: 4px; margin: 10px 0 12px; }
 .guide-progress li { position: relative; flex: 1; height: 3px; border-radius: 2px; background: #2b3237; overflow: hidden; }
 .guide-progress li.is-done { background: var(--color-accent-line); }
@@ -602,7 +602,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .guide-evidence li::before { content: "「"; color: var(--color-text-muted); }
 .guide-evidence li::after { content: "」"; color: var(--color-text-muted); }
 .guide-evidence footer { margin-top: 6px; font-size: 10px; color: var(--color-text-muted); }
-.guide-evidence a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.guide-evidence a { display: inline-block; padding: 12px 2px; margin: -12px -2px; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .guide-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
 .guide-next { margin-left: auto; min-width: 112px; }
 .guide-disclaimer { margin-top: 10px; font-size: 9.5px; line-height: 1.7; color: var(--color-text-muted); }
@@ -621,7 +621,8 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .source-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .source-date { margin-left: auto; flex: none; font-size: 10px; font-variant-numeric: tabular-nums; color: var(--color-accent); }
 .source-date.is-stale { color: var(--color-warning); }
-.source-chevron { flex: none; transition: transform var(--dur-fast) var(--ease-standard); }
+/* Room for the corners while it turns (a rotated square is wider), so the panel never scrolls sideways. */
+.source-chevron { flex: none; margin-right: 4px; transition: transform var(--dur-fast) var(--ease-standard); }
 .source-evidence.is-open .source-chevron { transform: rotate(90deg); }
 .source-panel { overflow: hidden; }
 .source-label { margin-top: 8px; font-size: 10px; letter-spacing: 0.04em; color: var(--color-text-muted); }
@@ -631,7 +632,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .source-panel blockquote li::after { content: "」"; color: var(--color-text-muted); }
 .source-scope { margin-top: 6px; font-size: 10px; line-height: 1.7; color: var(--color-text-muted); }
 .source-actions { display: flex; flex-wrap: wrap; gap: 0 16px; padding-bottom: 4px; }
-.source-actions .link-button { font-size: 11px; min-height: 32px; }
+.source-actions .link-button { font-size: 11px; min-height: 36px; }
 .sources .source-evidence { margin-top: 0; border-top: 0; }
 .guide-preparing { position: fixed; z-index: 55; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid rgba(151, 201, 179, 0.22); border-radius: 999px; background: #14181c; box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45); font-size: 12px; color: var(--color-text-secondary); }
 @media (max-width: 767.98px) { .guide-preparing { left: 0; right: 0; bottom: 16px; width: max-content; margin: 0 auto; } }
@@ -705,7 +706,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .chat-journey-open { grid-column: 1 / -1; justify-self: start; }
 .chat-composer { margin: 0; }
 .chat-composer-box { display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 18px; border: 1.5px solid var(--chat-brand); border-radius: 24px; background: #14181c; box-shadow: 0 0 0 4px rgba(0, 145, 90, 0.12), 0 12px 40px rgba(0, 0, 0, 0.35); }
-.chat-composer-box:focus-within { box-shadow: 0 0 0 4px rgba(0, 145, 90, 0.26), 0 12px 40px rgba(0, 0, 0, 0.35); }
+.chat-composer-box:focus-within { border-color: #00b26e; box-shadow: 0 0 0 3px rgba(0, 178, 110, 0.6), 0 12px 40px rgba(0, 0, 0, 0.35); }
 .chat-composer textarea { flex: 1; min-height: 40px; max-height: 132px; padding: 8px 0; border: 0; background: transparent; resize: none; font-size: 15px; line-height: 1.6; }
 .chat-composer textarea:focus { outline: none; }
 .chat-send { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 50%; background: var(--chat-brand-strong); color: #fff; }

@@ -12,11 +12,11 @@ export function PageHeader({ title, crumbs }: { title: string; crumbs: Crumb[] }
       <div className="mx-auto max-w-6xl px-4 py-6 md:py-8">
         <nav aria-label="麵包屑" className="text-xs text-muted">
           <ol className="flex flex-wrap gap-1">
-            <li><Link href={SITE_ROUTES.home} className="hover:text-brand">首頁</Link></li>
+            <li><Link href={SITE_ROUTES.home} className="-mx-1.5 -my-2.5 inline-block px-1.5 py-2.5 hover:text-brand">首頁</Link></li>
             {crumbs.map((crumb) => (
               <li key={crumb.label} className="before:mr-1 before:content-['›']">
                 {crumb.href ? (
-                  <Link href={crumb.href} className="hover:text-brand">{crumb.label}</Link>
+                  <Link href={crumb.href} className="-my-2.5 inline-block py-2.5 hover:text-brand">{crumb.label}</Link>
                 ) : (
                   <span aria-current="page">{crumb.label}</span>
                 )}

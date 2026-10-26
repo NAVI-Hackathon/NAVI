@@ -10,7 +10,7 @@ export function MockDownloadButton({ label = "下載" }: { label?: string }) {
       <button
         type="button"
         onClick={() => setClicked(true)}
-        className="rounded border border-brand px-3 py-1 text-sm text-brand hover:bg-brand hover:text-white"
+        className="min-h-9 rounded border border-brand px-3 text-sm text-brand hover:bg-brand hover:text-white"
       >
         {label}
       </button>

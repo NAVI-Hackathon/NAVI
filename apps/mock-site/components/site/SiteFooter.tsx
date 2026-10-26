@@ -18,12 +18,12 @@ export function SiteFooter({
           <p className="mt-2">{address}</p>
           <p className="mt-1">免付費服務／申訴專線 {hotline}</p>
         </div>
-        <ul className="space-y-1.5">
-          <li><Link href={SITE_ROUTES.services} className="hover:text-white">保戶服務</Link></li>
-          <li><Link href={SITE_ROUTES.forms} className="hover:text-white">常用表單下載</Link></li>
-          <li><Link href={SITE_ROUTES.claims} className="hover:text-white">理賠程序介紹</Link></li>
-          <li><Link href={SITE_ROUTES.online} className="hover:text-white">網路保險服務</Link></li>
-          <li><Link href={SITE_ROUTES.faq} data-tour-id="footer-faq" className="hover:text-white">常見問題</Link></li>
+        <ul className="space-y-0">
+          <li><Link href={SITE_ROUTES.services} className="inline-flex min-h-9 items-center hover:text-white">保戶服務</Link></li>
+          <li><Link href={SITE_ROUTES.forms} className="inline-flex min-h-9 items-center hover:text-white">常用表單下載</Link></li>
+          <li><Link href={SITE_ROUTES.claims} className="inline-flex min-h-9 items-center hover:text-white">理賠程序介紹</Link></li>
+          <li><Link href={SITE_ROUTES.online} className="inline-flex min-h-9 items-center hover:text-white">網路保險服務</Link></li>
+          <li><Link href={SITE_ROUTES.faq} data-tour-id="footer-faq" className="inline-flex min-h-9 items-center hover:text-white">常見問題</Link></li>
         </ul>
         <p className="leading-relaxed">
           {`本站內容整理自法國巴黎人壽官網公開資訊（資料集整理日期 ${datasetDate}；各頁「資料來源」標示該頁條目的擷取日期），`}
