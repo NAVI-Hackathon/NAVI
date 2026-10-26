@@ -7,8 +7,10 @@ export function createDemoProvider() {
   return {
     mode: 'demo', requiresPaidTier: false,
     async understandTasks(message, signal) {
-      const parts = message.split(/(?:，?也想|，?另外|；|;)/).map(part => part.trim()).filter(Boolean);
-      const inputs = parts.length > 4 ? [message] : parts;
+      // Keep conjunctions and negations; a vague follow-up may depend on the preceding medical context.
+      const parts = message.split(/(?:[，,；;]\s*)?(?=也想|另外|順便|第二個|第三個|第四個)/u).map(part => part.trim()).filter(Boolean);
+      const independent = parts.slice(1).every(part => /地址|受益人|要保人|住院|門診|理賠|申請書|信用卡|扣款|保單|借款|密碼|表單/.test(part));
+      const inputs = parts.length > 4 || !independent ? [message] : parts;
       return { tasks: await Promise.all(inputs.map(async input => ({ input, data: await this.understandIntent(input, signal) }))) };
     },
     async answerKnowledge(question, context) { return { answer: context.answer, confidence: 1, supported: true, sourceIds: context.sourceIds }; },
