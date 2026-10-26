@@ -181,3 +181,9 @@ test('Unclassified and declared uploads cannot race to overwrite the same actual
   const saved = await s.addDocument(j.id, upload('diagnosis_certificate')); release();
   await assert.rejects(pending, { code: 'JOURNEY_STALE' }); assert.equal(s.get(j.id).documents[0].id, saved.document.id);
 });
+
+
+test('Partial multi-intent extraction cannot silently discard the remaining request', async () => {
+  const provider = createGeminiProvider(config, async () => response({ tasks: [{ input: '我想改地址', data: result('policy_change') }] }));
+  await assert.rejects(understandTasks('我想改地址，也想知道要怎麼申請住院理賠。', { config, provider }), { code: 'AI_RESPONSE_INVALID' });
+});

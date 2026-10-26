@@ -13,13 +13,17 @@ export async function understandTasks(message, { provider, config, signal }) {
   return requestValidatedAI(async combined => {
     const raw = ProviderTasksSchema.parse(await provider.understandTasks(message, combined));
     const seen = new Set();
+    let uncovered = message;
     const tasks = raw.tasks.map(({ input, data }, index) => {
       // A task must cite a literal part of the input; the model cannot invent a new request.
       if (!message.includes(input) || seen.has(input)) throw new ApiError('AI_RESPONSE_INVALID', '需求拆解尚不完整，請一次描述一件事情。', 502, false);
+      if (!uncovered.includes(input)) throw new ApiError('AI_RESPONSE_INVALID', '需求片段重疊，請一次描述一件事情。', 502, false);
+      uncovered = uncovered.replace(input, '');
       seen.add(input);
       const normalized = normalizeIntent(normalizeGeminiIntent(data), input);
       return { id: `task-${index + 1}`, input, data: normalized, outcome: intentDisposition(normalized, config.confidenceThreshold) };
     });
+    if (uncovered.replace(/(?:另外|以及|還要|然後|也想|也|和|\band\b|\balso\b)|[\s，。！？、；,.!?;]/gi, '')) throw new ApiError('AI_RESPONSE_INVALID', '部分需求尚未完整保留，請分步說明。', 502, false);
     return TaskUnderstandingSchema.parse({ tasks, nextStep: 'confirm_one_task', provider: provider.mode, isMock: provider.mode === 'demo', disclaimer: '請先確認要處理的項目；各項任務分開進行，不會自動建立旅程或判斷理賠資格。' });
   }, { config, signal });
 }
