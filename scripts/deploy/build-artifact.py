@@ -48,6 +48,7 @@ def build(revision, output, web_origin='http://127.0.0.1:18171', mock_origin='ht
         shutil.copy2(source/'data'/data_file, payload/'data'/data_file)
     for name in ['package.json','package-lock.json','apps/api/package.json','apps/web/package.json','apps/mock-site/package.json']:
         target=payload/name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(source/name,target)
+    run(['node', 'scripts/evidence/navigation-audit.js', 'apps/mock-site/out', str(payload/'data/navigation-targets.json')], source, env)
     shutil.copy2(HERE/'runtime-server.mjs',payload/'runtime-server.mjs')
     metadata={'providerIsolation': (source/'apps/api/src/middleware/testSession.js').is_file(), 'schema':1,'sourceCommit':sha,'buildNode':subprocess.check_output(['node','--version'],text=True).strip(),'buildPlatform':platform.system()+'-'+platform.machine(),'buildOverlay':'next.config.ts output=export; source repo unchanged',
         'staticArtifacts':'HTML/CSS/browser JS; no native runtime modules', 'apiDependencies':'Installed on Ubuntu from root lockfile, API workspace only',
