@@ -3,7 +3,7 @@ import { getKnowledgeEntry, searchKnowledge, verifyNavigationDestination } from 
 import { verifiedEvidence } from './evidence.js';
 
 const instructions = { VIEW_INFORMATION: '查看來源說明', VIEW_FORM: '查看相關表單', OPEN_SERVICE: '前往服務說明與入口' };
-const disclaimer = '本計畫只提供頁面導覽，仍需自行確認條件；不會登入、填表、送件或判斷理賠資格。';
+const disclaimer = '本計畫只提供頁面導覽，入口可導航不代表符合申請條件；不會登入、填表、送件或判斷理賠資格。';
 export function buildNavigationPlan(sourceId, options) {
   const root = getKnowledgeEntry(sourceId);
   if (!root) return null;

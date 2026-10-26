@@ -4,11 +4,14 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import os from 'node:os';
+import { getKnowledgeVersion } from '../apps/api/src/services/knowledgeVersionService.js';
 
 export const evidenceJobs = Object.freeze([
   ['tests', ['test']], ['lint', ['run', 'lint']], ['build', ['run', 'build:all']],
   ['legacy', ['run', 'eval:ai:local']], ['hospitalization', ['run', 'eval:hospitalization']],
-  ['knowledge', ['run', 'eval:knowledge']], ['shared-browser', ['run', 'test:shared:browser']],
+  ['knowledge', ['run', 'eval:knowledge']], ['reliability', ['run', 'eval:reliability:local']],
+  ['judge2-local', ['run', 'eval:judge2:local']], ['typecheck-mock', ['run', 'typecheck:mock']],
+  ['navigation', ['run', 'test:navigation']], ['layout', ['run', 'test:layout']], ['shared-browser', ['run', 'test:shared:browser']],
 ]);
 export function latencySummary(samples) {
   if (!samples.length || samples.some(value => !Number.isFinite(value) || value < 0)) throw Error('Invalid latency samples');
@@ -44,12 +47,13 @@ export async function generateEvidencePack() {
     return { log, stdout: child.stdout ?? '' };
   };
   const inputs = {};
-  for (const path of ['data/cardif_seed_data.json', 'apps/api/eval/cases.jsonl', 'apps/api/eval/hospitalization/cases.jsonl', 'apps/api/eval/knowledge/cases.jsonl']) inputs[path] = hash(await readFile(resolve(root, path)));
-  const provenance = { commit: git(['rev-parse', 'HEAD']), workingTreeDirty: Boolean(git(['status', '--porcelain'])), trackedDiffSha256: hash(git(['diff', 'HEAD'])), runtime: process.version, os: `${os.platform()}/${os.arch()}`, inputs };
+  const knowledgeVersion = getKnowledgeVersion().knowledgeVersion;
+  for (const path of ['data/cardif_seed_data.json', 'data/cardif_public_data.json', `knowledge/releases/${knowledgeVersion}.json`, 'apps/api/eval/cases.jsonl', 'apps/api/eval/hospitalization/cases.jsonl', 'apps/api/eval/knowledge/cases.jsonl', 'apps/api/eval/reliability/cases.jsonl', 'apps/api/eval/reliability/judge2-cases.jsonl']) inputs[path] = hash(await readFile(resolve(root, path)));
+  const provenance = { knowledgeVersion, commit: git(['rev-parse', 'HEAD']), workingTreeDirty: Boolean(git(['status', '--porcelain'])), trackedDiffSha256: hash(git(['diff', 'HEAD'])), runtime: process.version, os: `${os.platform()}/${os.arch()}`, inputs };
   const reports = {};
   for (const [id, args] of evidenceJobs) {
     const { log, stdout } = run(id, 'npm', args); await writeFile(resolve(output, `${id}.log`), log);
-    if (['legacy', 'hospitalization', 'knowledge'].includes(id) && !error) {
+    if (['legacy', 'hospitalization', 'knowledge', 'reliability', 'judge2-local', 'navigation'].includes(id) && !error) {
       try { reports[id] = parseReport(stdout); } catch { error = `${id} report invalid`; }
     }
     if (error) break;

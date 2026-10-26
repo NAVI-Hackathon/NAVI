@@ -32,11 +32,19 @@ export const KnowledgeSourceSchema = z.union([PrototypeSourceSchema, z.object({
   isMock: z.literal(false), url: z.url(), sourceUrl: z.url(), retrievedAt: z.iso.date(), navigationDestination: NavigationTargetSchema,
 }).strict().refine(source => source.id === source.sourceId && source.url === source.sourceUrl && source.sourceUrl === source.navigationDestination.source.url && source.retrievedAt === source.navigationDestination.source.retrievedAt, { message: '來源欄位與導覽來源不一致。' })]);
 export const NextActionSchema = z.object({ type: z.enum(['UPLOAD_DOCUMENT', 'PROVIDE_INFORMATION', 'REVIEW_INFORMATION', 'CONTACT_SPECIALIST', 'PROCEED_TO_SERVICE', 'NONE']), target: z.string().nullable(), title: z.string(), description: z.string(), destination: NavigationTargetSchema.optional() }).strict();
-const documentMetadata = z.object({ id: z.string().uuid(), status: z.enum(['uploaded', 'verified', 'needs_review']), matchedRequirements: z.array(z.string()), filename: z.string().max(180), mimeType: z.enum(DOCUMENT_MIME_TYPES), size: z.number().int().positive().max(MAX_DOCUMENT_BYTES), source: z.enum(['demo', 'live']), isMock: z.boolean(), entryMethod: z.enum(['upload', 'sample', 'manual']).optional() }).strict();
+export const DocumentVerificationSchema = z.object({ scope: z.literal('prototype_field_consistency'), authenticity: z.literal('not_assessed'), eligibility: z.literal('not_assessed') }).strict();
+const documentMetadata = z.object({ id: z.string().uuid(), status: z.enum(['uploaded', 'verified', 'needs_review']), matchedRequirements: z.array(z.string()), filename: z.string().max(180), mimeType: z.enum(DOCUMENT_MIME_TYPES), size: z.number().int().positive().max(MAX_DOCUMENT_BYTES), source: z.enum(['demo', 'live']), isMock: z.boolean(), entryMethod: z.enum(['upload', 'sample', 'manual']).optional(), verification: DocumentVerificationSchema.optional() }).strict();
 export const DocumentSchema = z.discriminatedUnion('documentType', DocumentAnalysisSchema.options.map(schema => schema.extend(documentMetadata.shape)));
 export const ConversationSchema = z.object({ role: z.enum(['user', 'assistant']), message: z.string().max(MAX_MESSAGE_LENGTH), createdAt: z.iso.datetime() }).strict();
 export const ConsistencyIssueSchema = z.object({ type: z.enum(['FLIGHT_NUMBER_MISMATCH', 'DEPARTURE_DATE_MISMATCH', 'ORIGIN_MISMATCH', 'DESTINATION_MISMATCH', 'PASSENGER_NAME_MISMATCH', 'HOSPITAL_NAME_MISMATCH', 'ADMISSION_DATE_MISMATCH', 'DISCHARGE_DATE_MISMATCH', 'INPATIENT_DAYS_MISMATCH', 'PATIENT_NAME_MISMATCH']), severity: z.literal('high'), message: z.string(), documentIds: z.array(z.string().uuid()) }).strict();
-export const ClaimChannelSchema = z.object({ id: z.enum(['hospital_upload', 'union_chain', 'mail']), name: z.string(), available: z.boolean(), notes: z.array(z.string()), destination: NavigationTargetSchema }).strict();
+// Navigation is technical availability; channel conditions and coverage are separate decisions.
+export const ChannelEligibilitySchema = z.object({
+  status: z.enum(['eligible', 'requires_confirmation', 'ineligible']),
+  scope: z.literal('channel_conditions_only'), coverageAssessed: z.literal(false),
+  reason: z.string().min(1), sourceIds: z.array(z.string().min(1)).min(1),
+  unconfirmedRequirements: z.array(z.string().min(1)),
+}).strict().refine(value => value.status === 'eligible' ? value.unconfirmedRequirements.length === 0 : value.status !== 'requires_confirmation' || value.unconfirmedRequirements.length > 0, { message: '管道資格狀態與尚待確認條件不一致。' });
+export const ClaimChannelSchema = z.object({ id: z.enum(['hospital_upload', 'union_chain', 'mail']), name: z.string(), available: z.boolean(), navigationAvailable: z.boolean().optional(), eligibility: ChannelEligibilitySchema.optional(), notes: z.array(z.string()), destination: NavigationTargetSchema }).strict();
 export const ClaimContextSchema = z.object({
   hospital: z.object({ mentioned: z.string(), matchedName: z.string().nullable(), partner: z.boolean() }).nullable(),
   inpatient: z.object({ admissionDate: z.iso.date().nullable(), dischargeDate: z.iso.date().nullable(), days: z.number().int().min(1).max(3660).nullable(), source: z.enum(['dates', 'printed_days', 'user_reported']).nullable() }).strict().optional(),

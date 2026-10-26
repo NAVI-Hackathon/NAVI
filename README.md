@@ -4,13 +4,13 @@
 
 NAVI — AI Service Journey Navigator · Understand. Guide. Resolve.
 
-Knowledge 的定向更新、受權限保護的本機審核、版本發布與回滾，見 [Knowledge Lifecycle 操作指南](docs/knowledge-lifecycle.md)。既有23項候選仍需逐筆人工審核；版本機制完成不代表候選已採用。
+Knowledge 的定向更新、受權限保護的本機審核、版本發布與回滾，見 [Knowledge Lifecycle 操作指南](docs/knowledge-lifecycle.md)。已核准的23項候選已整理成10筆FAQ並發布為 `kb-1404d058190e380c66eedee1`；未來候選仍須逐筆審核，不會自動採用。
 
-**Developer B 最新狀態：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 首頁答案與助手面板也已改用（`38934f4`）。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
+**歷史里程碑：Phase 4C 共用 Local Knowledge Engine。** `shared/knowledge/` 沿用 Frontend 排名，統一 Snapshot 來源、原文驗證、門診／住院與資格拒答、可信導航；Backend 已採用，Frontend 首頁答案與助手面板也已改用（`38934f4`）。既有 Journey／文件契約及 Legacy 功能保留，零真實 Gemini、零新增相依套件。詳見 [Phase 4C 報告與遷移指南](docs/backend-phase-4c.md)；Phase 4A／4B 報告保留為歷史驗收紀錄。
 
 ## 線上 Demo
 
-目前使用自訂網域與免費 HTTPS；部署及首次跨 origins 回滾方式見[網域 HTTPS 指南](docs/domain-https-deployment.md)。下列入口維持 Demo 模式，非正式理賠送件服務。
+目前使用自訂網域與免費 HTTPS；部署及首次跨 origins 回滾方式見[網域 HTTPS 指南](docs/domain-https-deployment.md)。一般入口與 Demo 備援分離，皆為非官方原型，不是正式理賠送件服務。
 
 | 網站 | 網址 | 說明 |
 | --- | --- | --- |
@@ -19,7 +19,8 @@ Knowledge 的定向更新、受權限保護的本機審核、版本發布與回�
 | NAVI 離線備案 | https://app.navitw.com/demo | 前端本地 Mock，不依賴 API |
 | Backend 健康檢查 | https://app.navitw.com/api/health | |
 
-- Backend 以 `AI_MODE=demo` 執行，未設定 Gemini Key：意圖判讀與文件辨識都是示範資料，畫面標示「示範辨識資料，未讀取文件內容」。
+- 2026-10-27唯讀盤點：一般入口的 Backend 為 `AI_MODE=live`、`gemini-3.1-flash-lite`，只限合成資料；`/demo` 與 `/embed?mode=demo` 為獨立前端 Mock，不呼叫 Gemini。模型錯誤不以Demo替代。此配置盤點不是當日Free Tier或真實推論成功證據。
+- 程式預設每日／process上限皆12；Production明確設定兩者20、每Session6、併發1、單次10秒、attempt1。沒有提高額度；Google專案實際配額仍須人工核對。管道的入口存在／院所快照比對不等於申請資格。詳見[第二位評審契約](docs/judge2-contract.md)、[Live Evidence Matrix](docs/live-evidence-matrix.md)。
 - 2026-10-20 完整驗收（Developer A，示範資料、零 Gemini 請求）：官網開啟 NAVI → 住院醫療理賠 35% → 範例診斷書 70% → 範例存摺 90% → 確認 100%；重新整理後由 Backend 讀回 100%；移除存摺退回 70% 並撤回確認；假案件編號顯示「已失效」；「帶我去」與前往服務皆使模擬官網切換分頁並高亮；手機寬度（375px）流程與確認對話框無橫向溢出；`/demo` 全程不呼叫 API；知識問答與帶我去正常。部署版本含 `38934f4`。實機手機尚未測試。
 - 三個網域憑證已簽發並通過續期模擬；`www.navitw.com` 轉往主網域，舊 IP／8080 入口只保留轉址。仍只接受合成展示資料。案件只存在記憶體：服務重啟即清空、1 小時後過期，之後會顯示「這份服務旅程已失效」。
 - 請勿輸入真實病歷、姓名、身分證或帳號。線上服務無法使用時，以本機 `npm run dev:all` 作為展示備案。
