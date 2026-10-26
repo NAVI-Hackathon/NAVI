@@ -26,7 +26,7 @@ export function determineNextAction(journey, config) {
     if (!journey.confirmed) return { ...action('REVIEW_INFORMATION', null, '確認資料並填妥保險金申請書', '確認整理的資料，不會自動送出申請。'), destination: hospitalDestinations.form };
     // The seed permits inpatient proof generally, but 醫起通 explicitly requires a diagnosis certificate.
     const partner = journey.claimContext?.hospital?.partner && journey.documents.some(doc => doc.documentType === 'diagnosis_certificate' && doc.fields.certificateKind === 'diagnosis_certificate');
-    return { ...action('PROCEED_TO_SERVICE', partner ? 'hospital_upload' : 'union_chain', partner ? '查看保險理賠醫起通' : '查看理賠聯盟鏈或郵寄方式', '資料已準備完成，可依管道條件接續服務；不代表保障適用、理賠核准或已送件。'), destination: partner ? hospitalDestinations.hospitalUpload : hospitalDestinations.unionChain };
+    return { ...action('PROCEED_TO_SERVICE', partner ? 'hospital_upload' : 'union_chain', partner ? '查看保險理賠醫起通' : '查看理賠聯盟鏈或郵寄方式', '資料初步準備完成，僅提供管道資訊；適用條件仍需確認，不代表保障適用、理賠核准或已送件。'), destination: partner ? hospitalDestinations.hospitalUpload : hospitalDestinations.unionChain };
   }
   for (const type of ['boarding_pass', 'delay_certificate']) if (!journey.documents.some(doc => doc.documentType === type && doc.status === 'verified')) return action('UPLOAD_DOCUMENT', type, type === 'boarding_pass' ? '請上傳登機證' : '請上傳航空公司延誤證明', type === 'boarding_pass' ? '用於確認旅客與航班資訊。' : '這份文件可協助確認實際延誤時間。');
   if (!journey.requirements.some(r => r.id === 'travel' && r.status === 'verified')) return action('PROVIDE_INFORMATION', 'travel', '請補齊旅行資訊', '請重新上傳包含旅客姓名、航班、航線與日期的完整登機證。');
@@ -36,7 +36,7 @@ export function deriveJourney(journey, config) {
   const definition = getJourneyDefinition(journey.serviceType);
   const documents = journey.documents.map(document => {
     const verified = Boolean(definition && (definition.documentTypes ?? ['boarding_pass', 'delay_certificate']).includes(document.documentType) && documentVerified(document, config.journeyConfidenceThreshold));
-    return { ...document, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [document.documentType] : [] };
+    return { ...document, verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [document.documentType] : [] };
   });
   const consistencyIssues = checkEvidenceConsistency(documents, journey.extractedData);
   for (const issue of consistencyIssues) {

@@ -5,7 +5,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 const documentTypes = new Set(['diagnosis_certificate', 'bank_passbook', 'boarding_pass', 'delay_certificate']);
 const reasons = {
-  VERIFIED: '已符合目前原型的資料檢查。', OPTIONAL: '這是條件性項目，不列入本原型必要計分；是否需要仍須依來源與實際情況確認。',
+  VERIFIED: '已符合目前原型的資料檢查，不代表文件真偽或理賠資格已驗證。', OPTIONAL: '這是條件性項目，不列入本原型必要計分；是否需要仍須依來源與實際情況確認。',
   MANUAL_UNVERIFIED: '僅有手動填寫資訊，尚無已驗證文件，因此不計文件分數。',
   DOCUMENT_NEEDS_REVIEW: '文件欄位、辨識信心或交叉比對尚未通過，需要進一步確認。',
   DOCUMENT_MISSING: '尚未提供這項已驗證文件。', INFORMATION_MISSING: '尚缺符合檢查的資訊；如資訊來自文件，須先完成文件驗證。',

@@ -71,5 +71,5 @@ export async function analyzeDocument(upload, { provider, config, signal }) {
   }
   const verified = documentVerified({ ...analysis, fields }, config.journeyConfidenceThreshold);
   const medical = ['diagnosis_certificate', 'bank_passbook'].includes(analysis.documentType);
-  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
+  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
 }

@@ -1,4 +1,4 @@
-import { cardif, cardifService, claimsUrl, formsUrl, destination, formAnchor } from './cardif.js';
+import { cardif, cardifService, claimsUrl, formsUrl, destination, formAnchor, isTrustedDestination } from './cardif.js';
 import { z } from 'zod';
 const date = z.iso.date();
 
@@ -69,6 +69,15 @@ export function calculateStay(fields) {
   }
   return Number.isInteger(reportedInpatientDays) && reportedInpatientDays > 0 && reportedInpatientDays <= 3660 ? { days: reportedInpatientDays, source: 'printed_days' } : { days: null, source: null };
 }
+const channelSourceIds = { hospital_upload: 'service:claim_hospital_upload', union_chain: 'service:claim_union_chain', mail: 'service:claim_by_mail' };
+function channelInformation(id, service, legacyAvailable, target) {
+  // No policy/member APIs or insurer attestation: snapshot matches can never establish eligibility.
+  const eligibility = { status: 'requires_confirmation', scope: 'channel_conditions_only', coverageAssessed: false,
+    reason: '此處提供管道說明與入口，申請條件仍需確認，不代表已符合資格。',
+    sourceIds: [channelSourceIds[id]], unconfirmedRequirements: [...service.documents, ...service.notes] };
+  return { id, name: service.name, available: legacyAvailable, navigationAvailable: isTrustedDestination(target), eligibility,
+    notes: [eligibility.reason, ...service.notes], destination: target };
+}
 export function hospitalClaimContext(extractedData, documents = []) {
   const certificate = documents.find(doc => doc.documentType === 'diagnosis_certificate' && doc.status === 'verified');
   const mentioned = certificate?.fields.hospitalName ?? extractedData.hospitalName ?? null;
@@ -79,9 +88,9 @@ export function hospitalClaimContext(extractedData, documents = []) {
     hospital,
     inpatient: { admissionDate: certificate?.fields.admissionDate ?? extractedData.admissionDate ?? null, dischargeDate: certificate?.fields.dischargeDate ?? extractedData.dischargeDate ?? null, days: stay.days, source: stay.source },
     channels: [
-      { id: 'hospital_upload', name: upload.name, available: Boolean(matchedName), notes: upload.notes, destination: hospitalDestinations.hospitalUpload },
-      { id: 'union_chain', name: chain.name, available: true, notes: chain.notes, destination: hospitalDestinations.unionChain },
-      { id: 'mail', name: mail.name, available: true, notes: mail.notes, destination: hospitalDestinations.mail },
+      channelInformation('hospital_upload', upload, Boolean(matchedName), hospitalDestinations.hospitalUpload),
+      channelInformation('union_chain', chain, true, hospitalDestinations.unionChain),
+      channelInformation('mail', mail, true, hospitalDestinations.mail),
     ],
     reminders: [hospitalRules.hospitalCertificate, hospitalRules.hospitalPartners, hospitalRules.chainOriginals, hospitalRules.chainAmount],
   };
