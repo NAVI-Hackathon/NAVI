@@ -53,7 +53,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate
     body = (
       <>
         <p className="chat-title">嗨，我是 NAVI</p>
-        <p className="chat-text">告訴我發生了什麼，我會從官網資料找答案，帶你到正確的地方。也可以直接選一個：</p>
+        <p className="chat-text"><strong>從問題，走到正確的下一步。</strong>理賠、保單變更、表單下載、保單借款都可以問：我會理解需求、檢核要準備什麼，再帶你到官網正確的頁面。也可以直接選一個：</p>
         {latest && <Options followUp={{ options: STARTERS }} disabled={busy} onSend={onSend} onHotline={onHotline} />}
       </>
     );
@@ -77,7 +77,8 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate
         {latest && message.retry && (
           <div className="chat-option-list">
             <button type="button" className="chat-option" disabled={busy} onClick={() => onSend(message.retry.text, message.retry.label)}>重新分析</button>
-            {mode !== 'demo' && <a className="chat-option" href="/demo">改用示範模式</a>}
+            {/* Embedded NAVI stays in its panel: the demo entry is /embed?mode=demo, not the full-page /demo. */}
+            {mode !== 'demo' && <a className="chat-option" href={embedded ? '/embed?mode=demo' : '/demo'}>改用示範模式</a>}
           </div>
         )}
       </>
@@ -223,12 +224,12 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, dock,
 function HowItWorks() {
   return (
     <section className="how-it-works" aria-labelledby="how-title">
-      <h2 id="how-title" className="how-title">NAVI 怎麼幫你</h2>
+      <h2 id="how-title" className="how-title">從問題，走到正確的下一步</h2>
       <ol className="how-steps">
         {[
-          ['spark', '理解', '用自己的話描述，NAVI 找出你要辦的服務。', '意圖理解・描述先遮蔽個資'],
-          ['shield', '檢核', '文件分成已取得、需要補件、需要人工確認，原因一看就懂。', '後端規則判定・不判斷理賠'],
-          ['route', '帶你去', '一步一步帶到官網正確的頁面，並附上原文來源。', '可驗證導覽・資料快照摘錄'],
+          ['spark', '理解', '理解需求：用自己的話描述，NAVI 找出你要辦的服務，理賠、保單變更、表單、借款都可以。', '意圖理解・描述先遮蔽個資'],
+          ['shield', '檢核', '檢核條件：文件分成已取得、需要補件、需要人工確認，原因一看就懂。', '後端規則判定・不判斷理賠'],
+          ['route', '帶你去', '引導服務：一步一步帶到官網正確的頁面或服務入口，並附上原文來源。', '可驗證導覽・資料快照摘錄'],
         ].map(([icon, title, body, tech], i) => (
           <li key={title} className="how-step">
             <span className="how-icon"><Icon name={icon} size={18} /></span>

@@ -7,8 +7,8 @@ import { DEMO_STORY } from '../mocks/hospitalClaim.js';
 export const STARTERS = [
   { label: '我住院了，想申請理賠', send: DEMO_STORY, icon: 'medical' },
   { label: '我搬家了，想改地址', send: '我最近搬家了，保單上的地址要怎麼改？', icon: 'document' },
+  { label: '下載契約變更申請書', send: '我要下載保險契約內容變更申請書', icon: 'document' },
   { label: '想用保單借錢', send: '我想用保單借錢週轉，要準備什麼？', icon: 'bank' },
-  { label: '我想更改繳費方式', send: '我想把保單的繳費方式改成信用卡扣款，要從哪裡開始？', icon: 'card' },
 ];
 
 // When the backend needs more detail, these are the services NAVI can actually help with.
