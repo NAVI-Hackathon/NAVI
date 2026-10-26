@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Icon from '../Icon.jsx';
 import { verifiedEvidence } from '../../../../../shared/knowledge/evidence.js';
+import { getKnowledgeEntry } from '../../../../../shared/knowledge/index.js';
 import { transition } from '../../motion/tokens.js';
 
 /** "今天" / "3 天前"; review_recommended (over 90 days) is a maintenance hint, not a rule change. */
@@ -29,6 +30,7 @@ export default function SourceEvidence({ sourceId, preferredLines = [], onNaviga
     ) : null;
   }
   const { source, excerpts, snapshot } = evidence;
+  const knowledgeVersion = getKnowledgeEntry(sourceId)?.knowledgeVersion;
   const fresh = freshness(snapshot);
   return (
     <div className={`source-evidence ${open ? 'is-open' : ''}`}>
@@ -45,6 +47,7 @@ export default function SourceEvidence({ sourceId, preferredLines = [], onNaviga
             <p className="source-label">資料快照摘錄</p>
             <blockquote><ul>{excerpts.map(line => <li key={line}>{line}</li>)}</ul></blockquote>
             <p className="source-scope">已與本地官網資料快照逐字核對，非即時查核官網；內容以官網公告為準。</p>
+            {knowledgeVersion && <p className="source-scope" style={{ overflowWrap: 'anywhere' }}>知識版本：{knowledgeVersion}</p>}
             <div className="source-actions">
               <a href={source.url} target="_blank" rel="noopener noreferrer" className="link-button"><Icon name="external" size={13} />開啟官網原頁</a>
               {onNavigate && (
