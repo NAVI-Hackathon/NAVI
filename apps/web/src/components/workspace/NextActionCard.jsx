@@ -11,7 +11,7 @@ const buttonCopy = {
   NONE: null,
 };
 
-export default function NextActionCard({ action, complete, busy, onAction, onSample, onNavigate }) {
+export default function NextActionCard({ action, complete, busy, onAction, onSample, sampleByAi = false, onNavigate }) {
   const copy = buttonCopy[action.type];
   const processing = Boolean(busy);
   return (
@@ -37,7 +37,7 @@ export default function NextActionCard({ action, complete, busy, onAction, onSam
               </button>
             )}
             {action.type === 'UPLOAD_DOCUMENT' && onSample && (
-              <button type="button" className="link-button" disabled={processing} onClick={() => onSample(action.target)}>使用範例文件</button>
+              <button type="button" className="link-button" disabled={processing} onClick={() => onSample(action.target)}>{sampleByAi ? '使用合成範例（由 AI 辨識）' : '使用範例文件'}</button>
             )}
           </div>
         </motion.div>

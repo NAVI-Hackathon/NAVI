@@ -61,13 +61,13 @@ function Result({ type, document }) {
         </motion.p>
       )}
       {/* Fixture results are never presented as AI recognition. */}
-      {!manual && <motion.p className="doc-filename" variants={fadeUp}>{document.filename} · {document.isMock ? '示範辨識資料，未讀取文件內容' : 'AI 辨識結果，請核對內容'}</motion.p>}
+      {!manual && <motion.p className="doc-filename" variants={fadeUp}>{document.filename} · {document.isMock ? '示範辨識資料，非真實文件分析。' : 'AI 辨識結果，請核對內容'}</motion.p>}
     </motion.div>
   );
 }
 
 /** Formal mode: information the user typed. Stored as 待確認 — never shown as a recognised document. */
-function PendingInformation({ type, information, disabled, onUpload, onSample, onEdit, onRemove }) {
+function PendingInformation({ type, information, disabled, onUpload, onSample, sampleLabel, onEdit, onRemove }) {
   const rows = unverifiedForms[type].filter(f => information.fields[f.name] != null);
   const spec = documentSpecs[type];
   return (
@@ -84,7 +84,7 @@ function PendingInformation({ type, information, disabled, onUpload, onSample, o
       <p className="doc-match is-review"><Icon name="info" size={14} />不計入準備完成度。請上傳{spec.title}由系統驗證，或由專員確認。</p>
       <div className="doc-pending-actions">
         <button type="button" className="button button-secondary button-small" disabled={disabled} onClick={onUpload}>上傳文件<Icon name="upload" size={15} /></button>
-        {onSample && <button type="button" className="link-button" disabled={disabled} onClick={onSample}>使用範例{spec.title}</button>}
+        {onSample && <button type="button" className="link-button" disabled={disabled} onClick={onSample}>{sampleLabel}</button>}
         <button type="button" className="link-button" disabled={disabled} onClick={onEdit}>編輯資訊</button>
         <button type="button" className="link-button" disabled={disabled} onClick={onRemove}>移除</button>
       </div>
@@ -103,7 +103,7 @@ function Analyzing() {
   );
 }
 
-export default function DocumentCard({ type, document, manualInformation, manualVerifies = true, uiState, busy, onUpload, onSample, onRemove, onManual, onRemoveManual, onRetry, registerInput }) {
+export default function DocumentCard({ type, document, manualInformation, manualVerifies = true, uiState, busy, onUpload, onSample, sampleByAi = false, onRemove, onManual, onRemoveManual, onRetry, registerInput }) {
   const spec = documentSpecs[type];
   const input = useRef(null);
   const depth = useRef(0);
@@ -128,6 +128,8 @@ export default function DocumentCard({ type, document, manualInformation, manual
   const state = processing ? 'analyzing' : manual ? 'manual' : document ? 'result' : failed ? 'failed' : pending ? 'pending' : 'empty';
   // Formal mode offers manual entry up front, clearly as unverified information.
   const manualLabel = manualVerifies ? '手動輸入' : '先提供資訊（尚未驗證）';
+  // Formal mode: the synthetic sample is read by the AI, not filled in locally.
+  const sampleLabel = sampleByAi ? '使用合成範例（由 AI 辨識）' : `使用範例${spec.title}`;
 
   return (
     <motion.article
@@ -182,7 +184,7 @@ export default function DocumentCard({ type, document, manualInformation, manual
 
         {state === 'pending' && (
           <PendingInformation key="pending" type={type} information={manualInformation} disabled={disabled}
-            onUpload={() => input.current?.click()} onSample={onSample ? () => onSample(type) : null}
+            onUpload={() => input.current?.click()} onSample={onSample ? () => onSample(type) : null} sampleLabel={sampleLabel}
             onEdit={() => onManual(type, null)} onRemove={() => onRemoveManual?.(type)} />
         )}
 
@@ -193,7 +195,7 @@ export default function DocumentCard({ type, document, manualInformation, manual
             <p className="dropzone-hint">PDF、PNG、JPG、WebP，10 MB 以內</p>
             <div className="dropzone-actions">
               <button type="button" className="button button-secondary button-small" disabled={disabled} onClick={() => input.current?.click()}>選擇文件</button>
-              {onSample && <button type="button" className="link-button" disabled={disabled} onClick={() => { setError(''); onSample(type); }}>使用範例{spec.title}</button>}
+              {onSample && <button type="button" className="link-button" disabled={disabled} onClick={() => { setError(''); onSample(type); }}>{sampleLabel}</button>}
               {!manualVerifies && onManual && <button type="button" className="link-button" disabled={disabled} onClick={() => onManual(type, null)}>{manualLabel}</button>}
             </div>
           </motion.div>

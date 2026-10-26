@@ -43,7 +43,7 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
           manualInformation={snapshot.journey.manualDocumentInformation?.find(m => m.documentType === type)}
           manualVerifies={actions.manualVerifies}
           uiState={docStates[type]} busy={busy}
-          onUpload={actions.upload} onSample={actions.sample} onRemove={actions.remove} onManual={actions.manual} onRemoveManual={actions.removeManual} onRetry={actions.resetDocument}
+          onUpload={actions.upload} onSample={actions.sample} sampleByAi={actions.sampleByAi} onRemove={actions.remove} onManual={actions.manual} onRemoveManual={actions.removeManual} onRetry={actions.resetDocument}
           registerInput={registerInput}
         />
       ))}
@@ -71,7 +71,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
       : action.type === 'review' ? actions.review() : actions.handoff()),
   };
   const readiness = (props = {}) => (
-    <ReadinessPanel snapshot={snapshot} busy={busy} onAction={actions.next} onSample={actions.sample} onHandoff={actions.handoff} onNavigate={actions.navigate} preflight={preflight} {...props} />
+    <ReadinessPanel snapshot={snapshot} busy={busy} onAction={actions.next} onSample={actions.sample} sampleByAi={actions.sampleByAi} onHandoff={actions.handoff} onNavigate={actions.navigate} preflight={preflight} {...props} />
   );
   const assistant = <AssistantPanel snapshot={snapshot} onHandoff={actions.handoff} onNavigate={actions.navigate} />;
 
@@ -144,7 +144,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
                           <p className="mobile-readiness-caption">{readinessCaption(journey)}</p>
                         </div>
                       </div>
-                      <NextActionCard action={journey.nextAction} complete={journey.currentStage === 'READY_TO_PROCEED'} busy={busy} onAction={actions.next} onSample={actions.sample} onNavigate={actions.navigate} />
+                      <NextActionCard action={journey.nextAction} complete={journey.currentStage === 'READY_TO_PROCEED'} busy={busy} onAction={actions.next} onSample={actions.sample} sampleByAi={actions.sampleByAi} onNavigate={actions.navigate} />
                     </section>
                   )}
                   {hasDocuments && (

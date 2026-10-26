@@ -77,8 +77,9 @@ export function createApiJourneyService({
     mode: 'live',
     // Manual information is accepted but never verified: it is stored as「待確認」 next to the
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
-    // Formal mode is real use: the UI offers no sample documents (those stay in /demo).
-    capabilities: { manualEntry: false, manualInformation: true, samples: false },
+    // Formal mode is real use: its sample is the synthetic PDF, sent to the server and read by the
+    // AI like any upload (Live accepts only approved synthetic files). /demo samples never leave the browser.
+    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai' },
     /** Nothing to show synchronously: the journey itself is only on the server (see resume). */
     restore() {
       state = null;

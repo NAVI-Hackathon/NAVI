@@ -22,8 +22,18 @@ const mode = resolveMode(location);
 // Mock insurer site for standalone mode (NextAction links open there in a new tab).
 const mockSiteOrigin = originOf(import.meta.env.VITE_MOCK_SITE_URL ?? '');
 
+// Where the full flow runs on synthetic data without the AI service (embedded: the insurer site's demo entry).
+const demoEntry = embedded && mockSiteOrigin ? `${mockSiteOrigin}/?navi=demo` : `${location.origin}/demo`;
+const tryDemo = `想先看完整流程，可以改用示範模式（${demoEntry}）。`;
+
 const errorCopy = {
   ...analysisErrors,
+  AI_BUSY: ['NAVI 正在處理其他分析', '請稍候幾秒，再按「重新分析」。'],
+  AI_DAILY_LIMIT_REACHED: ['今日 AI 分析次數已用完', `這個原型只使用免費額度，明天會重新開放。${tryDemo}`],
+  AI_UNAVAILABLE: ['AI 分析服務暫時無法使用', `請稍後再試一次。${tryDemo}`],
+  AI_USAGE_UNAVAILABLE: ['AI 分析暫時關閉', `目前無法確認免費額度，為避免產生費用已暫停分析。${tryDemo}`],
+  TEST_SESSION_REQUIRED: ['這項功能目前僅限授權測試', `請勿輸入或上傳真實資料。${tryDemo}`],
+  TEST_SESSION_DENIED: ['這項功能目前僅限授權測試', `請勿輸入或上傳真實資料。${tryDemo}`],
   AI_NOT_CONFIGURED: ['AI 分析服務尚未啟用', '目前無法使用 AI 分析。你可以改用示範模式，體驗完整的服務旅程。'],
   API_UNAVAILABLE: ['分析服務暫時無法使用', '請稍後再試一次，或改用示範模式。'],
   AI_PROVIDER_ERROR: ['分析服務暫時無法回應', '請稍後再試一次，或改用示範模式。'],
@@ -286,8 +296,9 @@ export default function App() {
       : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
     manualVerifies: service.capabilities.manualEntry,
     upload,
-    // Sample documents only in /demo: formal mode is real use and never fills in sample data.
+    // /demo fills in local sample data; formal mode sends the synthetic PDF for real AI recognition.
     sample: service.capabilities.samples ? type => upload(type, { sample: true }) : null,
+    sampleByAi: service.capabilities.samples === 'ai',
     navigate,
     async remove(type) {
       const next = await attempt(() => service.removeDocument(type));

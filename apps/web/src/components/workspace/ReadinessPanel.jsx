@@ -94,7 +94,7 @@ function RequirementList({ requirements }) {
   );
 }
 
-export default function ReadinessPanel({ snapshot, busy, onAction, onSample, onHandoff, onNavigate, preflight, showNextAction = true }) {
+export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sampleByAi, onHandoff, onNavigate, preflight, showNextAction = true }) {
   const { journey } = snapshot;
   const isHospital = snapshot.context.kind === 'hospital' && journey.currentStage !== 'HUMAN_REVIEW';
   const delta = useReadinessDelta(journey.readiness);
@@ -132,7 +132,7 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, onH
         <p className="readiness-basic">{journey.currentStage === 'HUMAN_REVIEW' ? '這個情況需要專員確認，NAVI 已先整理好你的描述。' : '這項服務目前提供辦理導引。先備妥以下資料，再前往服務入口。'}</p>
       )}
 
-      {showNextAction && <NextActionCard action={journey.nextAction} complete={complete} busy={busy} onAction={onAction} onSample={onSample} onNavigate={onNavigate} />}
+      {showNextAction && <NextActionCard action={journey.nextAction} complete={complete} busy={busy} onAction={onAction} onSample={onSample} sampleByAi={sampleByAi} onNavigate={onNavigate} />}
 
       {isHospital && preflight
         ? <PreflightBoard journey={journey} explanation={preflight.explanation} busy={busy} onAction={preflight.onAction} />

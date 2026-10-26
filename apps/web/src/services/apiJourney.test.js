@@ -127,7 +127,7 @@ test('formal mode is real use: a demo server never "recognises" the user\'s own 
     understand: (message, { signal } = {}) => understandIntent(message, { signal, baseUrl }),
     fetchImpl: (url, init) => { if (init?.method === 'POST' && String(url).endsWith('/documents')) posted += 1; return fetch(url, init); },
   });
-  assert.equal(service.capabilities.samples, false, 'the formal UI offers no sample documents');
+  assert.equal(service.capabilities.samples, 'ai', 'the formal sample is sent to the server, never filled in locally');
   await service.analyze(DEMO_STORY);
   const photo = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0xff, 0xd9])], 'photo.jpg', { type: 'image/jpeg' });
   await assert.rejects(service.uploadDocument('diagnosis_certificate', { file: photo }), error => error.code === 'DOCUMENT_RECOGNITION_UNAVAILABLE' && /尚未啟用文件辨識/.test(error.message));
@@ -155,7 +155,7 @@ test('fixture fields returned for the user\'s own file are withdrawn when the mo
 
 test('formal-mode manual information is stored as 待確認: no readiness, no document, no review; a verified upload replaces it', async t => {
   const service = client(await backend(t));
-  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: false });
+  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai' });
   await service.analyze(DEMO_STORY);
   const typed = await service.submitManual('diagnosis_certificate', { hospitalName: '臺中榮民總醫院', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', reportedInpatientDays: 5 });
   assert.equal(typed.journey.readiness, 35, 'manual information adds no readiness');

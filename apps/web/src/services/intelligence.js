@@ -5,7 +5,7 @@ export class IntelligenceError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
 export const analysisErrors = {
-  AI_TIMEOUT: ['分析時間較長', '請重新分析，我們會再試一次。'],
+  AI_TIMEOUT: ['分析時間較長', '這次沒有完成分析，請稍後按「重新分析」再試一次。'],
   NETWORK_ERROR: ['目前暫時無法分析你的需求', '請確認網路連線，或稍後再試一次。'],
   AI_RESPONSE_INVALID: ['分析結果尚不完整', '請重新分析，或補充你的情況後再試一次。'],
   INVALID_INPUT: ['請再確認輸入內容', '請描述你的情況，最多 2,000 字。'],
