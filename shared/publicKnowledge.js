@@ -7,7 +7,7 @@ const date = z.iso.date();
 const link = z.object({ name: z.string(), url });
 const sitemapNode = z.lazy(() => link.extend({ children: z.array(sitemapNode).optional() }));
 export const PublicKnowledgeSchema = z.object({
-  meta: z.object({ source: url, crawled: date, knowledgeVersion: z.string().regex(/^kb-[a-z0-9-]+$/).optional(), syntheticDemo: z.literal(true).optional() }),
+  meta: z.object({ source: url, crawled: date, legacyRetrievedAt: date.optional(), knowledgeVersion: z.string().regex(/^kb-[a-z0-9-]+$/).optional(), syntheticDemo: z.literal(true).optional() }),
   sitemap: z.array(link.extend({ children: z.array(sitemapNode).default([]) })),
   services: z.array(z.object({
     id: z.string(), name: z.string(), category: z.string(), url,

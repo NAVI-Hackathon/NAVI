@@ -16,7 +16,7 @@ export function verifiedEvidence(sourceId, { preferredLines = [], now = new Date
   if (!source || !verifyKnowledgeSource(source)) return null;
   const snapshot = assessSnapshotDate(source.retrievedAt, now);
   if (snapshot.status === 'invalid') return null;
-  const excerpts = [...new Set([...preferredLines, ...entry.content.split('\n')])].filter(line => verifyEvidenceSnippet(sourceId, line)).slice(0, 3);
+  const excerpts = [...new Set([...preferredLines, ...entry.content.split('\n')])].filter(line => typeof line === 'string' && line.trim() && verifyEvidenceSnippet(sourceId, line)).slice(0, 3);
   if (!excerpts.length) return null;
   return KnowledgeEvidenceSchema.parse({ source, excerpts, snapshot, verificationScope: 'local_snapshot', liveWebsiteChecked: false });
 }

@@ -27,6 +27,18 @@ async function server(t, provider = createDemoProvider()) {
   };
 }
 const options = { now: new Date('2026-10-21T00:00:00Z') };
+test('approved medical FAQs expose versioned HTTP evidence and trusted navigation for every new source',async t=>{
+  const api=await server(t);
+  const version=await api.get('/knowledge/version');assert.equal(version.status,200);
+  for(let i=13;i<=22;i++){
+    const id=`faq:${i}`,entry=getKnowledgeEntry(id),navigation=await api.post('/navigation/plans',{sourceId:id});
+    assert.equal(navigation.status,200);assert.ok(verifyNavigationPlan(NavigationPlanSchema.parse(navigation.data.plan)));
+    assert.ok(navigation.data.plan.steps.some(step=>step.destination.path==='/faq'&&step.destination.anchor===`faq-${i}`));
+    const evidence=await api.get('/knowledge/versioned-evidence?query='+encodeURIComponent(entry.title));
+    assert.equal(evidence.status,200);assert.equal(evidence.data.knowledgeVersion,version.data.knowledgeVersion);assert.equal(evidence.data.evidence.results[0].source.id,id);
+    for(const quote of evidence.data.evidence.results[0].excerpts)assert.ok(quote.trim()&&verifyEvidenceSnippet(id,quote));
+  }
+});
 test('multi-step navigation preserves source relationships, exact excerpts and canonical destinations', () => {
   for (const id of ['claim-doc:1', 'claim-doc:2', 'service:change_address', 'service:change_beneficiary', 'service:policy_loan', 'faq:7']) {
     const plan = buildNavigationPlan(id, options);
@@ -70,6 +82,8 @@ test('knowledge evidence distinguishes snapshot validation from live official ve
   assert.equal(assessSnapshotDate('2026-01-01', options.now).status, 'review_recommended');
   const search = searchVerifiedKnowledge('理賠聯盟鏈要寄正本嗎', options);
   assert.equal(search.status, 'answered'); assert.ok(search.results.every(r => r.excerpts.every(line => verifyEvidenceSnippet(r.source.id, line))));
+  const multiline = verifiedEvidence('faq:13', options);
+  assert.ok(multiline.excerpts.every(line => line.trim().length > 0 && verifyEvidenceSnippet('faq:13', line)));
 });
 test('eligibility, unsupported and negated hospitalization queries do not start a journey or invent navigation', async t => {
   const api = await server(t, { mode: 'demo', understandIntent: () => { throw Error('must not call'); } });

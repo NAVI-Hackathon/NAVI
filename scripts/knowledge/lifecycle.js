@@ -154,6 +154,36 @@ export function decide({ root, store, tokenFile, changeId, status, reviewer, rea
     return { changeId, status };
   });
 }
+function validateFaqAppend(snapshot, allCandidates, input) {
+  const plan = z.object({ operation: z.literal('append_faq'), changeIds: z.array(z.string()).min(1), entries: z.array(z.object({ q: z.string().min(1), a: z.string().min(1) }).strict()).min(1).max(50), anchorsConfirmed: z.array(z.string()), workflowCompatibility: z.literal('reviewed_no_rule_change') }).strict().parse(input);
+  const items = plan.changeIds.map(id => allCandidates.find(c => c.changeId === id) ?? fail('找不到候選。'));
+  if (new Set(plan.changeIds).size !== items.length) fail('候選不可重複。');
+  const whole = items.find(c => c.category === 'Requires Manual Review');
+  if (!whole || !allowedSources.has(whole.sourceUrl)) fail('追加FAQ需要完整且可信的整頁審核。');
+  if (/合成測試|SYNTHETIC TEST|NOT A VALID/.test(whole.context)) fail('合成候選不得採用至正式 Knowledge。');
+  const group = allCandidates.filter(c => c.sourceUrl === whole.sourceUrl && c.normalizedContentSha256 === whole.normalizedContentSha256);
+  if (group.length !== items.length || !group.every(c => plan.changeIds.includes(c.changeId)) || items.filter(c => c.category === 'Requires Manual Review').length !== 1) fail('必須審核整頁的全部候選。');
+  if (!items.every(c => ['Added', 'Requires Manual Review'].includes(c.category) && c.context === whole.context && c.retrievedAt === whole.retrievedAt && sha256(c.context) === c.normalizedContentSha256 && (!c.new || sha256(c.new.text) === c.new.sha256 && c.context.includes(c.new.text)))) fail('候選快照與段落驗證失敗。');
+  const questions = [...whole.context.matchAll(/^\* ([^\n]+)\n/gm)];
+  const exactEntries = questions.map((match, i) => ({ q: match[1].trim(), a: whole.context.slice(match.index + match[0].length, questions[i + 1]?.index ?? whole.context.length).trim() }));
+  if (!exactEntries.length || !isDeepStrictEqual(exactEntries, plan.entries)) fail('FAQ必須完整保留已審核來源的問答原文與順序。');
+  if (plan.entries.some(entry => snapshot.faq.some(existing => existing.q === entry.q && existing.source === whole.sourceUrl))) fail('既有FAQ不可重複追加。');
+  const anchors = plan.entries.map((_, i) => `faq-${snapshot.faq.length + i + 1}`);
+  if (!isDeepStrictEqual(anchors, plan.anchorsConfirmed)) fail('新Source ID的導航錨點尚未確認。');
+  return { ...plan, baseSnapshotHash: sha256(snapshot), candidateHashes: Object.fromEntries(items.map(c => [c.changeId, sha256(c)])), sourceUrl: whole.sourceUrl, retrievedAt: whole.retrievedAt, wholeChangeId: whole.changeId };
+}
+export function approveFaqAppend({ root, store, tokenFile, plan, reviewer, reason, wholePageConfirmed = false }) {
+  return locked(store, tokenFile, () => {
+    if (!reviewer?.trim() || !reason?.trim() || !wholePageConfirmed) fail('追加FAQ需要審核者、理由與整頁明確確認。');
+    const mapping = validateFaqAppend(read(publicPath(root)), candidates(store), plan);
+    // Record the adopting whole-page decision last; partial review writes cannot publish a batch.
+    for (const id of [...mapping.changeIds.filter(id => id !== mapping.wholeChangeId), mapping.wholeChangeId]) {
+      const reviewOnly = id !== mapping.wholeChangeId;
+      audit(store, { action: 'REVIEW', changeId: id, candidateHash: mapping.candidateHashes[id], status: 'APPROVED', reviewer: reviewer.trim(), reason: reason.trim(), mapping: reviewOnly ? null : mapping, synthetic: false, reviewOnly, wholePageConfirmed: true });
+    }
+    return { approved: mapping.changeIds.length, addedSourceIds: mapping.entries.map((_, i) => `faq:${read(publicPath(root)).faq.length + i + 1}`) };
+  });
+}
 export function validateRelease(value) {
   const release = ReleaseSchema.parse(value), snapshot = projectPublicKnowledge(release.snapshot);
   if (!isDeepStrictEqual(snapshot, release.snapshot) || inspectPublicText(JSON.stringify(snapshot), fingerprints.fingerprints).length) fail('公開快照含有非公開欄位或內部筆記。');
@@ -228,24 +258,36 @@ export async function publish({ root, store, tokenFile, changeIds, evaluate, syn
     const selected = requested.filter(item => !item.decision.reviewOnly);
     if (!selected.length) return { adopted: 0, ...previous };
     if (selected.every(item => previous.approvedChangeIds.includes(item.changeId))) return { adopted: 0, ...previous };
-    const after = structuredClone(before), fields = new Set();
+    const after = structuredClone(before), fields = new Set(), addedIds = new Set(), approvedIds = new Set();
     for (const item of selected) {
       const d = item.decision;
       if (item.status !== 'APPROVED' || d.candidateHash !== sha256(Object.fromEntries(Object.entries(item).filter(([k]) => !['status', 'decision'].includes(k)))) || Boolean(d.synthetic) !== synthetic) fail('只能發布已核准且完整性有效的候選。');
       if (d.mapping.baseSnapshotHash !== sha256(before)) fail('審核基準已改變，請重新人工審核。');
+      if (d.mapping.operation === 'append_faq') {
+        const { baseSnapshotHash, candidateHashes, sourceUrl, retrievedAt, wholeChangeId, ...plan } = d.mapping;
+        const plainCandidates = reviewed.map(({ status, decision, ...candidate }) => candidate);
+        const batch = validateFaqAppend(before, plainCandidates, plan);
+        if (synthetic || !isDeepStrictEqual(batch, d.mapping) || batch.changeIds.some(id => reviewed.find(c => c.changeId === id)?.status !== 'APPROVED')) fail('完整FAQ批次審核已失效。');
+        if (fields.has('append_faq')) fail('不可同時發布衝突的追加FAQ批次。'); fields.add('append_faq');
+        for (const [index, entry] of batch.entries.entries()) { after.faq.push({ ...entry, source: batch.sourceUrl, retrievedAt: batch.retrievedAt.slice(0, 10) }); addedIds.add(`faq:${before.faq.length + index + 1}`); }
+        batch.changeIds.forEach(id => approvedIds.add(id));
+        continue;
+      }
       const mapping = validateMapping(before, item, Object.fromEntries(Object.entries(d.mapping).filter(([k]) => !['oldValue', 'baseSnapshotHash'].includes(k))), synthetic);
       const key = `${mapping.sourceId}/${mapping.field}`; if (fields.has(key)) fail('同一欄位有衝突的核准變更。'); fields.add(key);
       const target = fieldTarget(after, mapping.sourceId, mapping.field); target[mapping.field] = mapping.value;
       target.retrievedAt = item.retrievedAt.slice(0, 10);
+      approvedIds.add(item.changeId);
     }
-    // Dataset整理日期不冒充逐條擷取日期；取實際採用來源的最近擷取日。
-    after.meta.crawled = [before.meta.crawled, ...selected.map(x => x.retrievedAt.slice(0, 10))].sort().at(-1);
-    const release = makeRelease(after, previous.knowledgeVersion, selected.map(x => x.changeId), synthetic);
+    // Preserve historical fallback dates when the dataset is organized again.
+    after.meta.legacyRetrievedAt ??= before.meta.crawled;
+    after.meta.crawled = new Date().toISOString().slice(0, 10);
+    const release = makeRelease(after, previous.knowledgeVersion, [...approvedIds], synthetic);
     const oldIds = createKnowledgeEngine(before).knowledgeEntries.map(x => x.id), newIds = createKnowledgeEngine(after).knowledgeEntries.map(x => x.id);
-    if (!isDeepStrictEqual(oldIds, newIds)) fail('來源ID／導覽錨點改動需要獨立契約審核。');
+    if (!isDeepStrictEqual(oldIds, newIds.filter(id => !addedIds.has(id))) || [...addedIds].some(id => !newIds.includes(id))) fail('來源ID／導覽錨點改動需要獨立契約審核。');
     await checkPublication(release, evaluate);
     commitActivation(root, store, release, { action: 'PUBLISH', version: release.knowledgeVersion, approvedChangeIds: release.approvedChangeIds });
-    return { adopted: selected.length, ...status(root) };
+    return { adopted: approvedIds.size, addedEntries: addedIds.size, ...status(root) };
   });
 }
 export async function rollback({ root, store, tokenFile, reviewer, reason, version, evaluate }) {

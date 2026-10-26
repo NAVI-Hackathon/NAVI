@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
-import raw from '../../../data/cardif_seed_data.json' with { type: 'json' };
+import raw from '../../../data/cardif_public_data.json' with { type: 'json' };
 
 const top = query => searchKnowledge(query).results[0]?.id;
 

@@ -109,3 +109,26 @@
 {"id": "competition-beneficiary-2", "synthetic": true, "kind": "query", "query": "我要變更受益人", "status": "answered", "expectedTop1": "service:change_beneficiary", "expectedTop3": ["service:change_beneficiary"], "group": "new_retrieval"}
 {"id": "competition-beneficiary-3", "synthetic": true, "kind": "query", "query": "beneficiary change", "status": "answered", "expectedTop1": "service:change_beneficiary", "expectedTop3": ["service:change_beneficiary"], "group": "new_retrieval"}
 {"id": "competition-beneficiary-4", "synthetic": true, "kind": "query", "query": "change my beneficiary", "status": "answered", "expectedTop1": "service:change_beneficiary", "expectedTop3": ["service:change_beneficiary"], "group": "new_retrieval"}
+{"id": "approved-qa-query-13", "synthetic": true, "kind": "query", "query": "參加理賠聯盟鏈的公司有哪些?", "status": "answered", "expectedTop1": "faq:13", "expectedTop3": ["faq:13"], "group": "new_retrieval", "requiresSourceIds": ["faq:13"]}
+{"id": "approved-qa-nav-13", "synthetic": true, "kind": "navigation", "sourceId": "faq:13", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:13"]}
+{"id": "approved-qa-query-14", "synthetic": true, "kind": "query", "query": "參加保險醫起通的公司有哪些?", "status": "answered", "expectedTop1": "faq:14", "expectedTop3": ["faq:14"], "group": "new_retrieval", "requiresSourceIds": ["faq:14"]}
+{"id": "approved-qa-nav-14", "synthetic": true, "kind": "navigation", "sourceId": "faq:14", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:14"]}
+{"id": "approved-qa-query-15", "synthetic": true, "kind": "query", "query": "參加保險理賠醫起通的醫療院所有哪些?", "status": "answered", "expectedTop1": "faq:15", "expectedTop3": ["faq:15"], "group": "new_retrieval", "requiresSourceIds": ["faq:15"]}
+{"id": "approved-qa-nav-15", "synthetic": true, "kind": "navigation", "sourceId": "faq:15", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:15"]}
+{"id": "approved-qa-query-16", "synthetic": true, "kind": "query", "query": "適用的保單有哪些?", "status": "answered", "expectedTop1": "faq:16", "expectedTop3": ["faq:16"], "group": "new_retrieval", "requiresSourceIds": ["faq:16"]}
+{"id": "approved-qa-nav-16", "synthetic": true, "kind": "navigation", "sourceId": "faq:16", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:16"]}
+{"id": "approved-qa-query-17", "synthetic": true, "kind": "query", "query": "適用範圍有哪些？", "status": "answered", "expectedTop1": "faq:17", "expectedTop3": ["faq:17"], "group": "new_retrieval", "requiresSourceIds": ["faq:17"]}
+{"id": "approved-qa-nav-17", "synthetic": true, "kind": "navigation", "sourceId": "faq:17", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:17"]}
+{"id": "approved-qa-query-18", "synthetic": true, "kind": "query", "query": "辦理方式有哪些呢？", "status": "answered", "expectedTop1": "faq:18", "expectedTop3": ["faq:18"], "group": "new_retrieval", "requiresSourceIds": ["faq:18"]}
+{"id": "approved-qa-nav-18", "synthetic": true, "kind": "navigation", "sourceId": "faq:18", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:18"]}
+{"id": "approved-qa-query-19", "synthetic": true, "kind": "query", "query": "如何進行數位身分驗證？", "status": "answered", "expectedTop1": "faq:19", "expectedTop3": ["faq:19"], "group": "new_retrieval", "requiresSourceIds": ["faq:19"]}
+{"id": "approved-qa-nav-19", "synthetic": true, "kind": "navigation", "sourceId": "faq:19", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:19"]}
+{"id": "approved-qa-query-20", "synthetic": true, "kind": "query", "query": "後續其他保險公司還會請我補資料嗎？", "status": "answered", "expectedTop1": "faq:20", "expectedTop3": ["faq:20"], "group": "new_retrieval", "requiresSourceIds": ["faq:20"]}
+{"id": "approved-qa-nav-20", "synthetic": true, "kind": "navigation", "sourceId": "faq:20", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:20"]}
+{"id": "approved-qa-query-21", "synthetic": true, "kind": "query", "query": "要如何知道我申請案件轉送各保險公司的處理進度？", "status": "answered", "expectedTop1": "faq:21", "expectedTop3": ["faq:21"], "group": "new_retrieval", "requiresSourceIds": ["faq:21"]}
+{"id": "approved-qa-nav-21", "synthetic": true, "kind": "navigation", "sourceId": "faq:21", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:21"]}
+{"id": "approved-qa-query-22", "synthetic": true, "kind": "query", "query": "請問有規定首家保險公司多久之內要轉送給其他公司嗎？", "status": "answered", "expectedTop1": "faq:22", "expectedTop3": ["faq:22"], "group": "new_retrieval", "requiresSourceIds": ["faq:22"]}
+{"id": "approved-qa-nav-22", "synthetic": true, "kind": "navigation", "sourceId": "faq:22", "patch": {}, "accepted": true, "requiresSourceIds": ["faq:22"]}
+{"id": "approved-qa-invalid-anchor", "synthetic": true, "kind": "navigation", "sourceId": "faq:13", "patch": {"anchor": "faq-9999"}, "accepted": false, "requiresSourceIds": ["faq:13"]}
+{"id": "approved-qa-invalid-url", "synthetic": true, "kind": "navigation", "sourceId": "faq:13", "patch": {"sourceUrl": "https://evil.invalid/"}, "accepted": false, "requiresSourceIds": ["faq:13"]}
+{"id": "approved-qa-eligibility-scope", "synthetic": true, "kind": "query", "query": "參加醫起通就一定會理賠嗎？", "status": "out_of_scope", "expectedTop1": null, "expectedTop3": [], "group": "scope"}

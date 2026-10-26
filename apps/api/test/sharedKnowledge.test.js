@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import raw from '../../../data/cardif_seed_data.json' with { type: 'json' };
+import raw from '../../../data/cardif_public_data.json' with { type: 'json' };
 import { knowledgeEntries, searchKnowledge, getKnowledgeEntry, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, verifyEvidenceSnippet, verifyNavigationDestination } from '../../../shared/knowledge/index.js';
 import { searchPublicKnowledge, retrieveKnowledge } from '../src/services/knowledgeService.js';
 import { validateGroundedAnswer } from '../src/services/knowledgeAnswerService.js';
@@ -29,8 +29,9 @@ test('all shared sources and evidence derive from the snapshot; IDs and destinat
   for (const entry of knowledgeEntries) {
     assert.equal(entry.sourceId, entry.id);
     assert.equal(entry.sourceUrl, entry.destination.source.url);
-    assert.equal(entry.retrievedAt, entry.type === 'glossary' ? raw.glossary.find(t => `glossary:${t.id}` === entry.id).retrievedAt : raw.services.find(s => `service:${s.id}` === entry.id)?.retrievedAt ?? raw.meta.crawled);
-    for (const line of entry.content.split('\n')) assert.ok(snapshotLines(entry).includes(line), `${entry.id}: not a snapshot quote`);
+    const record = entry.type === 'glossary' ? raw.glossary.find(t => `glossary:${t.id}` === entry.id) : entry.type === 'faq' ? raw.faq[Number(entry.id.split(':')[1]) - 1] : entry.type === 'form' ? raw.forms.find(f => `form:${f.id}` === entry.id) : raw.services.find(s => `service:${s.id}` === entry.id);
+    assert.equal(entry.retrievedAt, record?.retrievedAt ?? raw.meta.legacyRetrievedAt ?? raw.meta.crawled);
+    for (const line of entry.content.split('\n')) assert.ok(snapshotLines(entry).flatMap(text => text.split('\n')).includes(line), `${entry.id}: not a snapshot quote`);
     assert.equal(verifyKnowledgeSource(knowledgeSource(entry)), true);
     NavigationTargetSchema.parse(entry.destination);
   }
@@ -174,6 +175,7 @@ test('hospital mention preserves unknown branch text and never relaxes partner m
 test('knowledge evaluation uses authored cases and computes all metrics with zero external attempts', async () => {
   const report = evaluateKnowledge(await loadKnowledgeDataset());
   assert.ok(report.newCases >= 40); assert.equal(report.failed, 0);
+  assert.deepEqual(report.skippedVersionCases, []); assert.equal(report.total, report.datasetTotal);
   assert.equal(report.metrics.invalidSourceRate.invalid, 0); assert.equal(report.metrics.invalidRouteRate.invalid, 0);
   assert.ok(report.metrics.latencyMs.p95 >= report.metrics.latencyMs.p50);
   assert.equal(report.geminiRequests, 0); assert.equal(report.blockedExternalAttempts, 0);

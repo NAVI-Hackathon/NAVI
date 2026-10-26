@@ -1,4 +1,5 @@
 import { NavigationTargetSchema, KnowledgeSourceSchema } from '../journey.js';
+import { z } from 'zod';
 import { cardif, claimsUrl, formsUrl, sitePaths, officialSource as baseOfficialSource, kebab, formAnchor } from '../cardif.js';
 import { hasNegatedHospitalization } from '../hospitalization.js';
 import { queryProfile, rewrite, tokens, TYPE_CUES, SERVICE_CUES, RANKING, isDecisionQuestion } from './vocabulary.js';
@@ -6,7 +7,10 @@ import { queryProfile, rewrite, tokens, TYPE_CUES, SERVICE_CUES, RANKING, isDeci
 export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(snapshot.meta.syntheticDemo) } = {}) {
   const cardif = snapshot;
   const knowledgeVersion = snapshot.meta.knowledgeVersion ?? null;
-  const officialSource = (url, date) => baseOfficialSource(url, date ?? snapshot.meta.crawled);
+  const officialSource = (url, date) => baseOfficialSource(url, date ?? snapshot.meta.legacyRetrievedAt ?? snapshot.meta.crawled);
+  // Candidate validation must use its own snapshot, rather than the running release's ID list.
+  const targetSchema = z.object(NavigationTargetSchema.shape).strict();
+  const publicSourceSchema = z.object({ ...KnowledgeSourceSchema.options[1].shape, navigationDestination: targetSchema }).strict();
   const seedServices = cardif.services, seedForms = cardif.forms, seedFaq = cardif.faq;
   const seedClaimDocuments = cardif.claim_document_requirements, seedClaimRules = cardif.claim_general_rules;
   const hotline = cardif.contacts.hotline, FORMS_PAGE_URL = formsUrl, claimByMail = { url: claimsUrl };
@@ -20,7 +24,7 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
   const typeLabels = { service: '服務說明', form: '表單', faq: '常見問題', claim_documents: '理賠應備文件', claim_rule: '理賠規定', glossary: '名詞解釋' };
 
   function destination(kind, path, anchor, label, sourceUrl, retrievedAt) {
-    return NavigationTargetSchema.parse({ kind, path, anchor, label: clip(label), source: officialSource(sourceUrl, retrievedAt) });
+    return targetSchema.parse({ kind, path, anchor, label: clip(label), source: officialSource(sourceUrl, retrievedAt) });
   }
 
   function serviceEntry(service) {
@@ -220,7 +224,7 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
   const getKnowledgeEntry = id => byId.get(id) ?? null;
 
   function verifyNavigationDestination(value, sourceId) {
-    const parsed = NavigationTargetSchema.safeParse(value);
+    const parsed = targetSchema.safeParse(value);
     if (!parsed.success) return false;
     const canonical = byId.get(sourceId)?.destination;
     const target = parsed.data;
@@ -255,12 +259,12 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
   }
 
   function verifyKnowledgeSource(value) {
-    const parsed = KnowledgeSourceSchema.safeParse(value);
+    const parsed = (synthetic ? KnowledgeSourceSchema : publicSourceSchema).safeParse(value);
     if (!parsed.success) return false;
     if (synthetic) return parsed.data.type === 'prototype_guide' && byId.get(parsed.data.id)?.title === parsed.data.title;
     if (parsed.data.type !== 'public_site_snapshot') return false;
     const source = parsed.data, record = byId.get(source.id);
-    return Boolean(record && source.title === record.title && source.section === record.id && source.sourceUrl === record.sourceUrl && source.retrievedAt === record.retrievedAt && verifyNavigationDestination(source.navigationDestination, source.id));
+    return Boolean(record && source.sourceId === source.id && source.url === source.sourceUrl && source.title === record.title && source.section === record.id && source.sourceUrl === record.sourceUrl && source.retrievedAt === record.retrievedAt && verifyNavigationDestination(source.navigationDestination, source.id));
   }
   return { typeLabels, knowledgeEntries, searchKnowledge, getKnowledgeEntry, verifyNavigationDestination, verifyEvidenceSnippet, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, knowledgeVersion };
 }

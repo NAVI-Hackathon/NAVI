@@ -2,7 +2,9 @@
 
 本機定向擷取、人工審核、不可變知識版本、雙站建置與回滾。沒有公開管理寫入入口、不執行 Gemini、不採用付費服務。`docs/presentation`、錄影、簡報與展示證據不屬於此功能的Git交付。
 
-## 本輪盤點與完成範圍
+目前核准採用狀態見 [已核准Q&A發布紀錄](knowledge-approved-qa-release.md)。以下盤點保留首次實作驗證當時的狀態。
+
+## 首次盤點與完成範圍
 
 | 能力 | 原狀態 | 本輪結果 |
 |---|---|---|
@@ -131,3 +133,19 @@ npm run build:all
 ```
 
 Demo在隔離臨時目錄執行，合成資料標記synthetic_demo、來源為prototype/isMock；本機測試審核者明確標示LOCAL-SYNTHETIC-DEMO，不冒充真人批准官方內容。正式根目錄禁止啟用合成版本。輸出證據只放忽略的artifacts，不push簡報或影片。沒有Gemini、付費API或新增主要相依套件。
+
+## 新來源FAQ的追加審核
+
+只有人工已核准整頁、全部段落與新錨點時，才能用追加FAQ流程。先將原文問答、全部changeIds、已確認錨點與workflowCompatibility放入私有plan.json，再執行：
+
+```sh
+node scripts/knowledge/cli.js approve-faqs --token-file data/private/knowledge/access-token \
+  --mapping /private/plan.json --reviewer Sh --reason '逐項審核決定與錨點確認依據' --whole-page-confirmed
+npm run knowledge:publish -- --token-file data/private/knowledge/access-token
+```
+
+工具核對同一來源的全部候選、原文問答、順序、段落SHA與新錨點；逐筆簽章記錄後，只將最後的完整整頁決定設為採用映射。任何段落被撤回批准都會阻擋發布。既有ID不重排，僅追加新FAQ，不修改服務條件或Workflow。
+
+`meta.legacyRetrievedAt` 是舊條目缺少個別日期時沿用的歷史資料集備援日期，不是重新擷取日期。更新meta.crawled時不會讓舊來源日期變新；新FAQ保留其實際retrievedAt。前端來源卡仍區分entry與legacy_dataset_fallback，沒有將備援日期寫成舊條目的逐條retrievedAt。
+
+Knowledge Evaluation新增requiresSourceIds，僅對實際包含該來源的版本測試新增資料。回滾舊版本時會明列skippedVersionCases，仍測完所有原有案例；最新正式版本CI要求skippedVersionCases為空，不能靠跳過案例發布。
