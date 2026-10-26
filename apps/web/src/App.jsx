@@ -30,6 +30,7 @@ const errorCopy = {
   ...analysisErrors,
   AI_BUSY: ['NAVI 正在處理其他分析', '請稍候幾秒，再按「重新分析」。'],
   AI_DAILY_LIMIT_REACHED: ['今日 AI 分析次數已用完', `這個原型只使用免費額度，明天會重新開放。${tryDemo}`],
+  AI_SESSION_LIMIT_REACHED: ['這次體驗的 AI 分析次數已用完', `為保留免費額度，每次體驗的分析次數有上限，約一小時後可再試。${tryDemo}`],
   AI_UNAVAILABLE: ['AI 分析服務暫時無法使用', `請稍後再試一次。${tryDemo}`],
   AI_USAGE_UNAVAILABLE: ['AI 分析暫時關閉', `目前無法確認免費額度，為避免產生費用已暫停分析。${tryDemo}`],
   TEST_SESSION_REQUIRED: ['這項功能目前僅限授權測試', `請勿輸入或上傳真實資料。${tryDemo}`],
