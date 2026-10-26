@@ -83,3 +83,5 @@ A advanced main during the audit to `8a49718e1a49a7b36bbc03d21af2c96c7139b844` (
 - External generation requests 0; added paid APIs/dependencies 0. Fresh project Free Tier/quota and genuine model performance remain unverified in this audit; no new Live evaluation was run.
 
 Reproducible logs/job timings are local ignored `artifacts/audit-final-*.log` and `artifacts/audit-final-jobs.json`. Deployment verification is recorded separately after the release switch.
+
+A then advanced main again to `6d2c20de645a51248c4f4e054219d4006542b329` (touch targets, focus visibility and phone accessibility regression). B preserved it via a normal merge after the branch was published, avoiding a force push. Re-run: frontend 47/47, backend 266/266, layout **13/13**, lint/typecheck, both builds/scans, navigation and competition E2E all passed. Prior evaluations remain valid because the additional A commit only changes UI/styles/accessibility tests.
