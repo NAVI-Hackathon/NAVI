@@ -68,3 +68,18 @@ These short Mac loopback runs do not measure model/VPS latency, long-term reliab
 - Cases/Sessions remain single-process and expire after TTL/restart; durable daily quota survives restart. No unsafe cross-device sync added.
 - No participant records supplied: user benefit statistics are unmeasured. Enterprise adaptation/cost assumptions are in `enterprise-integration-limits.md`.
 - No presentation, recording, API key, Cookie, raw personal document or private Knowledge review store is committed.
+
+## Final local regression gate
+
+A advanced main during the audit to `8a49718e1a49a7b36bbc03d21af2c96c7139b844` (cross-service welcome and honest recovery/preliminary-readiness wording). B rebased onto it without modifying A's files.
+
+- Frontend 47/47; Backend 266/266 (313 total). No removed tests.
+- Layout 10/10 including A's new failed-upload/retry/100%-not-submitted test; Chromium 375/390/430 and keyboard-height simulations, not real iOS.
+- Legacy 120/120; Hospitalization 76/76; Knowledge 134/134; new reliability mock-transport dataset 27/27.
+- Mock-site lint and `typecheck:mock` pass. No root `typecheck` script exists.
+- Both production builds, shared browser bundle and competition HTTP/built-anchor E2E pass.
+- Public scanner: NAVI 8 files and mock build 195 files (includes JSON, maps, HTML/RSC), 0 findings. Final static-export artifacts are scanned again by the production builder.
+- New reliability cases include a partial multi-intent result rejection; no silent dropping of the rest of a request.
+- External generation requests 0; added paid APIs/dependencies 0. Fresh project Free Tier/quota and genuine model performance remain unverified in this audit; no new Live evaluation was run.
+
+Reproducible logs/job timings are local ignored `artifacts/audit-final-*.log` and `artifacts/audit-final-jobs.json`. Deployment verification is recorded separately after the release switch.
