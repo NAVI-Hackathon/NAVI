@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { ServiceJourneySchema } from '../../../../shared/journey.js';
 import { HandoffConfirmationSchema, HandoffPreviewSchema, JourneyExplanationSchema, NavigationPlanResponseSchema } from '../../../../shared/competition.js';
 import { planNavigation } from '../../../../shared/knowledge/navigationPlan.js';
+import { CorrectJourneyIntentResponseSchema, TaskUnderstandingSchema } from '../../../../shared/serviceTasks.js';
+import { DEFAULT_CONFIDENCE_THRESHOLD, UnderstandingSchema } from '../../../../shared/intelligence.js';
 import { opensJourney } from './naviService.js';
 import { samplePdfFile } from '../mocks/sampleDocuments.js';
 import { redactIdentifiers } from '../domain/privacy.js';
@@ -25,6 +27,18 @@ const Stored = z.object({
 // user sees their own masked words, held in memory only; afterwards the server's note.
 const storyOf = journey => journey.conversation.find(entry => entry.role === 'user')?.message ?? '';
 const UploadResponse = z.object({ journey: ServiceJourneySchema }).passthrough();
+
+/**
+ * One task of /intelligence/tasks as the single-intent understanding the rest of the client uses, so a chosen
+ * task opens its journey without a second AI call. Null when it does not validate (then understand normally).
+ */
+export function understandingOfTask(split, task) {
+  const parsed = UnderstandingSchema.safeParse({
+    success: true, data: task.data,
+    meta: { source: split.provider === 'live' ? 'gemini' : 'demo_fallback', outcome: task.outcome, confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD },
+  });
+  return parsed.success ? parsed.data : null;
+}
 
 export function createApiJourneyService({
   understand, storage, storageKey = 'navi.journey', fetchImpl = (...args) => fetch(...args),
@@ -79,7 +93,7 @@ export function createApiJourneyService({
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
     // Formal mode is real use: its sample is the synthetic PDF, sent to the server and read by the
     // AI like any upload (Live accepts only approved synthetic files). /demo samples never leave the browser.
-    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai' },
+    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true },
     /** Nothing to show synchronously: the journey itself is only on the server (see resume). */
     restore() {
       state = null;
@@ -106,8 +120,21 @@ export function createApiJourneyService({
         throw error;
       }
     },
-    async analyze(message, { signal, openJourney = () => true } = {}) {
-      const understanding = await understand(message, { signal });
+    /**
+     * Several independent requests in one message (POST /intelligence/tasks: one AI call, at most four tasks).
+     * Null when the server has no such endpoint (older release): the caller then understands it as one request.
+     */
+    async understandTasks(message, { signal } = {}) {
+      try {
+        return await request('/intelligence/tasks', { method: 'POST', json: { message: message.trim() }, signal, schema: TaskUnderstandingSchema });
+      } catch (error) {
+        if (error?.status === 404 && error.code !== 'JOURNEY_NOT_FOUND') return null;
+        throw error;
+      }
+    },
+    /** `understanding`: already known (a chosen task) — then the message is not sent to the AI again. */
+    async analyze(message, { signal, openJourney = () => true, understanding: known = null } = {}) {
+      const understanding = known ?? await understand(message, { signal });
       const kind = kindOf(understanding.data.serviceType);
       // Only a 住院醫療理賠 service request has a server-owned journey. Information questions
       // (intent knowledge_query) are answered from official data; the server refuses them with 409.
@@ -182,6 +209,21 @@ export function createApiJourneyService({
       return request(`/journeys/${journey.id}/handoff/confirm`, { method: 'POST', json: { previewId, confirmed: true }, signal, schema: HandoffConfirmationSchema });
     },
     requestHandoff() { requireState(); state = { ...state, handoffRequested: true }; save(); return snapshot(); },
+    /** Read the journey again (after JOURNEY_STALE: another change won; nothing is retried automatically). */
+    async refresh({ signal } = {}) {
+      const { journey } = requireState();
+      return commit(await request(`/journeys/${journey.id}`, { signal }));
+    },
+    /**
+     * The user says NAVI understood the wrong service (POST /journeys/:id/intent-correction). The server
+     * re-reads the need; kept documents need confirming again and earn nothing until then.
+     */
+    async correctIntent(message, { signal } = {}) {
+      const { journey } = requireState();
+      const result = await request(`/journeys/${journey.id}/intent-correction`, { method: 'POST', json: { message: message.trim() }, signal, timeout: timeoutMs, schema: CorrectJourneyIntentResponseSchema });
+      state = { ...state, story: redactIdentifiers(message.trim()) };
+      return { snapshot: commit(result.journey), previousServiceType: result.previousServiceType };
+    },
     reset() { state = null; save(); },
     setFailNextDocument() { /* Demo-only control; the server decides recognition outcomes. */ },
   };

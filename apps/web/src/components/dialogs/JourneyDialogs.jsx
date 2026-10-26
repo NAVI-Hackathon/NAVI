@@ -62,6 +62,38 @@ export function ReviewDialog({ snapshot, onConfirm, onProceed, onClose }) {
   );
 }
 
+/** NAVI understood the wrong service: one sentence to put it right; the server re-reads the need. */
+export function CorrectionDialog({ onClose, onSubmit }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function submit(event) {
+    event.preventDefault();
+    if (!text.trim() || busy) return;
+    setBusy(true); setError('');
+    const problem = await onSubmit(text.trim());
+    setBusy(false);
+    if (problem) setError(problem);
+  }
+  return (
+    <Modal title="修正需求" onClose={onClose}>
+      <form onSubmit={submit}>
+        <p className="modal-lead">NAVI 理解錯了嗎？用一句話說明正確的情況，例如「我其實沒有住院，只是門診」。</p>
+        <label className="field">
+          <span>正確的情況（請勿輸入真實個資）</span>
+          <textarea value={text} maxLength={2000} rows={3} onChange={e => setText(e.target.value)} />
+        </label>
+        {error && <p className="inline-error" role="alert"><Icon name="alert" size={15} />{error}</p>}
+        <div className="modal-actions">
+          <p className="modal-footnote"><Icon name="info" size={14} />修正後會依新的需求重新計算；已上傳的文件會保留，但需要重新確認。</p>
+          <button type="button" className="button button-secondary" onClick={onClose}>取消</button>
+          <button type="submit" className="button button-primary" disabled={!text.trim() || busy}>{busy ? '正在重新理解…' : '送出修正'}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 export function ProceedDialog({ snapshot, onClose, onDone, onNavigate }) {
   const { journey } = snapshot;
   const channel = journey.claimContext?.channels.find(c => c.id === journey.nextAction.target);

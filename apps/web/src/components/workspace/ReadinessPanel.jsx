@@ -5,6 +5,7 @@ import NextActionCard from './NextActionCard.jsx';
 import PreflightBoard from './PreflightBoard.jsx';
 import { CheckDraw, useCountUp } from '../../motion/primitives.jsx';
 import { duration, ease, transition } from '../../motion/tokens.js';
+import { documentSpecs } from '../../mocks/hospitalClaim.js';
 
 export function ReadinessRing({ value, size = 200, compact = false }) {
   const shown = useCountUp(value);
@@ -129,7 +130,13 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sam
           </AnimatePresence>
         </div>
       ) : (
-        <p className="readiness-basic">{journey.currentStage === 'HUMAN_REVIEW' ? '這個情況需要專員確認，NAVI 已先整理好你的描述。' : '這項服務目前提供辦理導引。先備妥以下資料，再前往服務入口。'}</p>
+        <>
+          <p className="readiness-basic">{journey.currentStage === 'HUMAN_REVIEW' ? '這個情況需要專員確認，NAVI 已先整理好你的描述。' : '這項服務目前提供辦理導引。先備妥以下資料，再前往服務入口。'}</p>
+          {/* Kept after a correction: shown, but only as something to confirm — never as a verified document. */}
+          {journey.documents.length > 0 && (
+            <p className="readiness-basic"><Icon name="info" size={13} />先前上傳的文件已保留，需要重新確認，目前不計分：{journey.documents.map(d => documentSpecs[d.documentType]?.title ?? d.filename).join('、')}</p>
+          )}
+        </>
       )}
 
       {showNextAction && <NextActionCard action={journey.nextAction} complete={complete} busy={busy} onAction={onAction} onSample={onSample} sampleByAi={sampleByAi} onNavigate={onNavigate} />}

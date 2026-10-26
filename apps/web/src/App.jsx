@@ -4,7 +4,7 @@ import AppHeader, { EmbedHeader } from './components/AppHeader.jsx';
 import Landing from './components/landing/Landing.jsx';
 import Workspace from './components/workspace/Workspace.jsx';
 import Toast from './components/Toast.jsx';
-import { HandoffDialog, ProceedDialog, ReviewDialog, ServiceDialog } from './components/dialogs/JourneyDialogs.jsx';
+import { CorrectionDialog, HandoffDialog, ProceedDialog, ReviewDialog, ServiceDialog } from './components/dialogs/JourneyDialogs.jsx';
 import { createApiAdapter, createMockAdapter, isEmbedPath, resolveMode } from './services/adapters.js';
 import { useHostBridge } from './hooks/useHostBridge.js';
 import { naviMessage, originOf } from '../../../shared/embed.js';
@@ -14,7 +14,7 @@ import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/ind
 import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
 import GuideCard from './components/guide/GuideCard.jsx';
 import { transition } from './motion/tokens.js';
-import { JOURNEY_EXPIRED_MESSAGE } from './services/apiJourney.js';
+import { JOURNEY_EXPIRED_MESSAGE, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 
 const embedded = isEmbedPath(location.pathname);
@@ -160,8 +160,20 @@ export default function App() {
     try { return await run(); }
     catch (error) {
       if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      else if (error?.code === 'JOURNEY_STALE') await reloadStale();
       else notify(error?.message && error?.code ? error.message : '目前暫時無法處理，請稍後再試。');
       return null;
+    }
+  }
+
+  /** Another change won (JOURNEY_STALE): show the current journey and let the user decide; never re-send. */
+  async function reloadStale() {
+    try {
+      setSnapshot(await service.refresh());
+      notify('案件剛剛有其他更新，已重新讀取最新狀態；請確認後再操作一次。');
+    } catch (error) {
+      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      else notify('案件剛剛有其他更新，但目前無法重新讀取；請稍後重新整理頁面。');
     }
   }
 
@@ -191,7 +203,11 @@ export default function App() {
    * One chat turn. `label` is what the user's bubble shows (an option button's label); `text` is what is
    * analysed — for follow-up options it carries the earlier context too. The server still decides.
    */
-  async function send(text, label = text) {
+  /**
+   * `picked`: a task the user chose from several in one message — its understanding is reused (no second
+   * AI call), and the tasks not handled yet stay offered under the reply.
+   */
+  async function send(text, label = text, picked = null) {
     analysisCtl.current?.abort();
     const ctl = new AbortController();
     analysisCtl.current = ctl;
@@ -201,33 +217,51 @@ export default function App() {
     const knowledge = searchKnowledge(text);
     if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return; }
     const answered = knowledge.status === 'answered';
-    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text) });
+    const pending = picked?.remaining.length ? { tasks: picked.remaining, split: picked.split } : {};
+    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text), ...pending });
     setAnalysisPhase(0);
     const step = reduced ? 0 : 520;
     const startedAt = performance.now();
     try {
       // 住院醫療理賠 opens the full journey; other services show the official answers when there are any.
       const openJourney = kind => kind === 'hospital' || !answered;
-      const result = await service.analyze(text, { signal: ctl.signal, openJourney });
+      let understanding = picked?.understanding ?? null;
+      if (!picked && service.capabilities.tasks) {
+        // Several independent requests: list them and let the user choose one; nothing opens on its own.
+        const split = await service.understandTasks(text, { signal: ctl.signal });
+        if (split && split.tasks.length > 1) {
+          await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
+          reply({ kind: 'tasks', split, tasks: split.tasks });
+          return;
+        }
+        if (split) understanding = understandingOfTask(split, split.tasks[0]);
+      }
+      const result = await service.analyze(text, { signal: ctl.signal, openJourney, understanding });
       await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
       setAnalysisPhase(1);
       await wait(step, ctl.signal);
-      if (!result.snapshot) { reply(answered ? answers() : replyFor(result.understanding, text, knowledge.hotline)); return; }
+      if (!result.snapshot) { reply(answered ? answers() : { ...replyFor(result.understanding, text, knowledge.hotline), ...pending }); return; }
       setAnalysisPhase(2);
       await wait(step, ctl.signal);
       setDocStates({});
       setTab('journey');
       setSnapshot(result.snapshot);
       // The journey opens as a card in the chat; the user enters the workspace from there.
-      reply({ kind: 'journey', journeyId: result.snapshot.journey.id });
+      reply({ kind: 'journey', journeyId: result.snapshot.journey.id, ...pending });
     } catch (error) {
       if (ctl.signal.aborted) return;
       // The official answers do not depend on the AI service, so they still help when it is down.
       // The analysis can still be retried (manually: a timeout is never re-sent on its own).
       if (answered) { reply({ ...answers('AI 分析暫時無法使用，以下是官網資料中的相關說明。'), retry: { text, label } }); return; }
       const [title, body] = errorCopy[error?.code] ?? errorCopy.DEFAULT;
-      reply({ kind: 'note', tone: 'error', title, body, retry: { text, label } });
+      reply({ kind: 'note', tone: 'error', title, body, retry: { text, label }, ...pending });
     }
+  }
+
+  /** Handle one task of several; the others stay listed for later. */
+  function pickTask(split, task, tasks) {
+    const understanding = understandingOfTask(split, task);
+    send(task.input, task.input, understanding ? { understanding, split, remaining: tasks.filter(other => other.id !== task.id) } : null);
   }
 
   async function upload(type, source) {
@@ -241,7 +275,8 @@ export default function App() {
       notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有資料需要確認：可重新上傳較清楚的文件，或轉由專員協助確認。` : `${documentSpecs[type].title}已辨識，準備完成度已更新。`);
     } catch (error) {
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
-      // Server messages (e.g. 文件類型與目前服務需求不同) are written for the user.
+      if (error?.code === 'JOURNEY_STALE') { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); await reloadStale(); return; }
+      // Server messages (e.g. 文件類型與目前服務需求不同, JOURNEY_BUSY) are written for the user.
       const message = error?.code && error.message ? error.message : null;
       setDocStates(s => ({ ...s, [type]: { status: 'failed', message } }));
       // The document card may be off screen (the upload started from 下一步), so say it where the user is too.
@@ -274,7 +309,12 @@ export default function App() {
     if (entry) {
       // Only a slow plan request shows「正在準備導覽…」; the local /demo plan is instant and never flashes it.
       const hint = setTimeout(() => { if (request === guideRequest.current) setGuidePending(true); }, 120);
-      try { const result = await service.navigationPlan(entry.id); plan = result.status === 'answered' ? result.plan : null; } catch { plan = null; }
+      try { const result = await service.navigationPlan(entry.id); plan = result.status === 'answered' ? result.plan : null; }
+      catch (error) {
+        plan = null;
+        // The release's site has no such place: say so instead of implying NAVI took the user there.
+        if (error?.code === 'NAVIGATION_TARGET_UNAVAILABLE') notify('官網上暫時找不到這個位置。可以先看答案下方的官網原文，或開啟官網原頁。');
+      }
       clearTimeout(hint);
     }
     if (request !== guideRequest.current) return; // a newer request replaced this one
@@ -333,6 +373,8 @@ export default function App() {
       notify('已移除待確認資訊。');
     },
     resetDocument(type) { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); },
+    // NAVI understood the wrong service: the user says what it really is (formal mode; the server re-reads it).
+    correct: service.capabilities.correction ? () => setDialog('correct') : null,
     review() { setDialog('review'); },
     proceed() { setDialog('proceed'); },
     handoff() { setDialog('handoff'); },
@@ -358,6 +400,9 @@ export default function App() {
         }
         case 'PROVIDE_INFORMATION':
           if (action.target === 'inpatient_info' && service.capabilities.manualEntry) setDocStates(s => ({ ...s, diagnosis_certificate: { status: 'manual' } }));
+          // Any other missing detail (e.g. after a correction NAVI could not place): describe the need again.
+          else if (action.target !== 'inpatient_info' && service.capabilities.correction) setDialog('correct');
+          else { goLanding(); notify('請在聊天室多說明一點你想處理的事情，NAVI 會重新理解。'); }
           break;
         case 'REVIEW_INFORMATION': setDialog('review'); break;
         case 'PROCEED_TO_SERVICE': setDialog(snapshot?.context.kind === 'hospital' ? 'proceed' : 'service'); break;
@@ -435,7 +480,7 @@ export default function App() {
             ) : (
               <Landing
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot}
-                dock={guideLayer} onSend={send} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                dock={guideLayer} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
@@ -459,6 +504,20 @@ export default function App() {
           )}
           {snapshot && dialog === 'handoff' && (
             <HandoffDialog key="handoff" snapshot={snapshot} service={service} onClose={closeDialog} onConfirmed={() => setSnapshot(service.requestHandoff())} />
+          )}
+          {snapshot && dialog === 'correct' && (
+            <CorrectionDialog key="correct" onClose={closeDialog}
+              onSubmit={async text => {
+                try {
+                  const { snapshot: next } = await service.correctIntent(text);
+                  setSnapshot(next); setDocStates({}); setDialog(null);
+                  notify(next.journey.documents.length ? '已依新的描述更新需求；先前上傳的文件已保留，需要重新確認。' : '已依新的描述更新需求。');
+                  return null;
+                } catch (error) {
+                  if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return null; }
+                  return error?.code && error.message ? error.message : '目前無法修正，請稍後再試。';
+                }
+              }} />
           )}
           {snapshot && dialog === 'service' && (
             <ServiceDialog key="service" snapshot={snapshot} onClose={closeDialog} onHandoff={() => setDialog('handoff')} />

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createApiJourneyService } from './apiJourney.js';
+import { createApiJourneyService, understandingOfTask } from './apiJourney.js';
 import { understandIntent } from './intelligence.js';
 import { DEMO_STORY } from '../mocks/hospitalClaim.js';
 // Formal mode talks to the real backend; run it in-process with the scripted demo provider (no AI calls).
@@ -155,7 +155,7 @@ test('fixture fields returned for the user\'s own file are withdrawn when the mo
 
 test('formal-mode manual information is stored as 待確認: no readiness, no document, no review; a verified upload replaces it', async t => {
   const service = client(await backend(t));
-  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai' });
+  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true });
   await service.analyze(DEMO_STORY);
   const typed = await service.submitManual('diagnosis_certificate', { hospitalName: '臺中榮民總醫院', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', reportedInpatientDays: 5 });
   assert.equal(typed.journey.readiness, 35, 'manual information adds no readiness');
@@ -202,4 +202,44 @@ test('formal mode: step-by-step guide plans come from the server and match the s
   // Unreachable API: the same plan is built locally from the shared snapshot.
   const offline = client('http://127.0.0.1:9');
   assert.deepEqual((await offline.navigationPlan('service:change_address')).plan, result.plan);
+});
+
+test('several requests in one message are listed as tasks; a chosen task opens its journey without a second AI call', async t => {
+  const baseUrl = await backend(t);
+  let understands = 0;
+  const service = createApiJourneyService({
+    baseUrl, storage: memoryStorage(),
+    understand: (message, { signal } = {}) => { understands += 1; return understandIntent(message, { signal, baseUrl }); },
+  });
+  const split = await service.understandTasks('我想改地址，也想知道要怎麼申請住院理賠。');
+  assert.equal(split.nextStep, 'confirm_one_task');
+  assert.deepEqual(split.tasks.map(task => task.data.serviceType), ['policy_change', 'hospitalization_claim']);
+  assert.ok(split.tasks.every(task => '我想改地址，也想知道要怎麼申請住院理賠。'.includes(task.input)), 'each task quotes the message');
+  const hospital = split.tasks[1];
+  const understanding = understandingOfTask(split, hospital);
+  assert.ok(understanding, 'a task becomes a valid single understanding');
+  const { snapshot } = await service.analyze(hospital.input, { understanding });
+  assert.equal(snapshot.journey.serviceType, 'hospitalization_claim');
+  assert.equal(understands, 0, 'the chosen task is not analysed again');
+});
+
+test('an older server without /intelligence/tasks falls back to a single understanding', async () => {
+  const service = createApiJourneyService({
+    baseUrl: 'http://unused', storage: memoryStorage(), understand: async () => null,
+    fetchImpl: async () => new Response(JSON.stringify({ success: false, error: { code: 'NOT_FOUND', message: 'not found' } }), { status: 404, headers: { 'Content-Type': 'application/json' } }),
+  });
+  assert.equal(await service.understandTasks('我想改地址，也想申請住院理賠'), null);
+});
+
+test('correcting the need re-reads it on the server: kept documents earn nothing until confirmed again', async t => {
+  const service = client(await backend(t));
+  await service.analyze(DEMO_STORY);
+  assert.equal((await service.uploadDocument('diagnosis_certificate', { sample: true })).journey.readiness, 70);
+  const { snapshot, previousServiceType } = await service.correctIntent('我其實沒有住院，只是門診。');
+  assert.equal(previousServiceType, 'hospitalization_claim');
+  assert.notEqual(snapshot.journey.serviceType, 'hospitalization_claim');
+  assert.equal(snapshot.journey.readiness, 0, 'no score carried over');
+  assert.ok(snapshot.journey.documents.every(d => d.status === 'needs_review'), 'kept documents need confirming');
+  assert.equal(snapshot.context.kind, snapshot.journey.serviceType, 'the client follows the corrected service');
+  assert.equal((await service.refresh()).journey.id, snapshot.journey.id);
 });

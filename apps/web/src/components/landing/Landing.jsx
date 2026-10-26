@@ -29,6 +29,22 @@ function Options({ followUp, disabled, onSend, onHotline }) {
   );
 }
 
+/** Several requests in one message: one button per task; the user chooses which NAVI handles now. */
+function TaskOptions({ split, tasks, disabled, onPickTask, first }) {
+  return (
+    <div className="chat-options">
+      <p className="chat-question">{first ? '想先處理哪一件？' : `還有 ${tasks.length} 件事，要接著處理嗎？`}</p>
+      <div className="chat-option-list">
+        {tasks.map(task => (
+          <button key={task.id} type="button" className="chat-option" disabled={disabled} onClick={() => onPickTask(split, task, tasks)}>
+            <Icon name="route" size={15} />{task.input.replace(/[。！？!?]+$/, '')}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** After a failed analysis: try again by hand (never automatically), or continue with the demo. */
 function RetryOptions({ retry, busy, mode, onSend }) {
   return (
@@ -57,7 +73,7 @@ function JourneyCard({ message, snapshot, onOpen }) {
   );
 }
 
-function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate, onHotline, onOpenWorkspace }) {
+function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace }) {
   const followUp = latest ? message.followUp : null;
   let body = null;
   if (message.kind === 'welcome') {
@@ -79,6 +95,14 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate
           : null}
       </>
     );
+  } else if (message.kind === 'tasks') {
+    body = (
+      <>
+        <p className="chat-title">我聽到你有 {message.tasks.length} 件事</p>
+        <p className="chat-text">NAVI 一次處理一件：先選一件，其他的會留著，處理完可以接著選。</p>
+        <p className="chat-notice" role="note">{message.split.disclaimer}</p>
+      </>
+    );
   } else if (message.kind === 'journey') {
     body = <JourneyCard message={message} snapshot={snapshot} onOpen={onOpenWorkspace} />;
   } else {
@@ -95,6 +119,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate
       <span className="msg-avatar" aria-hidden="true">N</span>
       <div className="msg-bubble">
         {body}
+        {latest && message.tasks?.length > 0 && <TaskOptions split={message.split} tasks={message.tasks} disabled={busy} onPickTask={onPickTask} first={message.kind === 'tasks'} />}
         {/* Older replies keep their question; only the latest offers buttons. */}
         {message.kind !== 'welcome' && (followUp
           ? <Options followUp={followUp} disabled={busy} onSend={onSend} onHotline={onHotline} />
@@ -108,7 +133,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onNavigate
  * NAVI landing as a chat: the conversation scrolls above, the input stays at the bottom.
  * Replies come from the official-site search and the backend; option buttons only send text back.
  */
-export default function Landing({ messages, analysisPhase, snapshot, mode, dock, onSend, onNavigate, onHotline, onOpenWorkspace, ref }) {
+export default function Landing({ messages, analysisPhase, snapshot, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, ref }) {
   const [text, setText] = useState('');
   const textarea = useRef(null);
   const dockRef = useRef(null);
@@ -182,7 +207,7 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, dock,
               {message.role === 'user'
                 ? <div className="msg msg-user"><p className="msg-bubble">{message.text}</p></div>
                 : <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot}
-                  onSend={onSend} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} />}
+                  onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} />}
             </motion.div>
           ))}
           {busy && (

@@ -306,6 +306,9 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .field { display: grid; gap: 5px; font-size: 10px; color: var(--color-text-muted); }
 .field input { min-height: 38px; padding: 0 10px; background: var(--color-surface-muted); border: var(--border); border-radius: var(--radius-sm); font-size: 12px; color-scheme: dark; transition: border-color var(--dur-fast); }
 .field input:focus { outline: 0; border-color: rgba(151, 201, 179, 0.4); }
+.field textarea { min-height: 88px; padding: 10px; resize: vertical; background: var(--color-surface-muted); border: var(--border); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; color: var(--color-text); }
+.field textarea:focus { outline: 0; border-color: rgba(151, 201, 179, 0.6); box-shadow: 0 0 0 3px rgba(0, 178, 110, 0.35); }
+.correct-link { font-size: 11px; color: var(--color-text-muted); gap: 6px; }
 .manual-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
 /* Readiness (right) */

@@ -88,6 +88,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
         </div>
         <div className="workspace-meta">
           <span className={`state-pill stage-${journey.currentStage.toLowerCase()}`}><span className="pulse-dot" aria-hidden="true" />{stateLabel(journey)}</span>
+          {actions.correct && <button type="button" className="link-button correct-link" onClick={actions.correct}><Icon name="edit" size={14} />需求不對？修正</button>}
           {breakpoint === 'tablet' && (
             <button type="button" className="button button-secondary button-small" aria-expanded={assistantOpen} aria-controls="assistant-drawer" onClick={() => onAssistantOpen(!assistantOpen)}>
               <Icon name="spark" size={15} />{assistantOpen ? '收合 AI 助手' : 'AI 助手'}
