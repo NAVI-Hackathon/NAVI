@@ -65,7 +65,8 @@ export function createJourneyService({ repository, provider, config }) {
       const intent = data.data.intent === 'knowledge_query' ? normalizeIntent({ ...data.data, intent: 'unknown', serviceType: 'unknown' }) : data.data;
       const definition = getJourneyDefinition(intent.serviceType);
       const { claimContext, officialSources, ...retained } = current;
-      const journey = save({ ...retained, serviceType: intent.serviceType, title: definition?.title ?? titles[intent.serviceType], summary: intent.serviceType === 'hospitalization_claim' ? HOSPITAL_SUMMARY : '需求已修正，請確認目前想處理的服務。', confidence: intent.confidence, extractedData: intent.extractedData, confirmed: false, sources: getSources(definition?.sourceIds ?? []), disclaimer: definition?.disclaimer ?? '需求已修正；保留文件僅供確認，不代表目前服務適用或理賠核准。' });
+      const documents = current.documents.map(document => ({ ...document, requiresRevalidation: true }));
+      const journey = save({ ...retained, documents, serviceType: intent.serviceType, title: definition?.title ?? titles[intent.serviceType], summary: intent.serviceType === 'hospitalization_claim' ? HOSPITAL_SUMMARY : '需求已修正，請確認目前想處理的服務。', confidence: intent.confidence, extractedData: intent.extractedData, confirmed: false, sources: getSources(definition?.sourceIds ?? []), disclaimer: definition?.disclaimer ?? '需求已修正；保留文件僅供確認，不代表目前服務適用或理賠核准。' });
       return { journey, previousServiceType: previous.serviceType, evidenceRetained: true, requiresRevalidation: true };
     },
     addManualDocumentInformation(id, input) {
