@@ -11,7 +11,8 @@ import { ApiError, errorHandler } from './middleware/errorHandler.js';
 
 export function createApp(config, provider = createAIProvider(config), repository = new InMemoryJourneyRepository()) {
   if (config.production && !['live', 'unavailable'].includes(provider.mode)) throw new Error('Production provider must be live or unavailable');
-  const sessions = createTestSessions(config, repository);
+  const sessions = createTestSessions(config, repository, { providerMode: provider.mode });
+  provider = sessions.bindProvider(provider);
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxyLoopback) app.set('trust proxy', 'loopback');

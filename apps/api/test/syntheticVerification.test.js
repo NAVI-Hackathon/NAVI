@@ -88,14 +88,15 @@ test('Custom PDF bytes reach analysis; a browser-supplied hash never grants veri
   assert.equal((await (await service.request(`/journeys/${journey.id}`, null, cookie)).json()).readiness, 35);
 });
 
-test('Session AI-operation cap includes uploads and re-submissions; deterministic case operations still work', async t => {
+test('Session cap charges provider attempts; receipt creation and deterministic case operations are free', async t => {
   let calls = 0; const demo = createDemoProvider();
-  const service = await api(t, { ...settings(), sessionRequestLimit: 2 }, { ...demo, mode: 'live', understandIntent: async message => { calls++; return demo.understandIntent(message); } });
+  const service = await api(t, { ...settings(), sessionRequestLimit: 1 }, { ...demo, mode: 'live', understandIntent: async message => { calls++; return demo.understandIntent(message); } });
   const first = await service.request('/intelligence/understand', { message: story }); const cookie = cookieOf(first); await first.json();
   const created = await service.request('/journeys', { message: story }, cookie); const journey = await created.json();
   const denied = await service.request(`/journeys/${journey.id}/documents`, await multipart('diagnosis_certificate'), cookie);
   assert.equal(denied.status, 429); assert.equal((await denied.json()).error.code, 'AI_SESSION_LIMIT_REACHED'); assert.equal(calls, 1);
-  assert.equal((await service.request(`/journeys/${journey.id}/handoff-summary?enhance=true`, null, cookie)).status, 429);
+  const template = await service.request(`/journeys/${journey.id}/handoff-summary?enhance=true`, null, cookie);
+  assert.equal(template.status, 200); assert.equal((await template.json()).summaryMode, 'template'); // No AI method exists here.
   assert.equal((await service.request('/knowledge/answer', { question: '醫起通是什麼？' }, cookie)).status, 429);
   for (const suffix of ['', '/explanation', '/handoff-summary']) assert.equal((await service.request(`/journeys/${journey.id}${suffix}`, null, cookie)).status, 200);
   const other = await service.request('/intelligence/understand', { message: story }); assert.equal(other.status, 200); assert.notEqual(cookieOf(other), cookie);

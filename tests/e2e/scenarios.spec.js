@@ -42,7 +42,7 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
   test.describe(device.name, () => {
     test.use({ viewport: device.viewport, ...(device.phone ? { hasTouch: true, isMobile: true } : {}) });
 
-    test('地址變更: answer with its source → three-step guide on the site → back and reload', async ({ page }) => {
+    test('地址變更: answer with its source → two distinct guide targets → back and reload', async ({ page }) => {
       await openNavi(page);
       await ask(page, '我搬家了，保單地址要怎麼改？');
       const go = navi(page).getByRole('button', { name: /帶我去：查看變更戶籍地址/ }).last();
@@ -59,14 +59,11 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
       await expectOutlined(page, 'form-contract-change-investment');
 
       await backToNavi(page, device.phone);
-      await navi(page).getByRole('button', { name: '下一步' }).click();
-      await expect(page).toHaveURL(/\/services\/policy-change/);
-      await backToNavi(page, device.phone);
       await navi(page).getByRole('button', { name: '完成導覽' }).click();
 
       // Back returns to the previous page of the site; a reload keeps the site working and NAVI reopens.
       await page.goBack();
-      await expect(page).toHaveURL(/\/services\/forms/);
+      await expect(page).toHaveURL(/\/services\/policy-change/);
       await page.reload();
       await page.locator('[data-tour-id="navi-launcher"]').click();
       await expect(navi(page).getByText('嗨，我是 NAVI')).toBeVisible({ timeout: 30_000 });

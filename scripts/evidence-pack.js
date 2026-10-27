@@ -11,7 +11,7 @@ export const evidenceJobs = Object.freeze([
   ['legacy', ['run', 'eval:ai:local']], ['hospitalization', ['run', 'eval:hospitalization']],
   ['knowledge', ['run', 'eval:knowledge']], ['reliability', ['run', 'eval:reliability:local']],
   ['judge2-local', ['run', 'eval:judge2:local']], ['typecheck-mock', ['run', 'typecheck:mock']],
-  ['navigation', ['run', 'test:navigation']], ['layout', ['run', 'test:layout']], ['shared-browser', ['run', 'test:shared:browser']],
+  ['navigation', ['run', 'test:navigation']], ['layout', ['run', 'test:layout']], ['sites-browser', ['run', 'test:e2e']], ['shared-browser', ['run', 'test:shared:browser']],
 ]);
 export function latencySummary(samples) {
   if (!samples.length || samples.some(value => !Number.isFinite(value) || value < 0)) throw Error('Invalid latency samples');

@@ -19,6 +19,7 @@ export function travelInformationComplete(document) {
   return document?.documentType === 'boarding_pass' && ['passengerName', 'flightNumber', 'origin', 'destination', 'departureDate'].every(key => Boolean(document.fields[key]));
 }
 export function documentVerified(document, threshold) {
+  if (document.requiresRevalidation) return false;
   if (!DocumentAnalysisSchema.safeParse({ documentType: document.documentType, confidence: document.confidence, fields: document.fields }).success) return false;
   const fields = document.fields;
   const sufficient = document.documentType === 'boarding_pass'

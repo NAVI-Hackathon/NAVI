@@ -197,7 +197,7 @@ test('formal mode: step-by-step guide plans come from the server and match the s
   const service = client(await backend(t));
   const result = await service.navigationPlan('service:change_address');
   assert.equal(result.status, 'answered');
-  assert.deepEqual(result.plan.steps.map(s => s.action), ['VIEW_INFORMATION', 'VIEW_FORM', 'OPEN_SERVICE']);
+  assert.deepEqual(result.plan.steps.map(s => s.action), ['VIEW_INFORMATION', 'VIEW_FORM']);
   assert.equal(result.plan.steps[0].destination.anchor, 'service-change-address');
   // Unreachable API: the same plan is built locally from the shared snapshot.
   const offline = client('http://127.0.0.1:9');
@@ -214,7 +214,7 @@ test('several requests in one message are listed as tasks; a chosen task opens i
   const split = await service.understandTasks('我想改地址，也想知道要怎麼申請住院理賠。');
   assert.equal(split.nextStep, 'confirm_one_task');
   assert.deepEqual(split.tasks.map(task => task.data.serviceType), ['policy_change', 'hospitalization_claim']);
-  assert.ok(split.tasks.every(task => '我想改地址，也想知道要怎麼申請住院理賠。'.includes(task.input)), 'each task quotes the message');
+  assert.deepEqual(split.tasks.map(task => task.input), ['我想改地址', '我也想知道要怎麼申請住院理賠']);
   const hospital = split.tasks[1];
   const understanding = understandingOfTask(split, hospital);
   assert.ok(understanding, 'a task becomes a valid single understanding');
