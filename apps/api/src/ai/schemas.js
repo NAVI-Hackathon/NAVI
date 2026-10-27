@@ -43,7 +43,7 @@ export const GeminiDocumentSchema = z.object({
     scheduledDeparture: DocumentClockTimeSchema,
     actualDeparture: DocumentClockTimeSchema,
     patientName: text.optional(), hospitalName: text.optional(), admissionDate: z.iso.date().nullable().optional(), dischargeDate: z.iso.date().nullable().optional(),
-    certificateKind: z.enum(['diagnosis_certificate', 'hospitalization_proof']).nullable().optional(),
+    visitDate:z.iso.date().nullable().optional(), certificateKind: z.enum(['diagnosis_certificate', 'hospitalization_proof']).nullable().optional(),
     reportedInpatientDays: z.number().int().min(1).max(3660).nullable().optional(),
     accountHolder: text.optional(), bankName: text.optional(), accountLast4: z.string().regex(/^\d{4}$/).nullable().optional(),
   }).strict(),
@@ -52,12 +52,13 @@ export const documentJsonSchema = z.toJSONSchema(GeminiDocumentSchema.extend({ c
 export function normalizeGeminiDocument(raw) {
   // Keep the existing public enum; accept the unambiguous alternative spelling only at provider intake.
   if (raw?.fields?.certificateKind === 'hospitalization_certificate') raw = { ...raw, fields: { ...raw.fields, certificateKind: 'hospitalization_proof' } };
+  if(raw?.fields?.certificateKind==='outpatient_proof'&&raw.fields.visitDate&&!raw.fields.admissionDate&&!raw.fields.dischargeDate)raw={...raw,fields:{...raw.fields,certificateKind:'diagnosis_certificate'}};
   const parsed = GeminiDocumentSchema.parse(raw);
   parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
   if (parsed.documentType === 'unknown') return { documentType: 'unknown', confidence: Math.min(parsed.confidence, 0.4), fields: {} };
   if (parsed.documentType === 'diagnosis_certificate') return DocumentAnalysisSchema.parse({ ...parsed, fields: {
     patientName: parsed.fields.patientName ?? null, hospitalName: parsed.fields.hospitalName ?? null, admissionDate: parsed.fields.admissionDate ?? null, dischargeDate: parsed.fields.dischargeDate ?? null,
-    diagnosis: null, certificateKind: parsed.fields.certificateKind ?? null, reportedInpatientDays: parsed.fields.reportedInpatientDays ?? null,
+    ...(parsed.fields.visitDate?{visitDate:parsed.fields.visitDate}:{}), diagnosis: null, certificateKind: parsed.fields.certificateKind ?? null, reportedInpatientDays: parsed.fields.reportedInpatientDays ?? null,
   } });
   if (parsed.documentType === 'bank_passbook') return DocumentAnalysisSchema.parse({ ...parsed, fields: { accountHolder: parsed.fields.accountHolder ?? null, bankName: parsed.fields.bankName ?? null, accountLast4: parsed.fields.accountLast4 ?? null } });
   const allowed = parsed.documentType === 'boarding_pass'

@@ -35,7 +35,9 @@ export function createConversationService({config,provider,store}) {
       const sources=evidence.results.map(e=>({id:e.source.id,content:e.excerpts.join('\n')}));
       const answerContext={answer:sources.map(s=>s.content).join('\n'),sourceIds:sources.map(s=>s.id),sources};
       let understanding=null,answer=INSUFFICIENT_ANSWER,errorCode=null,mode='retrieval';
-      if(evidence.status==='out_of_scope')answer='NAVI 可以協助查詢流程與準備資料，但不提供投保建議或判斷能否理賠；請由專員確認。';
+      const correctionRequired=Boolean(state.tasks.length&&/其實|不是|改成|更正|修正|actually|instead/i.test(input.message));
+      if(correctionRequired)answer='請先選擇要修正的旅程，再使用「需求不對？修正」。原有獨立任務會保留，不會自動改動準備度。';
+      else if(evidence.status==='out_of_scope')answer='NAVI 可以協助查詢流程與準備資料，但不提供投保建議或判斷能否理賠；請由專員確認。';
       else try {
         if(!provider.converse)throw new ApiError('AI_UNAVAILABLE','對話模型目前無法使用。',503,true);
         const raw=await requestValidatedAI(s=>provider.converse(input.message,context,sources,s),{config,signal});
@@ -49,7 +51,7 @@ export function createConversationService({config,provider,store}) {
       const note=understanding?.tasks.map(t=>t.data.summary).join('；')??(evidence.status==='answered'?'使用者查詢服務資訊。':'使用者希望補充服務需求。');
       state.messages=[...state.messages,{role:'user',text:redactIdentifiers(note),at:new Date().toISOString()},{role:'assistant',text:answer,at:new Date().toISOString()}].slice(-60);
       state.updatedAt=new Date().toISOString();
-      const reply=ConversationReplySchema.parse({conversationId:id,messages:state.messages,understanding,answer,evidence,mode,errorCode,knowledgeVersion:getKnowledgeVersion().knowledgeVersion});
+      const reply=ConversationReplySchema.parse({correctionRequired,conversationId:id,messages:state.messages,understanding,answer,evidence,mode,errorCode,knowledgeVersion:getKnowledgeVersion().knowledgeVersion});
       await store.transaction(async()=>{await sessions.session(req);await store.put('conversations',id,state,{owner,ttlMs:config.dataRetentionMs,expectedRevision:row?.revision??0});await store.put('conversation_requests',key,{reply,messageHash:hashMessage(input.message),conversationId:id},{owner,ttlMs:config.dataRetentionMs,expectedRevision:reservation});});return reply;
     })().finally(()=>{pending.delete(key);pending.delete(id);});pending.set(key,{promise:work,hash:hashMessage(input.message),id});pending.set(id,true);return work;
   }
@@ -57,4 +59,4 @@ export function createConversationService({config,provider,store}) {
 }
 import { createHash } from 'node:crypto';
 const hashMessage=s=>createHash('sha256').update(s).digest('hex');
-function mergeTasks(previous,current){const corrected=current.some(t=>t.input.includes('不是')||t.input.includes('其實'));const base=corrected?previous.filter(t=>t.data.serviceType!=='hospitalization_claim'):previous;return [...base.filter(t=>!current.some(c=>c.data.serviceType===t.data.serviceType)),...current].slice(-12);}
+function mergeTasks(previous,current){return [...previous.filter(t=>!current.some(c=>c.persistedTaskId&&c.persistedTaskId===t.persistedTaskId)),...current].slice(-12);}

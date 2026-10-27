@@ -26,7 +26,7 @@ export function deriveServiceWorkflow(journey, config) {
   const flow=serviceWorkflow(journey.workflowId);if(!flow)return journey;
   const required=['source_reviewed','information_prepared','ready_for_official_service'];
   const checked=new Set(journey.checklist??[]);
-  const documents=journey.workflowId==='outpatient_claim'?(journey.documents??[]):[];
+  const documents=journey.workflowId==='outpatient_claim'?(journey.documents??[]).filter(d=>d.documentType==='diagnosis_certificate'):[];
   const issues=checkEvidenceConsistency(documents,journey.extractedData);
   const blocked=journey.confidence<config.confidenceThreshold||issues.length>0||documents.some(d=>d.status!=='verified'||d.requiresRevalidation);
   const requirements=required.map((id,i)=>({id,name:['已閱讀來源與條件','已準備來源列出的適用資料','已確認後續正式辦理方式'][i],description:i===0?flow.source.content:i===1?'只確認你已準備適用資料；不是文件真偽或保單資格驗證。':'NAVI 不會代為送出申請。',required:true,status:checked.has(id)?'verified':'missing',weight:[30,40,30][i]}));

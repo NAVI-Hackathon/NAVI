@@ -15,6 +15,8 @@ const titles = { outpatient_claim: '門診醫療理賠', hospitalization_claim: 
 
 export function createJourneyService({ repository, provider, config }) {
   // Track only pending work; expiry/restart needs no persistent lock state.
+  const titleFor=type=>titles[type]??'其他服務需求';
+  const definitionFor=type=>config.productMode&&type!=='hospitalization_claim'?null:getJourneyDefinition(type);
   const pending = new Map(), commits = new Map();
   function commit(id,task){const before=commits.get(id)??Promise.resolve();const work=before.catch(()=>{}).then(task).finally(()=>{if(commits.get(id)===work)commits.delete(id);});commits.set(id,work);return work;}
   const invalidatePending = id => { for (const work of pending.get(id) ?? []) work.invalidated = true; };
@@ -48,7 +50,7 @@ export function createJourneyService({ repository, provider, config }) {
       const supplied = provider.mode === 'live' || provider.mode === 'unavailable' ? trustedIntentResult : intentResult;
       const data = supplied ? normalizeIntent(supplied, message) : (await understandIntent(message, { provider, config, signal })).data;
       if (data.serviceType === 'hospitalization_claim' && data.intent === 'knowledge_query') throw new ApiError('SERVICE_NOT_SUPPORTED', '請先查詢相關服務資訊，確認要申辦時再開始服務旅程。', 409, false);
-      const definition = getJourneyDefinition(data.serviceType);
+      const definition = definitionFor(data.serviceType);
       if (data.serviceType === 'hospitalization_claim') {
         // Fill explicit local mentions for clients using the pre-PR schema; never infer dates.
         data.extractedData.hospitalName ??= findHospitalMention(message);
@@ -57,10 +59,10 @@ export function createJourneyService({ repository, provider, config }) {
       const now = new Date().toISOString();
       // Retain structured stay facts, not free-text clinical descriptions or provider narratives.
       const hospital = data.serviceType === 'hospitalization_claim';
-      const summary = hospital ? HOSPITAL_SUMMARY : `使用者希望取得${definition?.title ?? titles[data.serviceType]}相關服務協助。`;
+      const summary = hospital ? HOSPITAL_SUMMARY : `使用者希望取得${definition?.title ?? titleFor(data.serviceType)}相關服務協助。`;
       const conversation = hospital ? '使用者詢問住院醫療理賠；原始描述不留存。' : '使用者描述服務需求；原始描述不留存。';
       const workflowId = config.productMode ? selectServiceWorkflow(data, message) : null;
-      return save({ ...(workflowId ? { workflowId, checklist: [] } : {}), id: plannedId ?? randomUUID(), serviceType: data.serviceType, title: workflowId ? serviceWorkflow(workflowId).title : definition?.title ?? titles[data.serviceType], summary: summary.slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: conversation.slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: provider.mode === 'live' ? 'live' : supplied ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
+      return save({ ...(workflowId ? { workflowId, checklist: [] } : {}), id: plannedId ?? randomUUID(), serviceType: data.serviceType, title: workflowId ? serviceWorkflow(workflowId).title : definition?.title ?? titleFor(data.serviceType) ?? '需要其他服務協助', summary: summary.slice(0, ServiceJourneySchema.shape.summary.maxLength), confidence: data.confidence, extractedData: data.extractedData, documents: [], conversation: [{ role: 'user', message: conversation.slice(0, MAX_MESSAGE_LENGTH), createdAt: now }], confirmed: false, supported: Boolean(definition), provider: provider.mode === 'live' ? 'live' : supplied ? 'provided' : provider.mode === 'demo' ? 'demo' : 'live', sources: getSources(definition?.sourceIds ?? []), createdAt: now, disclaimer: definition?.disclaimer ?? '目前僅辨識需求，不提供理賠資格或保障結論。' });
     },
     async correctIntent(id, message, signal) {
       const previous = await get(id);
@@ -68,11 +70,11 @@ export function createJourneyService({ repository, provider, config }) {
       invalidatePending(id);
       const current = await get(id);
       const intent = data.data.intent === 'knowledge_query' ? normalizeIntent({ ...data.data, intent: 'unknown', serviceType: 'unknown' }) : data.data;
-      const definition = getJourneyDefinition(intent.serviceType);
+      const definition = definitionFor(intent.serviceType);
       const { claimContext, officialSources, workflowId, checklist, ...retained } = current;
       const nextWorkflow = config.productMode ? selectServiceWorkflow(intent, message) : null;
       const documents = current.documents.map(document => ({ ...document, requiresRevalidation: true }));
-      const journey = await save({ ...retained, ...(nextWorkflow ? { workflowId: nextWorkflow, checklist: [] } : {}), documents, serviceType: intent.serviceType, title: definition?.title ?? titles[intent.serviceType], summary: intent.serviceType === 'hospitalization_claim' ? HOSPITAL_SUMMARY : '需求已修正，請確認目前想處理的服務。', confidence: intent.confidence, extractedData: intent.extractedData, confirmed: false, sources: getSources(definition?.sourceIds ?? []), disclaimer: definition?.disclaimer ?? '需求已修正；保留文件僅供確認，不代表目前服務適用或理賠核准。' });
+      const journey = await save({ ...retained, ...(nextWorkflow ? { workflowId: nextWorkflow, checklist: [] } : {}), documents, serviceType: intent.serviceType, title: definition?.title ?? titleFor(intent.serviceType), summary: intent.serviceType === 'hospitalization_claim' ? HOSPITAL_SUMMARY : '需求已修正，請確認目前想處理的服務。', confidence: intent.confidence, extractedData: intent.extractedData, confirmed: false, sources: getSources(definition?.sourceIds ?? []), disclaimer: definition?.disclaimer ?? '需求已修正；保留文件僅供確認，不代表目前服務適用或理賠核准。' });
       return { journey, previousServiceType: previous.serviceType, evidenceRetained: true, requiresRevalidation: true };
     },
     async addManualDocumentInformation(id, input) {
@@ -101,7 +103,7 @@ export function createJourneyService({ repository, provider, config }) {
       if (initial.workflowId && initial.workflowId !== 'outpatient_claim') throw new ApiError('DOCUMENT_SERVICE_MISMATCH','這項服務使用準備清單，不需要將個人文件傳給 NAVI。',422,false);
       const duplicate = config.productMode && initial.documents.find(doc => doc.contentSha256 === upload.sha256 && !doc.requiresRevalidation);
       if (duplicate) { if (upload.documentType && upload.documentType !== duplicate.documentType) throw new ApiError('DOCUMENT_TYPE_MISMATCH','相同文件的類型不一致。',422,false); return { document: duplicate, journey: initial, readinessChange: { before: initial.readiness, after: initial.readiness }, duplicate: true }; }
-      const document = await analyzeForJourney(id, upload.documentType ?? 'document', () => analyzeDocument(upload, { provider, config, signal }));
+      const document = await analyzeForJourney(id, upload.documentType ?? 'document', () => analyzeDocument(upload, { provider, config:{...config,documentServiceType:initial.serviceType}, signal }));
       if (upload.documentType && upload.documentType !== 'unknown' && upload.documentType !== document.documentType) throw new ApiError('DOCUMENT_TYPE_MISMATCH', '文件內容與選擇的類型不同，請確認後重新上傳。', 422, false);
       // Read again after asynchronous analysis so concurrent uploads retain one another's documents.
       return commit(id,async()=>{
