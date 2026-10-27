@@ -57,6 +57,7 @@ export function createApp(config, provider = null, repository = null) {
     }
     if (ai && provider.mode === 'unavailable') return next(new ApiError('AI_UNAVAILABLE', '目前 AI 分析暫時無法使用，請稍後再試。請勿提供真實醫療或銀行資料。', 503, false));
     if (ai) return sessions.guard(req, res, next);
+    if(config.productMode&&path.startsWith('/journeys/'))return sessions.run(req,next);
     next();
   });
   if (config.productMode) app.use('/api', createProductRouter({ config, provider, sessions, repository, service }));

@@ -11,25 +11,31 @@ export class MongoStore {
  constructor({uri,database,key,production=false,now=Date.now}){
   if(!/^[A-Za-z0-9+/]{43}=$/.test(key??'')||!/^[a-zA-Z][a-zA-Z0-9_]{2,62}$/.test(database??'')||!/^navi(?:_|$)/.test(database))throw Error('NAVI database and independent 32-byte encryption key required');
   if(production&&(!/^mongodb\+srv:\/\//.test(uri??'')||/[?&](?:tls|ssl)=false|tlsAllowInvalid|tlsInsecure/i.test(uri)))throw Error('Production requires authenticated Atlas SRV/TLS');
-  try{this.client=new MongoClient(uri,{appName:'NAVI',maxPoolSize:8,minPoolSize:0,serverSelectionTimeoutMS:5000,connectTimeoutMS:5000,socketTimeoutMS:10000,timeoutMS:10000,retryWrites:true});}catch{throw Error('Invalid private MongoDB connection configuration');}this.db=this.client.db(database);this.key=Buffer.from(key,'base64');this.now=now;this.scope=new AsyncLocalStorage();
+  try{this.client=new MongoClient(uri,{appName:'NAVI',maxPoolSize:8,minPoolSize:0,serverSelectionTimeoutMS:5000,connectTimeoutMS:5000,socketTimeoutMS:10000,timeoutMS:10000,retryWrites:true});}catch{throw Error('Invalid private MongoDB connection configuration');}this.db=this.client.db(database);this.key=Buffer.from(key,'base64');this.now=now;this.scope=new AsyncLocalStorage();this.requestScope=new AsyncLocalStorage();
  }
  async connect(){try{await this.client.connect();const hello=await this.db.admin().command({hello:1});if(!hello.setName&&!hello.msg)throw Error('Transactions require replica set');await this.migrate();return this;}catch{await this.client.close();throw new ApiError('STORAGE_UNAVAILABLE','目前無法安全連線到服務資料庫，請稍後再試。',503,true);}}
  options(){const session=this.scope.getStore();return session?{session}:{};}
  collection(namespace){if(!COLLECTIONS[namespace])throw Error('Unknown NAVI collection');return this.db.collection(COLLECTIONS[namespace]);}
  async safe(fn){try{return await fn();}catch(e){if(e instanceof ApiError)throw e;if([11000,112].includes(e.code))throw new ApiError('JOURNEY_STALE','資料已變更或操作重複，請重新載入。',409,false);throw new ApiError('STORAGE_UNAVAILABLE','資料暫時無法保存，請稍後再試；尚未回報成功。',503,true);}}
- async transaction(fn){if(this.scope.getStore())return fn();return this.safe(()=>this.client.withSession(session=>session.withTransaction(()=>this.scope.run(session,fn),{readConcern:{level:'snapshot'},writeConcern:{w:'majority'},maxCommitTimeMS:5000,timeoutMS:10000})));}
+ withSessionFence(id,fn){return this.requestScope.run(id,fn);}
+ async transaction(fn){if(this.scope.getStore())return fn();return this.safe(()=>this.client.withSession(session=>session.withTransaction(()=>this.scope.run(session,async()=>{
+  const id=this.requestScope.getStore();
+  // Writing the session makes logout/erasure conflict with any in-flight mutation transaction.
+  if(id){const touched=await this.collection('sessions').updateOne({_id:id,expiresAt:{$gt:new Date(this.now())}},{$inc:{mutationFence:1}},this.options());if(!touched.matchedCount)throw new ApiError('SESSION_EXPIRED','工作階段已結束，資料未更動。',401,false);}
+  return fn();
+ }),{readConcern:{level:'snapshot'},writeConcern:{w:'majority'},maxCommitTimeMS:5000,timeoutMS:10000})));}
  aad(namespace,row){return JSON.stringify([namespace,row._id,row.ownerId,row.expiresAt.getTime(),row.revision]);}
  seal(namespace,row,value){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',this.key,iv);cipher.setAAD(Buffer.from(this.aad(namespace,row)));return Buffer.concat([iv,cipher.update(JSON.stringify(value)),cipher.final(),cipher.getAuthTag()]);}
  decrypt(namespace,row){try{const b=Buffer.from(row.payload.buffer??row.payload),d=createDecipheriv('aes-256-gcm',this.key,b.subarray(0,12));d.setAAD(Buffer.from(this.aad(namespace,row)));d.setAuthTag(b.subarray(-16));return JSON.parse(Buffer.concat([d.update(b.subarray(12,-16)),d.final()]).toString());}catch{throw new ApiError('DATA_INTEGRITY_ERROR','資料完整性檢查未通過，請聯絡管理員。',503,false);}}
  async get(namespace,id){return this.safe(async()=>{const row=await this.collection(namespace).findOne({_id:id,expiresAt:{$gt:new Date(this.now())}},this.options());return row?{value:this.decrypt(namespace,row),revision:row.revision,owner:row.ownerId,expires:row.expiresAt.getTime()}:null;});}
- async put(namespace,id,value,{owner='system',ttlMs=30*86400000,expectedRevision,journeyId,sessionId,updatedAt}={}){return this.safe(async()=>{
+ async put(namespace,id,value,{owner='system',ttlMs=30*86400000,expectedRevision,journeyId,sessionId,updatedAt}={}){if(this.requestScope.getStore()&&!this.scope.getStore())return this.transaction(()=>this.put(namespace,id,value,{owner,ttlMs,expectedRevision,journeyId,sessionId,updatedAt}));return this.safe(async()=>{
   const old=await this.get(namespace,id),version=old?.revision??0;
   if(expectedRevision!==undefined&&expectedRevision!==version)throw new ApiError('JOURNEY_STALE','資料已在其他分頁更新，請重新載入。',409,false);
   const row={_id:id,ownerId:owner||'system',expiresAt:new Date(this.now()+ttlMs),revision:version+1,...(journeyId?{journeyId}:{}),...(sessionId?{sessionId}:{}),...(updatedAt?{updatedAt}: {})};row.payload=this.seal(namespace,row,value);
   if(old){const saved=await this.collection(namespace).replaceOne({_id:id,revision:version},row,this.options());if(!saved.modifiedCount)throw new ApiError('JOURNEY_STALE','資料已變更，請重新載入。',409,false);}else await this.collection(namespace).insertOne(row,this.options());return row.revision;
  });}
  async list(namespace,owner){return this.safe(async()=>{const rows=await this.collection(namespace).find({expiresAt:{$gt:new Date(this.now())},...(owner===undefined?{}:{ownerId:owner})},this.options()).toArray();return rows.map(row=>({id:row._id,value:this.decrypt(namespace,row),revision:row.revision,owner:row.ownerId}));});}
- async delete(namespace,id){return this.safe(()=>this.collection(namespace).deleteOne({_id:id},this.options()));}
+ async delete(namespace,id){if(this.requestScope.getStore()&&!this.scope.getStore())return this.transaction(()=>this.delete(namespace,id));return this.safe(()=>this.collection(namespace).deleteOne({_id:id},this.options()));}
  async deleteOwner(owner){return this.transaction(async()=>{for(const namespace of Object.keys(COLLECTIONS))await this.collection(namespace).deleteMany({ownerId:owner},this.options());});}
  async transferOwner(from,to,ttlMs){return this.transaction(async()=>{for(const ns of Object.keys(COLLECTIONS))for(const row of await this.list(ns,from)){if(ns==='sessions')continue;await this.put(ns,row.id,ns==='owners'?{owner:to}:row.value,{owner:to,ttlMs,expectedRevision:row.revision,journeyId:row.value.journeyId});}});}
  async cleanup(){return this.safe(async()=>{for(const name of Object.values(COLLECTIONS))await this.db.collection(name).deleteMany({expiresAt:{$lte:new Date(this.now())}});});}

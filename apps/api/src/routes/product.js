@@ -14,8 +14,8 @@ const validate=(schema,body)=>{const p=schema.safeParse(body);if(!p.success)thro
 export function createProductRouter({config,provider,sessions,repository,service}){
  const emailService=createAccountEmailService(config,config.sendMail);
  const router=express.Router(),store=config.store,conversations=createConversationService({config,provider,store});
- const authenticated=async(req,res,next)=>{try{await sessions.ensure(req,res);if(config.authRequired)await sessions.requireAccount(req);next();}catch(e){next(e);}};
- const account=async(req,res,next)=>{try{await sessions.requireAccount(req);next();}catch(e){next(e);}};
+ const authenticated=async(req,res,next)=>{try{await sessions.ensure(req,res);if(config.authRequired)await sessions.requireAccount(req);sessions.run(req,next);}catch(e){next(e);}};
+ const account=async(req,res,next)=>{try{await sessions.requireAccount(req);sessions.run(req,next);}catch(e){next(e);}};
  const admin=(req,res,next)=>{const token=req.headers.authorization?.replace(/^Bearer /,'')??'';if(config.adminToken.length<32||!timingSafeEqual(hash(token),hash(config.adminToken)))return next(new ApiError('ADMIN_REQUIRED','此操作需要管理員授權。',403,false));next();};
  router.get('/ready',async(req,res)=>{await store.health();res.json({status:'ready',storage:'mongodb_encrypted',knowledgeVersion:getKnowledgeVersion().knowledgeVersion});});
  router.get('/session',async(req,res)=>res.json(await sessions.info(req,res)));

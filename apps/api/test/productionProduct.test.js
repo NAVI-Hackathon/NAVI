@@ -73,3 +73,18 @@ test('restore rolls back if the signature is removed between verification and in
 
 
 test('public verified accounts require an email, not an unrecoverable local test alias',async t=>{const f=fixture(t),a=await api(t,f,{authRequired:true,authRequireVerifiedEmail:true,sendMail:async message=>({accepted:[message.to]})});const r=await a.call('/auth/register',credentials);assert.equal(r.status,400);assert.equal(r.data.error.code,'VALIDATION_ERROR');assert.equal((await a.c.store.list('accounts')).length,0);});
+
+
+test('session write fences serialize erasure with in-flight mutations and prevent data resurrection',async t=>{
+ const f=fixture(t),s=await store(f);t.after(()=>s.close());const owner='synthetic_owner';await s.put('sessions','session',{owner},{owner});let started,release;const ready=new Promise(r=>started=r),hold=new Promise(r=>release=r);
+ const mutation=s.withSessionFence('session',()=>s.transaction(async()=>{await s.put('conversations','synthetic_pending',{text:'SYNTHETIC'},{owner});started();await hold;}));await ready;const deletion=s.deleteOwner(owner);setTimeout(release,50);await Promise.all([mutation,deletion]);assert.equal((await s.list('conversations',owner)).length,0);assert.equal(await s.get('sessions','session'),null);
+ await assert.rejects(s.withSessionFence('session',()=>s.transaction(()=>s.put('conversations','resurrected',{}, {owner}))),{code:'SESSION_EXPIRED'});assert.equal((await s.list('conversations',owner)).length,0);
+});
+
+test('authorized exports include pending tasks and unsent drafts while excluding authentication secrets',async t=>{
+ const f=fixture(t),a=await api(t,f);await a.start();await a.call('/auth/register',credentials);await a.call('/session/consent',{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'});const tasks=(await a.call('/intelligence/tasks',{message:'我住院五天，也想改地址'})).data;
+ const j=(await a.call('/journeys',{taskId:tasks.tasks[0].persistedTaskId,idempotencyKey:randomUUID()})).data;await a.call('/journeys/'+j.id+'/handoff/draft',{text:'請確認合成資料',version:0,journeyVersion:j.revision},'PUT');const exported=await a.call('/account/export');assert.equal(exported.status,200);assert.equal(exported.data.tasks.length,2);assert.equal(exported.data.handoffDrafts[0].text,'請確認合成資料');assert.doesNotMatch(JSON.stringify(exported.data),/password|cookie|salt|\"hash\"/i);
+});
+
+
+test('concurrent consent acknowledgements cannot reset per-session generation accounting',async t=>{const f=fixture(t),a=await api(t,f);await a.start();for(let n=1;n<=3;n++){const results=await Promise.all([a.call('/session/consent',{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'}),a.call('/intelligence/understand',{message:'我住院五天'})]);assert.deepEqual(results.map(r=>r.status),[200,200]);assert.equal((await a.c.store.list('sessions'))[0].value.aiRequests,n);}});
