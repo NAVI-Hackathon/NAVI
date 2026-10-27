@@ -56,7 +56,10 @@
     "test:navigation": "node --import ./apps/api/test/networkGuard.js scripts/evidence/navigation-audit.js",
     "eval:reliability:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js",
     "test:reliability:load": "node --import ./apps/api/test/networkGuard.js scripts/evidence/reliability-load.js",
-    "eval:judge2:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js apps/api/eval/reliability/judge2-cases.jsonl"
+    "eval:judge2:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js apps/api/eval/reliability/judge2-cases.jsonl",
+    "eval:holdout:dry": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --dry-run",
+    "eval:holdout:mock": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --mock",
+    "usability:summary": "node scripts/usability/summarize.js docs/usability/record-sheet.csv"
   },
   "engines": {
     "node": ">=22.12"

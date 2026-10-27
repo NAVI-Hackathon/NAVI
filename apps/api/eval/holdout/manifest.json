@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "frozenAt": "2026-10-27T11:11:27.321592+00:00",
+  "datasetSha256": "c2c66e2dfa945121dcbe210d41c9913c6b39a32e71736ae2a0ce2c41880cda19",
+  "caseCount": 36,
+  "provenance": "Developer-authored prospective regression set, frozen before any model execution; existing adversarial media reused. Not independently held out.",
+  "independentHeldOut": false,
+  "externalEvaluatorCasesReceived": 0,
+  "syntheticOnly": true,
+  "proposedLiveCaseIds": [
+    "H01",
+    "H02",
+    "H03",
+    "H05",
+    "H06",
+    "D01"
+  ],
+  "maxAttemptsPerCase": 1,
+  "liveExecuted": false
+}
