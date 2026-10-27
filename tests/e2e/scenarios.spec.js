@@ -52,7 +52,11 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
       await expect(page).toHaveURL(/\/services\/policy-change/);
       await expectOutlined(page, 'service-change-address');
 
+      // NAVI says it is there only after the site reported the place found; on phones the guide is still
+      // on the same step when the user comes back from the site.
       await backToNavi(page, device.phone);
+      const guide = navi(page).getByRole('region', { name: 'NAVI 逐步導覽' });
+      await expect(guide.getByText('官網已帶到這裡並標示出來')).toBeVisible();
       await expect(navi(page).getByText(/第 1／\d 步|1\s*\/\s*\d/).first()).toBeVisible();
       await navi(page).getByRole('button', { name: '下一步' }).click();
       await expect(page).toHaveURL(/\/services\/forms/);
@@ -76,6 +80,14 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
       await navi(page).getByRole('button', { name: /帶我去：下載保險契約內容變更申請書/ }).last().click();
       await expect(page).toHaveURL(/\/services\/forms/);
       await expectOutlined(page, 'form-contract-change-investment');
+      // One place, one move: the same card without steps, confirmed by the site.
+      await backToNavi(page, device.phone);
+      const card = navi(page).getByRole('region', { name: 'NAVI 前往官網' });
+      await expect(card.getByText('官網已帶到這裡並標示出來')).toBeVisible();
+      await expect(card.getByRole('button', { name: '下一步' })).toHaveCount(0);
+      await card.getByRole('button', { name: '知道了' }).click();
+      await expect(card).toHaveCount(0);
+      if (device.phone) await navi(page).getByRole('button', { name: '關閉 NAVI' }).click();
       // The outlined row's own button is not covered by the NAVI panel (it docks beside the page).
       const download = page.locator('[data-tour-id="form-contract-change-investment"]').getByRole('button', { name: '下載' });
       if (!device.phone) await expect.poll(() => download.evaluate(el => { const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); })).toBe(true);
@@ -121,6 +133,31 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
       await dialog.getByRole('button', { name: /前往|查看/ }).first().click();
       await expect(page).toHaveURL(/\/services\/claims/);
       await expectOutlined(page, 'service-claim-hospital-upload');
+      // One move to the channel, confirmed by the site (at 100% the journey has nothing open to list first).
+      await backToNavi(page, device.phone);
+      const card = navi(page).locator('.guide-card');
+      await expect(card.getByText('官網已帶到這裡並標示出來')).toBeVisible();
+    });
+
+    test('a place missing from the page: NAVI never says it is there and offers the other ways in', async ({ page }) => {
+      await openNavi(page);
+      // This release's page loses the target: whenever it appears, it is removed again.
+      await page.evaluate(() => {
+        const drop = () => document.querySelectorAll('[data-tour-id="service-change-address"]').forEach(el => el.remove());
+        new MutationObserver(drop).observe(document.body, { childList: true, subtree: true }); drop();
+      });
+      await ask(page, '我搬家了，保單地址要怎麼改？');
+      await navi(page).getByRole('button', { name: /帶我去：查看變更戶籍地址/ }).last().click();
+      await expect(page).toHaveURL(/\/services\/policy-change/);
+      await backToNavi(page, device.phone);
+      const guide = navi(page).getByRole('region', { name: 'NAVI 逐步導覽' });
+      await expect(guide.getByText('官網這一頁找不到這個位置')).toBeVisible({ timeout: 15_000 });
+      await expect(guide.getByText('官網已帶到這裡並標示出來')).toHaveCount(0);
+      await expect(guide.getByRole('link', { name: /開啟官網原頁/ })).toHaveAttribute('href', /^https:\/\/life\.cardif\.com\.tw\//);
+      await expect(guide.getByText(/免付費服務專線/)).toBeVisible();
+      // The next step is still offered and found as usual.
+      await guide.getByRole('button', { name: '下一步' }).click();
+      await expectOutlined(page, 'form-contract-change-investment');
     });
   });
 }

@@ -618,8 +618,8 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .guide-card { position: fixed; z-index: 55; right: 24px; bottom: 24px; width: min(400px, calc(100vw - 32px)); padding: 16px 18px 14px; background: #14181c; border: 1px solid rgba(151, 201, 179, 0.22); border-radius: var(--radius-lg); box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35), 0 24px 70px rgba(0, 0, 0, 0.5); }
 .guide-head { display: flex; align-items: center; gap: 10px; }
 .guide-eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: var(--color-accent); letter-spacing: 0.04em; }
-.guide-count { margin-left: auto; font-size: 11px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.guide-close { width: 36px; height: 36px; margin-right: -10px; }
+.guide-count { flex: none; margin-left: auto; font-size: 11px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.guide-close { flex: none; width: 36px; height: 36px; margin-left: auto; margin-right: -10px; }
 .guide-progress { display: flex; gap: 4px; margin: 10px 0 12px; }
 .guide-progress li { position: relative; flex: 1; height: 3px; border-radius: 2px; background: #2b3237; overflow: hidden; }
 .guide-progress li.is-done { background: var(--color-accent-line); }
@@ -629,6 +629,17 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .guide-title { margin-top: 2px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px; color: var(--color-text); }
 .guide-title:focus-visible { outline: none; }
 .guide-where { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--color-accent); }
+.guide-eyebrow { min-width: 0; }
+.guide-count + .guide-close { margin-left: 0; }
+.guide-service { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-muted); letter-spacing: 0; }
+.guide-where.is-going { color: var(--color-text-muted); }
+.guide-where .dots { transform: scale(0.8); }
+.guide-fallback { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--color-warning); border-radius: var(--radius-sm); background: var(--color-surface-sunken); font-size: 12px; line-height: 1.7; color: var(--color-text-secondary); }
+.guide-fallback-title { font-weight: 500; color: var(--color-text); }
+.guide-fallback ul { display: grid; gap: 2px; margin-top: 4px; }
+.guide-fallback a, .guide-fallback .link-button { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
+.guide-prereq { margin-top: 10px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-surface-muted); font-size: 12px; line-height: 1.7; color: var(--color-text-secondary); }
+.guide-prereq ul { list-style: disc; padding-left: 18px; }
 .guide-evidence { margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--color-accent-line); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--color-accent-soft); }
 .guide-evidence ul { display: grid; gap: 2px; font-size: 12px; line-height: 1.7; color: var(--color-text-secondary); }
 .guide-evidence li::before { content: "「"; color: var(--color-text-muted); }

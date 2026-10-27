@@ -57,3 +57,13 @@ test('messages are rejected before the expected window exists, even from an allo
     assert.deepEqual(readMessage(event('http://127.0.0.1:3000', data), { allowedOrigins, expectedSource: parent, schema }), data);
   }
 });
+
+test('the host answers a navigation with its id and found / missing only', () => {
+  const read = data => readMessage(event('http://127.0.0.1:3000', data), { allowedOrigins, expectedSource: parent, schema: HostMessageSchema });
+  for (const status of ['found', 'missing']) assert.deepEqual(read(hostMessage('host:navigated', { id: 3, status })), hostMessage('host:navigated', { id: 3, status }));
+  for (const bad of [{ id: 3, status: 'maybe' }, { id: 0, status: 'found' }, { id: '3', status: 'found' }, { status: 'found' }, { id: 3, status: 'found', label: 'x' }]) {
+    assert.equal(read(hostMessage('host:navigated', bad)), null, JSON.stringify(bad));
+  }
+  const navigate = readMessage(event('http://127.0.0.1:3000', naviMessage('navi:navigate', { destination: claimDestinations.form, id: 3 })), { allowedOrigins, expectedSource: parent, schema: NaviMessageSchema });
+  assert.equal(navigate.id, 3);
+});

@@ -13,6 +13,7 @@ import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
 import GuideCard from './components/guide/GuideCard.jsx';
+import { journeyPrerequisites, serviceSteps, singleStepPlan } from './domain/guidance.js';
 import TaskBar from './components/tasks/TaskBar.jsx';
 import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
@@ -26,6 +27,8 @@ const mockSiteOrigin = originOf(import.meta.env.VITE_MOCK_SITE_URL ?? '');
 
 // Where the full flow runs on synthetic data without the AI service (embedded: the insurer site's demo entry).
 const demoEntry = embedded && mockSiteOrigin ? `${mockSiteOrigin}/?navi=demo` : `${location.origin}/demo`;
+// The host looks for a place for up to 4 s after the page changes; past this NAVI stops waiting.
+const ARRIVAL_TIMEOUT_MS = 7000;
 const tryDemo = `想先看完整流程，可以改用示範模式（${demoEntry}）。`;
 
 const errorCopy = {
@@ -91,6 +94,9 @@ export default function App() {
   const [explanation, setExplanation] = useState(null);
   const [guide, setGuide] = useState(null); // { plan, index } while a step-by-step guide is open
   const [guidePending, setGuidePending] = useState(false); // plan request slower than a blink
+  // The last place NAVI sent the site to: going → found / missing (host answered), silent (no answer),
+  // unverified (the release has no verified place for it) or opened (standalone, a new tab).
+  const [arrival, setArrival] = useState(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   // Requests from one message not handled yet (from POST /intelligence/tasks), and this browser's journeys
   // as the server has them (formal mode). Neither is a local copy of journey state.
@@ -99,7 +105,9 @@ export default function App() {
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
   const systemReduced = useReducedMotion();
-  const host = useHostBridge(embedded);
+  const host = useHostBridge(embedded, message => {
+    if (message.type === 'host:navigated') setArrival(current => (current?.id === message.id && current.status === 'going' ? { ...current, status: message.status } : current));
+  });
   const reduced = reduceMotion || systemReduced;
 
   const analysisCtl = useRef(null);
@@ -361,50 +369,75 @@ export default function App() {
   /** Stop sending a file (only offered while the bytes are still going out). */
   const cancelUpload = type => uploads.current[type]?.abort();
 
-  /** Take the user to the step's page on the insurer site (embedded: host navigates; standalone: new tab). */
+  /**
+   * Take the user to a place on the insurer site. Embedded: the host page goes there and answers
+   * host:navigated (found / missing) for this id. Standalone: a new tab, which cannot report back.
+   */
+  const navigationId = useRef(0);
   const openOnSite = host.connected
-    ? destination => host.send(naviMessage('navi:navigate', { destination }))
+    ? destination => {
+      const id = ++navigationId.current;
+      setArrival({ id, status: 'going' });
+      host.send(naviMessage('navi:navigate', { destination, id }));
+    }
     : !embedded && mockSiteOrigin
       ? destination => {
         const url = new URL(destination.path, mockSiteOrigin);
         if (destination.anchor) url.searchParams.set('focus', destination.anchor);
         window.open(url, '_blank', 'noopener');
+        setArrival({ id: ++navigationId.current, status: 'opened' });
       }
       : null;
+  // A host that never answers (older site, lost message) is treated as not confirmed, never as found.
+  useEffect(() => {
+    if (arrival?.status !== 'going') return undefined;
+    const timer = setTimeout(() => setArrival(current => (current?.id === arrival.id && current.status === 'going' ? { ...current, status: 'silent' } : current)), ARRIVAL_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [arrival]);
 
-  // Every「帶我去」whose place is a knowledge entry starts a step-by-step guide when that entry has a
-  // multi-step plan (shared/knowledge/navigationPlan.js); anything else is a single navigation as before.
+  // Every「帶我去」opens the guide card: a multi-step plan when the place is a knowledge entry that has
+  // one (shared/knowledge/navigationPlan.js), otherwise a one-step card for that place. The card says
+  // whether the site found the place and, for this journey's own places, what is still open first.
   const guideRequest = useRef(0);
   const navigate = openOnSite ? async destination => {
     // Go right away (a new tab must open inside the click); step 1 of the plan is this same place.
     openOnSite(destination);
     const request = ++guideRequest.current;
     const entry = knowledgeEntries.find(e => e.destination.path === destination.path && e.destination.anchor === destination.anchor);
-    let plan = null;
+    const prerequisites = journeyPrerequisites(snapshotRef.current?.journey, destination);
+    let plan = null, unverified = false;
     if (entry) {
       // Only a slow plan request shows「正在準備導覽…」; the local /demo plan is instant and never flashes it.
       const hint = setTimeout(() => { if (request === guideRequest.current) setGuidePending(true); }, 120);
       try { const result = await service.navigationPlan(entry.id); plan = result.status === 'answered' ? result.plan : null; }
       catch (error) {
         plan = null;
-        // The release's site has no such place: say so instead of implying NAVI took the user there.
-        if (error?.code === 'NAVIGATION_TARGET_UNAVAILABLE') notify('官網上暫時找不到這個位置。可以先看答案下方的官網原文，或開啟官網原頁。');
+        // The release's site has no verified place for this: the card offers the other ways in.
+        unverified = error?.code === 'NAVIGATION_TARGET_UNAVAILABLE';
       }
       clearTimeout(hint);
     }
     if (request !== guideRequest.current) return; // a newer request replaced this one
     setGuidePending(false);
-    setGuide(plan && plan.steps.length > 1 && plan.steps[0].sourceId === entry.id ? { plan, index: 0 } : null);
+    const own = plan && plan.steps[0].sourceId === entry.id ? serviceSteps(plan, knowledgeEntries) : null;
+    const multi = own && own.plan.steps.length > 1;
+    setGuide({
+      plan: multi ? own.plan : singleStepPlan(destination, entry),
+      index: 0, single: !multi, service: own?.service ?? entry?.title ?? null, prerequisites,
+    });
+    if (unverified) setArrival(current => ({ id: current?.id ?? ++navigationId.current, status: 'unverified' }));
   } : null;
   const guideStep = index => {
     setGuide(current => (current ? { ...current, index } : current));
     // Embedded: the host page follows each step. Standalone: 在官網開啟 opens a step on request (no tab per click).
     if (host.connected) openOnSite(guide.plan.steps[index].destination);
+    else setArrival(null);
   };
   const endGuide = completed => {
     guideRequest.current += 1;
     setGuidePending(false);
     setGuide(null);
+    setArrival(null);
     if (completed) notify('導覽完成。需要時可以再按「帶我去」重新開始。');
   };
 
@@ -515,7 +548,8 @@ export default function App() {
         </motion.p>
       )}
       {guide && (
-        <GuideCard key="guide" guide={guide} embedded={host.connected}
+        <GuideCard key="guide" guide={guide} embedded={host.connected} arrival={arrival?.status ?? null}
+          hotline={searchKnowledge('').hotline} onHandoff={snapshot ? () => { endGuide(); setDialog('handoff'); } : null}
           onStep={guideStep} onOpen={step => openOnSite(step.destination)} onEnd={endGuide} />
       )}
     </AnimatePresence>
