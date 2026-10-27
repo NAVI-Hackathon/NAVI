@@ -12,6 +12,8 @@ export const evidenceJobs = Object.freeze([
   ['knowledge', ['run', 'eval:knowledge']], ['reliability', ['run', 'eval:reliability:local']],
   ['judge2-local', ['run', 'eval:judge2:local']], ['typecheck-mock', ['run', 'typecheck:mock']],
   ['navigation', ['run', 'test:navigation']], ['layout', ['run', 'test:layout']], ['sites-browser', ['run', 'test:e2e']], ['shared-browser', ['run', 'test:shared:browser']],
+  ['holdout-mock', ['run', 'eval:holdout:mock']], ['holdout-dry', ['run', 'eval:holdout:dry']],
+  ['reliability-load', ['run', 'test:reliability:load']], ['usability', ['run', 'usability:summary']],
 ]);
 export function latencySummary(samples) {
   if (!samples.length || samples.some(value => !Number.isFinite(value) || value < 0)) throw Error('Invalid latency samples');
@@ -48,12 +50,12 @@ export async function generateEvidencePack() {
   };
   const inputs = {};
   const knowledgeVersion = getKnowledgeVersion().knowledgeVersion;
-  for (const path of ['data/cardif_seed_data.json', 'data/cardif_public_data.json', `knowledge/releases/${knowledgeVersion}.json`, 'apps/api/eval/cases.jsonl', 'apps/api/eval/hospitalization/cases.jsonl', 'apps/api/eval/knowledge/cases.jsonl', 'apps/api/eval/reliability/cases.jsonl', 'apps/api/eval/reliability/judge2-cases.jsonl']) inputs[path] = hash(await readFile(resolve(root, path)));
+  for (const path of ['data/cardif_seed_data.json', 'data/cardif_public_data.json', `knowledge/releases/${knowledgeVersion}.json`, 'apps/api/eval/cases.jsonl', 'apps/api/eval/hospitalization/cases.jsonl', 'apps/api/eval/knowledge/cases.jsonl', 'apps/api/eval/reliability/cases.jsonl', 'apps/api/eval/reliability/judge2-cases.jsonl', 'apps/api/eval/holdout/cases.jsonl', 'apps/api/eval/holdout/manifest.json', 'apps/api/eval/holdout/mock-outputs.json', 'docs/usability/record-sheet.csv']) inputs[path] = hash(await readFile(resolve(root, path)));
   const provenance = { knowledgeVersion, commit: git(['rev-parse', 'HEAD']), workingTreeDirty: Boolean(git(['status', '--porcelain'])), trackedDiffSha256: hash(git(['diff', 'HEAD'])), runtime: process.version, os: `${os.platform()}/${os.arch()}`, inputs };
   const reports = {};
   for (const [id, args] of evidenceJobs) {
     const { log, stdout } = run(id, 'npm', args); await writeFile(resolve(output, `${id}.log`), log);
-    if (['legacy', 'hospitalization', 'knowledge', 'reliability', 'judge2-local', 'navigation'].includes(id) && !error) {
+    if (['legacy', 'hospitalization', 'knowledge', 'reliability', 'judge2-local', 'navigation', 'holdout-mock', 'holdout-dry', 'reliability-load'].includes(id) && !error) {
       try { reports[id] = parseReport(stdout); } catch { error = `${id} report invalid`; }
     }
     if (error) break;
@@ -67,7 +69,7 @@ export async function generateEvidencePack() {
     latencyMs: reports.competition ? latencySummary(reports.competition.latencies.map(row => row.elapsedMs)) : null,
     networkPolicy: 'Node fetch 外部請求被離線護欄阻擋；未執行 Live 或付費指令',
     businessEvidence: { measured: ['本地檢索題組正確率', '合成案件 Backend API 延遲', '導航目標與建置錨點驗證'], notMeasured: ['真人任務完成時間', '客服轉接率下降', '補件率下降', '營收或成本節省'], hypothesesOnly: true },
-    limitations: ['非 Gemini 模型準確率', '非正式客戶資料驗收', '未驗證 A 尚未接入的新 UI 操作', 'HTTP 展示不得接受真實敏感文件'] };
+    limitations: ['非 Gemini 模型準確率；Mock 測量含錯答也會保留，不以 job exitCode 代表模型答對', '非正式客戶資料驗收', '本機 Browser E2E 與正式站煙霧測試應分開列出', 'HTTPS 不等於可接受真實敏感文件；目前仍限合成資料', '獨立非開發者題組與真人研究尚待提供；不得推論母體成效'] };
   await writeFile(resolve(output, 'report.json'), JSON.stringify(report, null, 2) + '\n');
   await writeFile(resolve(output, 'README.md'), `# NAVI Demo Evidence\n\n完成：${report.complete}\n\nCommit：${provenance.commit}\n\n工作目錄含未提交變更：${provenance.workingTreeDirty}\n\n完整數據：report.json；每一指令另有 log 及 SHA-256。\n\n${report.limitations.join('\n\n')}\n`);
   console.log(output);
