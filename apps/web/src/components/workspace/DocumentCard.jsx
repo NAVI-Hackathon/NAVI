@@ -40,8 +40,8 @@ function Result({ type, document }) {
     <motion.div className="doc-result" initial="hidden" animate="show" variants={staggerChildren(0.06, 0.05)}>
       <motion.div className="doc-result-head" variants={fadeUp}>
         {review
-          ? <span className="doc-status is-review"><Icon name="alert" size={12} />需要專員確認</span>
-          : <span className="doc-status"><CheckDraw size={12} strokeWidth={2.6} />{manual ? '已手動確認' : '辨識完成'}</span>}
+          ? <span className="doc-status is-review"><Icon name="alert" size={12} />待人工確認</span>
+          : <span className="doc-status"><CheckDraw size={12} strokeWidth={2.6} />{manual ? '已手動填寫（示範）' : '欄位檢查通過'}</span>}
         <span className="doc-confidence">{manual ? '手動輸入' : `辨識信心 ${Math.round(document.confidence * 100)}%`}</span>
       </motion.div>
       <dl className="doc-fields">
@@ -61,7 +61,8 @@ function Result({ type, document }) {
         </motion.p>
       )}
       {/* Fixture results are never presented as AI recognition. */}
-      {!manual && <motion.p className="doc-filename" variants={fadeUp}>{document.filename} · {document.isMock ? '示範辨識資料，非真實文件分析。' : 'AI 辨識結果，請核對內容'}</motion.p>}
+      {/* Fixture results are never presented as AI recognition; a passed check is never an authenticity check. */}
+      {!manual && <motion.p className="doc-filename" variants={fadeUp}>{document.filename} · {document.isMock ? '示範模式・合成資料，非真實文件分析' : review ? 'Live AI 辨識・待人工確認' : 'Live AI 辨識・欄位檢查通過，尚未驗證文件真偽'}</motion.p>}
     </motion.div>
   );
 }

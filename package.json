@@ -42,6 +42,7 @@
     "knowledge:check": "node scripts/knowledge/project-public.js --check",
     "security:public": "node scripts/security/public-artifacts.js apps/web/dist apps/mock-site/.next/static apps/mock-site/.next/server/app",
     "test:layout": "playwright test -c tests/layout/playwright.config.js",
+    "test:e2e": "playwright test -c tests/e2e/playwright.config.js",
     "knowledge:init": "node scripts/knowledge/cli.js init",
     "knowledge:refresh": "node scripts/knowledge/cli.js refresh",
     "knowledge:import": "node scripts/knowledge/cli.js import",

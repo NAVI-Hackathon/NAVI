@@ -18,7 +18,7 @@ const mobileTabs = [
 ];
 
 function readinessCaption(journey) {
-  if (journey.currentStage === 'READY_TO_PROCEED') return '資料初步準備完成・尚未送件';
+  if (journey.currentStage === 'READY_TO_PROCEED') return '已完成 NAVI 初步資料準備，仍需依正式規定確認與送件。';
   const missing = journey.requirements.filter(r => r.required && r.status !== 'verified').length;
   return missing ? `還有 ${missing} 項資料待補齊` : '必要文件已備齊，請確認資料';
 }
@@ -143,6 +143,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
                         <div>
                           <p className="eyebrow">準備完成度</p>
                           <p className="mobile-readiness-caption">{readinessCaption(journey)}</p>
+                          <p className="mobile-readiness-note">NAVI 資料準備度，非核賠結果。</p>
                         </div>
                       </div>
                       <NextActionCard action={journey.nextAction} complete={journey.currentStage === 'READY_TO_PROCEED'} busy={busy} onAction={actions.next} onSample={actions.sample} sampleByAi={actions.sampleByAi} onNavigate={actions.navigate} />

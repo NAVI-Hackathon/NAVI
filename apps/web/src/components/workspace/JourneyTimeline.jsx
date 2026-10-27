@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { channelStatus } from '../../domain/channels.js';
 import Icon from '../Icon.jsx';
 import { stages as hospitalStages } from '../../mocks/hospitalClaim.js';
 import { basicJourneys } from '../../mocks/basicJourneys.js';
@@ -38,21 +39,33 @@ function ChannelList({ journey, onProceed, onNavigate }) {
   return (
     <motion.div className="channels" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: transition.enter }}>
       <ul>
-        {channels.map(channel => (
-          <li key={channel.id} className={channel.available ? '' : 'is-unavailable'}>
-            <div>
-              <strong>{channel.name}</strong>
-              {journey.nextAction.target === channel.id && <span className="tag tag-quiet">建議</span>}
-              {!channel.available && <span className="tag">未對應合作院所</span>}
-            </div>
-            <p>{channel.notes[0]}</p>
-            {onNavigate && (
-              <button type="button" className="link-button navigate-link" onClick={() => onNavigate(channel.destination)}>
-                <Icon name="external" size={13} />{channel.destination.label}
-              </button>
-            )}
-          </li>
-        ))}
+        {channels.map(channel => {
+          // Having an entry point is not eligibility: each channel says what is still to be confirmed.
+          const shown = channelStatus(channel, journey.claimContext.hospital);
+          return (
+            <li key={channel.id} className={`channel is-${shown.tone}`}>
+              <div>
+                <strong>{channel.name}</strong>
+                {journey.nextAction.target === channel.id && <span className="tag tag-quiet">建議先查看</span>}
+                <span className="tag">{shown.tag}</span>
+              </div>
+              <p>{shown.text}</p>
+              {shown.partnerHint && <p>{shown.partnerHint}</p>}
+              {shown.toConfirm.length > 0 && (
+                <details className="channel-confirm">
+                  <summary>仍需確認的條件 {shown.toConfirm.length} 項<Icon name="chevron" size={12} /></summary>
+                  <ul>{shown.toConfirm.map(item => <li key={item}>{item}</li>)}</ul>
+                </details>
+              )}
+              {onNavigate && shown.entry === 'navigable' && (
+                <button type="button" className="link-button navigate-link" onClick={() => onNavigate(channel.destination)}>
+                  <Icon name="external" size={13} />{channel.destination.label}
+                </button>
+              )}
+              {shown.entry === 'unavailable' && <p>這個入口目前無法導覽，請查看官網原文。</p>}
+            </li>
+          );
+        })}
       </ul>
       {reminders.length > 0 && (
         <div className="reminders">

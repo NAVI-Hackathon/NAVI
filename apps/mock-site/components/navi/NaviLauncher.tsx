@@ -82,6 +82,13 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     setAttempt(n => n + 1); // remounts the iframe
   };
 
+  // Wide screens: the open panel docks at the right and the page makes room for it, so the place NAVI
+  // outlines (and its buttons, e.g. 下載) is never hidden under the panel. Phones use a full-screen panel.
+  useEffect(() => {
+    document.documentElement.classList.toggle("navi-docked", open);
+    return () => document.documentElement.classList.remove("navi-docked");
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };

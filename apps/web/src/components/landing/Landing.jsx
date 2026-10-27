@@ -67,6 +67,7 @@ function JourneyCard({ message, snapshot, onOpen }) {
         <p className="chat-journey-label">已建立服務旅程</p>
         <p className="chat-journey-title">{current.title}</p>
         <p className="chat-journey-next">下一步：{current.nextAction.title}</p>
+        <p className="chat-journey-note">NAVI 資料準備度，非核賠結果。</p>
       </div>
       <button type="button" className="button button-primary button-small chat-journey-open" onClick={onOpen}>開啟工作區<Icon name="arrow" size={15} /></button>
     </div>
