@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { parseCsv, load, stats } from '../../../scripts/usability/summarize.js';
+import { parseCsv, load, stats, summarizeRecords } from '../../../scripts/usability/summarize.js';
 
 test('Usability statistics follow A protocol; assisted arrival is distinct from unaided success', () => {
   const s = stats([{ success: 1, time_s: 20, wrong_clicks: 0, help: 0, seq: 7, confidence: 6, correct_entry: 1 },
@@ -31,4 +31,12 @@ test('Empty actual user records produce no measured benefit and incomplete pairs
   writeFileSync(file, header); assert.match(execFileSync(process.execPath, [script.pathname, file], { encoding: 'utf8' }), /尚無資料/);
   writeFileSync(file, header + 'P01,A,X1,20,1,0,0,7,7\nP01,B,Y1,10,1,0,0,7,7');
   assert.match(execFileSync(process.execPath, [script.pathname, file], { encoding: 'utf8' }), /不列入配對差異/);
+});
+test('Machine-readable study summaries retain only A/B, per-task denominators and unknown enrollment when no records arrived', () => {
+  const empty = summarizeRecords([]); assert.equal(empty.availableRecords, 0); assert.equal(empty.participantCount, null);
+  assert.equal(empty.status, 'no_records_received'); assert.deepEqual(Object.keys(empty.conditions), ['A', 'B']);
+  assert.equal(empty.conditions.B.completion, null);
+  const report = summarizeRecords([{ participant: 'P01', condition: 'A', task: 'X1', success: 1, time_s: 30, wrong_clicks: 1, help: 0, seq: 6, confidence: 5, correct_entry: 1 }]);
+  assert.equal(report.participantCount, 1); assert.equal(report.tasks.X1.A.attempts, 1); assert.equal(report.tasks.X1.B.attempts, 0);
+  assert.equal(report.tasks.X1.A.medianTime, 30); assert.equal(report.tasks.X1.A.correctEntry, 1);
 });

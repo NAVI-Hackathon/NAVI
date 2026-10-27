@@ -14,6 +14,7 @@ export const evidenceJobs = Object.freeze([
   ['navigation', ['run', 'test:navigation']], ['layout', ['run', 'test:layout']], ['sites-browser', ['run', 'test:e2e']], ['shared-browser', ['run', 'test:shared:browser']],
   ['holdout-mock', ['run', 'eval:holdout:mock']], ['holdout-dry', ['run', 'eval:holdout:dry']],
   ['reliability-load', ['run', 'test:reliability:load']], ['usability', ['run', 'usability:summary']],
+  ['holdout-v2-mock', ['run', 'eval:holdout:v2:mock']], ['holdout-v2-dry', ['run', 'eval:holdout:v2:dry']], ['usability-json', ['run', 'usability:json']],
 ]);
 export function latencySummary(samples) {
   if (!samples.length || samples.some(value => !Number.isFinite(value) || value < 0)) throw Error('Invalid latency samples');
@@ -51,11 +52,18 @@ export async function generateEvidencePack() {
   const inputs = {};
   const knowledgeVersion = getKnowledgeVersion().knowledgeVersion;
   for (const path of ['data/cardif_seed_data.json', 'data/cardif_public_data.json', `knowledge/releases/${knowledgeVersion}.json`, 'apps/api/eval/cases.jsonl', 'apps/api/eval/hospitalization/cases.jsonl', 'apps/api/eval/knowledge/cases.jsonl', 'apps/api/eval/reliability/cases.jsonl', 'apps/api/eval/reliability/judge2-cases.jsonl', 'apps/api/eval/holdout/cases.jsonl', 'apps/api/eval/holdout/manifest.json', 'apps/api/eval/holdout/mock-outputs.json', 'docs/usability/record-sheet.csv']) inputs[path] = hash(await readFile(resolve(root, path)));
+  for (const file of ['cases.jsonl', 'manifest.json', 'mock-outputs.json']) {
+    const path = `apps/api/eval/holdout/v2/${file}`; inputs[path] = hash(await readFile(resolve(root, path)));
+  }
+  const cases = (await readFile(resolve(root, 'apps/api/eval/holdout/v2/cases.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+  for (const file of new Set(cases.filter(row => row.fixture).map(row => row.fixture.file))) {
+    const path = `apps/api/eval/holdout/v2/fixtures/${file}`; inputs[path] = hash(await readFile(resolve(root, path)));
+  }
   const provenance = { knowledgeVersion, commit: git(['rev-parse', 'HEAD']), workingTreeDirty: Boolean(git(['status', '--porcelain'])), trackedDiffSha256: hash(git(['diff', 'HEAD'])), runtime: process.version, os: `${os.platform()}/${os.arch()}`, inputs };
   const reports = {};
   for (const [id, args] of evidenceJobs) {
     const { log, stdout } = run(id, 'npm', args); await writeFile(resolve(output, `${id}.log`), log);
-    if (['legacy', 'hospitalization', 'knowledge', 'reliability', 'judge2-local', 'navigation', 'holdout-mock', 'holdout-dry', 'reliability-load'].includes(id) && !error) {
+    if (['legacy', 'hospitalization', 'knowledge', 'reliability', 'judge2-local', 'navigation', 'holdout-mock', 'holdout-dry', 'reliability-load', 'holdout-v2-mock', 'holdout-v2-dry', 'usability-json'].includes(id) && !error) {
       try { reports[id] = parseReport(stdout); } catch { error = `${id} report invalid`; }
     }
     if (error) break;

@@ -59,7 +59,11 @@
     "eval:judge2:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js apps/api/eval/reliability/judge2-cases.jsonl",
     "eval:holdout:dry": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --dry-run",
     "eval:holdout:mock": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --mock",
-    "usability:summary": "node scripts/usability/summarize.js docs/usability/record-sheet.csv"
+    "usability:summary": "node scripts/usability/summarize.js docs/usability/record-sheet.csv",
+    "eval:holdout:v2:dry": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --suite v2 --dry-run",
+    "eval:holdout:v2:mock": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --suite v2 --mock",
+    "knowledge:verify-release": "node --import ./apps/api/test/networkGuard.js scripts/knowledge/verify-release.js",
+    "usability:json": "node scripts/usability/summarize.js docs/usability/record-sheet.csv --json"
   },
   "engines": {
     "node": ">=22.12"

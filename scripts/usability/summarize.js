@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const TASKS = ['X1', 'X2', 'X3', 'Y1', 'Y2', 'Y3'];
 const CAP = 180;
@@ -84,16 +85,30 @@ export function stats(rows) {
   };
 }
 
+export function summarizeRecords(records) {
+  return { scope: 'prototype_ux_evaluation_demo_on_mock_site', availableRecords: records.length,
+    participantCount: records.length ? new Set(records.map(r => r.participant)).size : null,
+    status: records.length ? 'descriptive_results' : 'no_records_received',
+    conditions: Object.fromEntries(['A', 'B'].map(c => [c, stats(records.filter(r => r.condition === c))])),
+    tasks: Object.fromEntries(TASKS.map(task => [task, Object.fromEntries(['A', 'B'].map(c => [c, stats(records.filter(r => r.condition === c && r.task === task))]))])),
+    limitations: ['僅比較同一模擬官網的 A 無 NAVI 與 B NAVI Demo，不是 Gemini 品質或正式官網成效。', '沒有原始紀錄不推論實際研究人數或研究尚未開始。', '完成時間中位數僅計未受協助成功案例；未記錄 correct_entry 不推測到達率。'] };
+}
+
 function line(label, s) {
   return `${label.padEnd(10)} 次數 ${String(s.attempts).padStart(2)}｜完成率 ${fmt(s.completion === null ? null : s.completion * 100, 0, '%')}｜完成時間中位數 ${fmt(s.medianTime, 0, ' 秒')}｜錯誤點擊平均 ${fmt(s.wrongClicks)}｜需協助 ${fmt(s.help === null ? null : s.help * 100, 0, '%')}｜難易度 ${fmt(s.seq)}／7｜信心 ${fmt(s.confidence)}／7`;
 }
 
 function main() {
-  const file = process.argv[2] ?? 'docs/usability/record-sheet.csv';
+  const args = process.argv.slice(2); const asJson = args.includes('--json');
+  const file = args.find(arg => arg !== '--json') ?? 'docs/usability/record-sheet.csv';
   const { records, errors } = load(file);
   if (errors.length) {
     console.error(`紀錄表有 ${errors.length} 個問題，請先修正：\n- ${errors.join('\n- ')}`);
     process.exit(1);
+  }
+  if (asJson) {
+    console.log(JSON.stringify({ generatedAt: new Date().toISOString(), sourceFile: resolve(file),
+      sourceSha256: createHash('sha256').update(readFileSync(file)).digest('hex'), ...summarizeRecords(records) }, null, 2)); return;
   }
   if (!records.length) { console.log('紀錄表尚無資料：測試完成後再執行。'); return; }
   const people = [...new Set(records.map(r => r.participant))].sort();
