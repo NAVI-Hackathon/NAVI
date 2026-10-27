@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { IntentDataSchema, intentTypes, serviceTypes } from '../../../../shared/intelligence.js';
-import { DocumentAnalysisSchema, DocumentClockTimeSchema } from '../../../../shared/journey.js';
+import { DocumentFieldConfidenceSchema, DocumentAnalysisSchema, DocumentClockTimeSchema } from '../../../../shared/journey.js';
 import { normalizeIntent } from '../schemas/intent.schema.js';
 import { hasNegatedHospitalization } from '../../../../shared/hospitalization.js';
 
@@ -37,7 +37,7 @@ export function normalizeGeminiIntent(raw) {
   return normalizeIntent(data);
 }
 export const GeminiDocumentSchema = z.object({
-  documentType: z.enum(['boarding_pass', 'delay_certificate', 'diagnosis_certificate', 'bank_passbook', 'unknown']), confidence,
+  documentType: z.enum(['boarding_pass', 'delay_certificate', 'diagnosis_certificate', 'bank_passbook', 'unknown']), confidence, fieldConfidence:DocumentFieldConfidenceSchema.optional(),
   fields: z.object({ passengerName: text, flightNumber: text, origin: text, destination: text,
     departureDate: z.iso.date().nullable(), actualDepartureDate: z.iso.date().nullable(),
     scheduledDeparture: DocumentClockTimeSchema,

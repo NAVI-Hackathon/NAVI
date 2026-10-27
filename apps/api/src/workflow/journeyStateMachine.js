@@ -1,3 +1,4 @@
+import { deriveServiceWorkflow } from '../services/serviceWorkflows.js';
 import rules from '../../../../knowledge/claims.json' with { type: 'json' };
 import { JOURNEY_STATES as STATES } from '../../../../shared/journey.js';
 import { getJourneyDefinition } from '../services/knowledgeService.js';
@@ -33,6 +34,7 @@ export function determineNextAction(journey, config) {
   return journey.confirmed ? action('PROCEED_TO_SERVICE', null, '前往服務', '資料已準備完成，可接續既有服務；這不代表理賠核准或已送出申請。') : action('REVIEW_INFORMATION', null, '確認案件資料', '請確認航班資訊與已提供的文件。');
 }
 export function deriveJourney(journey, config) {
+  if (config.productMode && journey.workflowId) return deriveServiceWorkflow(journey, config);
   const definition = getJourneyDefinition(journey.serviceType);
   const documents = journey.documents.map(document => {
     const verified = Boolean(definition && (definition.documentTypes ?? ['boarding_pass', 'delay_certificate']).includes(document.documentType) && documentVerified(document, config.journeyConfidenceThreshold));

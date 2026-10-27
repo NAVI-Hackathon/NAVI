@@ -27,5 +27,6 @@ export function documentVerified(document, threshold) {
     : document.documentType === 'delay_certificate' ? calculateDelayMinutes(fields) !== null
       : document.documentType === 'diagnosis_certificate' ? Boolean(['diagnosis_certificate', 'hospitalization_proof'].includes(fields.certificateKind) && fields.patientName && fields.hospitalName && calculateStay(fields).days !== null && (!fields.admissionDate || !fields.dischargeDate || !fields.reportedInpatientDays || calculateStay(fields).days === fields.reportedInpatientDays))
         : document.documentType === 'bank_passbook' && Boolean(fields.accountHolder && fields.bankName && /^\d{4}$/.test(fields.accountLast4 ?? ''));
-  return Boolean(sufficient && document.confidence >= threshold);
+  const weakField = Object.entries(document.fieldConfidence ?? {}).some(([key,value]) => fields[key] != null && value < threshold);
+  return Boolean(sufficient && !weakField && document.confidence >= threshold);
 }

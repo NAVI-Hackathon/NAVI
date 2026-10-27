@@ -25,7 +25,7 @@ export function normalizeIntent(raw, message = '') {
   }
   // Medical/financial conclusions must not leak through the model's free-text summary.
   if (parsed.serviceType === 'hospitalization_claim') parsed.summary = parsed.intent === 'knowledge_query' ? '使用者希望了解住院醫療理賠相關資訊。' : HOSPITAL_SUMMARY;
-  const summaries = { policy_change: '使用者希望了解保單資料變更的辦理方式。', payment_method_change: '使用者希望了解繳費方式變更的辦理方式。', policy_information: '使用者希望查詢保單或服務資訊。', unknown: '目前還需要補充想處理的事情。' };
+  const summaries = { outpatient_claim: '使用者希望了解門診醫療理賠資料準備。', policy_change: '使用者希望了解保單資料變更的辦理方式。', payment_method_change: '使用者希望了解繳費方式變更的辦理方式。', policy_information: '使用者希望查詢保單或服務資訊。', unknown: '目前還需要補充想處理的事情。' };
   if (summaries[parsed.serviceType]) parsed.summary = summaries[parsed.serviceType];
   return IntentDataSchema.parse(parsed);
 }

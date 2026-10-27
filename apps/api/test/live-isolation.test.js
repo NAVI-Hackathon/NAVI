@@ -160,10 +160,10 @@ test('Live bank contradiction is not silently discarded with manual information'
   const provider = { ...createDemoProvider(), mode: 'live' };
   const service = createJourneyService({ config, provider, repository: new InMemoryJourneyRepository() });
   const journey = await service.create({ message: story });
-  service.addManualDocumentInformation(journey.id, { documentType: 'bank_passbook', fields: { accountLast4: '9999' } });
+  await service.addManualDocumentInformation(journey.id, { documentType: 'bank_passbook', fields: { accountLast4: '9999' } });
   const bytes = samplePdf('bank_passbook');
   await assert.rejects(service.addDocument(journey.id, { bytes, documentType: 'bank_passbook', mimeType: 'application/pdf', size: bytes.length }), { code: 'BANK_INFORMATION_MISMATCH' });
-  assert.equal(service.get(journey.id).readiness, 35); assert.equal(service.get(journey.id).documents.length, 0);
+  assert.equal((await service.get(journey.id)).readiness, 35); assert.equal((await service.get(journey.id)).documents.length, 0);
 });
 test('CI tests made no external generation requests', () => { assert.equal(offlineNetworkStats().externalRequests, 0); });
 

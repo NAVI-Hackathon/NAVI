@@ -3,7 +3,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 // Enforce a deadline even if a provider implementation fails to honor its AbortSignal.
 export async function withProviderDeadline(task, { config, signal }) {
-  const deadline = AbortSignal.timeout(config.timeoutMs);
+  const deadline = AbortSignal.timeout(config.productMode ? config.requestTimeoutMs : config.timeoutMs);
   const combined = signal ? AbortSignal.any([deadline, signal]) : deadline;
   let onAbort;
   try {
@@ -25,7 +25,7 @@ export async function withProviderDeadline(task, { config, signal }) {
 // One shared deadline covers both attempts; no nested retries or hidden demo substitution.
 export function requestValidatedAI(task, options) {
   return withProviderDeadline(async signal => {
-    const attempts = options.config.aiMaxAttempts ?? 2;
+    const attempts = options.config.productMode ? 1 : options.config.aiMaxAttempts ?? 2;
     for (let attempt = 0; attempt < attempts; attempt++) {
       try { return await task(signal); }
       catch (error) {

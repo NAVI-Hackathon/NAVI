@@ -97,10 +97,10 @@ test('existing browser Mock and server-owned hospital journeys agree on happy-pa
     browser = applySampleDocument(browser, documentType);
     compare(score);
   }
-  backend = service.review(backend.id);
+  backend = await service.review(backend.id);
   browser = confirmSession(browser);
   compare(100);
-  backend = service.removeDocument(backend.id, backend.documents.find(doc => doc.documentType === 'bank_passbook').id);
+  backend = await service.removeDocument(backend.id, backend.documents.find(doc => doc.documentType === 'bank_passbook').id);
   browser = removeDocument(browser, 'bank_passbook');
   compare(70);
   assert.equal(backend.confirmed, false);
