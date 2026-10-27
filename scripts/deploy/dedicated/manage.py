@@ -71,6 +71,10 @@ def healthy():
     with urllib.request.urlopen('http://127.0.0.1:18172/api/ai/status', timeout=2) as r:
         state = json.load(r)
         if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
+    if state.get('product', {}).get('enabled'):
+        with urllib.request.urlopen('http://127.0.0.1:18172/api/ready', timeout=5) as r:
+            ready = json.load(r)
+            if ready.get('status') != 'ready' or ready.get('storage') != 'mongodb_encrypted': raise RuntimeError('Persistent storage is not ready')
 
 def private_environment(path):
     path = pathlib.Path(path)

@@ -70,3 +70,15 @@ class EnvironmentTests(unittest.TestCase):
    with self.assertRaises(RuntimeError):m.private_environment(outside)
    path=m.ROOT/'config/candidate.env';path.symlink_to(outside)
    with self.assertRaises(RuntimeError):m.private_environment(path)
+
+
+class ProductReadinessTests(unittest.TestCase):
+ def test_product_activation_requires_database_readiness(self):
+  from io import StringIO
+  class Reply(StringIO):
+   def __init__(self,body):super().__init__(body);self.headers={'X-NAVI-AI-Mode':'live'}
+  replies=['{"status":"ok","aiProviderConfigured":true}','{"mode":"live","available":true,"syntheticOnly":true,"product":{"enabled":true}}']
+  with patch.object(m.urllib.request,'urlopen',side_effect=[Reply(v) for v in replies+['{"status":"ready","storage":"mongodb_encrypted"}']]) as call:
+   m.healthy();self.assertEqual(call.call_count,3)
+  with patch.object(m.urllib.request,'urlopen',side_effect=[Reply(v) for v in replies+['{"status":"ready","storage":"memory"}']]):
+   with self.assertRaises(RuntimeError):m.healthy()
