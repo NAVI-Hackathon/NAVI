@@ -67,6 +67,7 @@
   .name span { display: inline-block; }
   .tag { font-size: 40px; letter-spacing: 14px; color: #97C9B3; }
   .sub { font-size: 30px; color: #8D969B; letter-spacing: 2px; }
+  .release { margin-top: 18px; font: 500 20px 'DM Sans', 'Noto Sans TC', sans-serif; color: #5E6A64; letter-spacing: 1px; }
   .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; width: 1680px; margin-top: 20px; }
   .tile { display: flex; flex-direction: column; gap: 16px; align-items: center; }
   .tile .pic { width: 100%; height: 520px; border-radius: 22px; overflow: hidden; background: #0F1113; box-shadow: 0 0 0 1px #ffffff1a; }
@@ -105,14 +106,15 @@ const SCENES = [
   { bars: 3, section: '03　理解', caption: '官網改了什麼，先比對、再審核', icon: 'hash', card: 'flow', flow: 'refresh' },
   { bars: 2, section: '04　帶你去', caption: '先給答案，再一鍵帶你去', icon: 'chat', shots: [['desktop/navi-address-answer']], enter: 'whip', vo: '要改地址？NAVI 先給答案，再一步一步帶你到官網的正確位置。' },
   { bars: 2, section: '04　帶你去', caption: '一步一步帶到正確位置', icon: 'stairs', guide: 1, shots: [['desktop/guide-step-1']], enter: 'whip' },
-  { bars: 2, section: '04　帶你去', caption: '官網跟著換頁、框出目標', icon: 'stairs', guide: 2, shots: [['desktop/guide-step-2']], enter: 'whip' },
-  { bars: 3, section: '04　帶你去', caption: '手機也一樣順', icon: 'phone', guide: 3, shots: [['desktop/guide-step-3', { marks: false }], ['mobile/guide-step-3-card', { side: 'above' }]], enter: 'zoom', vo: '在手機上也一樣，收合後隨時回到下一步。' },
+  { bars: 2, section: '04　帶你去', caption: '第二步：官網換頁，框出要下載的申請書', icon: 'stairs', guide: 2, shots: [['desktop/guide-step-2']], enter: 'whip' },
+  { bars: 3, section: '04　帶你去', caption: '手機也一樣順', icon: 'phone', guide: 2, shots: [['desktop/guide-step-2', { marks: false }], ['mobile/guide-step-2-card', { side: 'above' }]], enter: 'zoom', vo: '在手機上也一樣，收合後隨時回到下一步。' },
+  { bars: 2, section: '04　帶你去', caption: '只要找表單？一步直達申請書', icon: 'source', shots: [['desktop/form-direct']], enter: 'whip', vo: '只要找表單，NAVI 一步就帶到正確的申請書。' },
   { bars: 3, section: '05　檢核', caption: '一句話建立住院理賠旅程', icon: 'hospital', shots: [['mobile/journey-card'], ['desktop/workspace-35', { marks: false }]], click: true, enter: 'whip', vo: '說一句「我住院五天要申請理賠」，就建立服務旅程。' },
   { bars: 2, section: '05　檢核', caption: '上傳診斷書，準備度 70%', icon: 'upload', object: ['診斷書', '住院 5 天'], shots: [['mobile/workspace-70']], vo: '上傳診斷書，準備度 70%；缺什麼、為什麼、怎麼補，一眼看懂。' },
   { bars: 2, section: '05　檢核', caption: '缺什麼、為什麼、怎麼補', icon: 'checklist', shots: [['mobile/workspace-preflight']] },
   { bars: 2, section: '05　檢核', caption: '補上存摺，準備度 90%', icon: 'upload', object: ['存摺影本', '末四碼 1234'], shots: [['mobile/workspace-90']] },
   { bars: 2, section: '05　檢核', caption: '確認資料，才算準備完成', icon: 'source', shots: [['desktop/review-dialog']], click: true },
-  { bars: 3, section: '05　檢核', caption: '資料準備完成 100%', icon: 'badge', shots: [['desktop/workspace-100']], enter: 'zoom', drop: true, vo: '百分之百只代表資料備齊，不代表理賠核准。' },
+  { bars: 3, section: '05　檢核', caption: '已完成 NAVI 初步資料準備', icon: 'badge', shots: [['desktop/workspace-100']], enter: 'zoom', drop: true, vo: '百分之百只代表資料備齊，不代表理賠核准。' },
   { bars: 3, section: '06　可信', caption: 'AI 理解，系統決定', icon: 'spark', card: 'flow', flow: 'principle', vo: 'AI 只負責理解，計分、答案和導覽都由規則與官網資料決定。' },
   { bars: 2, section: '06　可信', caption: '不給投保建議，不判斷能否理賠', icon: 'shield', shots: [['desktop/navi-guardrail']], vo: 'NAVI 不給投保建議，也不判斷能否理賠。' },
   { bars: 2, section: '06　可信', caption: '需要真人時，確認後才取得摘要', icon: 'headset', shots: [['mobile/handoff']], vo: '需要真人時，確認後才取得交接摘要。' },
@@ -207,7 +209,7 @@ const FLOWS = {
   },
   refresh: {
     nodes: [['globe', '定向擷取', '只讀公開頁、限速'], ['layers', '結構化快照', '保留網址與時間'], ['hash', 'SHA-256 比對', '新增・變更・移除'], ['eye', '人工審核', '逐筆批准才採用'], ['badge', '更新知識庫', 'NAVI 只引用審核過的']],
-    stats: [['8/8', '官方頁面擷取成功'], ['22', '新增段落待審'], ['662', '段落比對無變更'], ['0', '未審核就採用']],
+    stats: [['8/8', '官方頁面擷取成功'], ['23', '新增段落經人工核准'], ['10', '則新 FAQ 發布'], ['0', '未審核就採用']],
   },
 };
 function flowHtml(name) {
@@ -222,19 +224,19 @@ function flowHtml(name) {
 const flowTimes = (s, k) => s.start + BEAT * (1 + k);             // one node per beat
 const statTimes = (s, k) => s.start + BAR * 1.75 + BEAT * k;       // stats count up from the second half
 
-/** The guide's three places as a little staircase: done (sage), here (green, pulsing), next (grey). */
-const GUIDE_STOPS = ['變更說明', '申請書', '服務入口'];
+/** The guide's places (the address plan: two) as a little staircase: done (sage), here (green, pulsing), next (grey). */
+const GUIDE_STOPS = ['變更說明', '申請書'];
 function stepperHtml(current) {
-  const pts = [[24, 92], [160, 58], [296, 24]];
-  return `<svg class="stepper" width="420" height="140" viewBox="0 0 420 140" overflow="visible">
-    <path class="track" d="M24 92h68v-34h68v-34h68v0h68" fill="none" stroke="#3A3F44" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path class="done" pathLength="1" d="M24 92h68v-34h68v-34h68v0h68" fill="none" stroke="#00B26E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"/>
+  const pts = [[24, 80], [224, 30]];
+  return `<svg class="stepper" width="360" height="130" viewBox="0 0 360 130" overflow="visible">
+    <path class="track" d="M24 80h100v-50h100" fill="none" stroke="#3A3F44" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path class="done" pathLength="1" d="M24 80h100v-50h100" fill="none" stroke="#00B26E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"/>
     ${pts.map(([x, y], k) => `<circle class="node" data-k="${k}" cx="${x}" cy="${y}" r="13" fill="${k + 1 < current ? '#97C9B3' : k + 1 === current ? '#00B26E' : '#3A3F44'}"/>
       <text x="${x - 12}" y="${y + 44}" class="${k + 1 === current ? 'on' : ''}">${GUIDE_STOPS[k]}</text>`).join('')}
   </svg>`;
 }
-// Fraction of the stepper path that reaches each stop (the path has 3 equal-ish legs; stop k at k/3 of 4 legs).
-const STOP_AT = [0, 0.5, 1];
+// Fraction of the stepper path that reaches each stop.
+const STOP_AT = [0, 1];
 
 // The mark is a staircase that ends in an arrow corner: NAVI takes you there step by step.
 // In the film a green dot (the user) climbs it one beat per step, drawing the line; the hook snaps on arrival.
@@ -273,7 +275,8 @@ function cardHtml(scene) {
     const logo = scene.card === 'logo';
     return `<div class="card"><div class="mark-logo">${LOGO}</div><div class="name">${[...'NAVI'].map(c => `<span>${c}</span>`).join('')}</div>
       <div class="tag">${logo ? '智慧服務導航助手' : '理解・檢核・帶你去'}</div>
-      <div class="sub">${logo ? '理解・檢核・帶你去　｜　AfterZero・靜宜大學 資訊管理學系' : '像聊天一樣說出你的情況，NAVI 先問清楚、找到官網依據，再帶你到正確的地方'}</div></div>`;
+      <div class="sub">${logo ? '從問題，走到正確的下一步　｜　AfterZero・靜宜大學 資訊管理學系' : '像聊天一樣說出你的情況，NAVI 先問清楚、找到官網依據，再帶你到正確的地方'}</div>
+      ${logo ? '<div class="release">畫面來源：https://navitw.com 正式站・Release 13d7fcb・示範模式（合成資料）</div>' : ''}</div>`;
   }
   const tiles = [['mobile/navi-welcome', '聊天室', '說出情況、點選項', 'chat'], ['mobile/journey-card', '旅程卡', '一句話建立服務旅程', 'hospital'], ['mobile/workspace-70', '工作區', '準備度與文件健檢', 'badge'], ['mobile/guide-step-1-card', '導覽卡', '一步一步帶你去', 'stairs'], ['mobile/guide-step-2', '官網高亮', '框出正確位置', 'target']];
   return `<div class="card"><div class="tiles">${tiles.map(([key, title, sub, ic]) => `<div class="tile"><div class="pic"><img src="${shotOf(key).url}"></div><b>${icon(ic, '#00B26E', 1.8)}${title}</b><small>${sub}</small></div>`).join('')}</div></div>`;
@@ -450,6 +453,8 @@ function seek(time) {
       tag.style.opacity = smooth((t - tagAt) / 0.4).toFixed(3);
       tag.style.letterSpacing = `${(14 + 10 * (1 - ease((t - tagAt) / 1.2))).toFixed(2)}px`;
       sub.style.opacity = smooth((t - subAt) / 0.5).toFixed(3);
+      const release = s.el.querySelector('.release');
+      if (release) release.style.opacity = smooth((t - subAt - BEAT) / 0.5).toFixed(3);
       if (s.card === 'logo') {
         // Final bar: everything settles and fades to black on the held chord.
         const out = smooth((t - (DURATION - 1.2)) / 1.1);

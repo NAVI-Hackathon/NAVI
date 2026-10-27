@@ -145,19 +145,29 @@ async function siteSet(browser, dir, contextOptions) {
   await ask(navi, '我搬家了，保單上的地址要怎麼改？', navi.getByRole('button', { name: /帶我去：查看變更戶籍地址/ }).last());
   await shot(page, dir, 'navi-address-answer', { frame, marks: [['先給答案，一鍵開始導覽', navi.getByRole('button', { name: /帶我去：查看變更戶籍地址/ }).last()]] });
   await navi.getByRole('button', { name: /帶我去：查看變更戶籍地址/ }).last().click();
-  for (let step = 1; step <= 3; step += 1) {
+  // Walk the guide as long as it is (the server's plan decides the number of steps).
+  const total = Number((await navi.locator('.guide-card').innerText()).match(/第\s*\d+\s*[／/]\s*(\d+)\s*步/)?.[1] ?? 1);
+  for (let step = 1; step <= total; step += 1) {
     await pause(2200);
     // Phones fold NAVI away so the highlighted place is visible; the launcher invites the user back.
-    await shot(page, dir, `guide-step-${step}`, { frame, marks: [['官網跟著換頁、框出位置', page.locator('.navi-spot')], ...(mobile ? [] : [[`第 ${step}／3 步`, navi.locator('.guide-card')]])] });
+    await shot(page, dir, `guide-step-${step}`, { frame, marks: [['官網跟著換頁、框出位置', page.locator('.navi-spot')], ...(mobile ? [] : [[`第 ${step}／${total} 步`, navi.locator('.guide-card')]])] });
     if (mobile) {
       await page.getByRole('button', { name: /回到 NAVI/ }).click();
       await pause(800);
-      await shot(page, dir, `guide-step-${step}-card`, { frame, marks: [[`回到 NAVI，第 ${step}／3 步`, navi.locator('.guide-card')]] });
+      await shot(page, dir, `guide-step-${step}-card`, { frame, marks: [[`回到 NAVI，第 ${step}／${total} 步`, navi.locator('.guide-card')]] });
     }
-    if (step < 3) await navi.getByRole('button', { name: '下一步' }).click();
+    if (step < total) await navi.getByRole('button', { name: '下一步' }).click();
   }
   await navi.getByRole('button', { name: '完成導覽' }).click();
   await pause(800);
+
+  // A form: one step straight to the right application form.
+  if (mobile) await page.getByRole('button', { name: /回到 NAVI/ }).click().catch(() => {});
+  await ask(navi, '我要下載保險契約內容變更申請書', navi.getByRole('button', { name: /帶我去：下載保險契約內容變更申請書/ }).last());
+  await navi.getByRole('button', { name: /帶我去：下載保險契約內容變更申請書/ }).last().click();
+  await pause(2200);
+  await shot(page, dir, 'form-direct', { frame, marks: [['一步直達正確的申請書', page.locator('.navi-spot')]] });
+  if (mobile) await page.getByRole('button', { name: /回到 NAVI/ }).click();
 
   // Guardrail: no product advice.
   await ask(navi, '推薦我買哪張保單', navi.getByText('這個問題需要由專人協助'));
@@ -165,7 +175,7 @@ async function siteSet(browser, dir, contextOptions) {
   await context.close();
 }
 
-const ring = page => ['準備完成度由後端規則計分', page.locator('[role=progressbar][aria-label="準備完成度"]').locator('visible=true').first()];
+const ring = page => ['NAVI 資料準備度・後端規則計分', page.locator('[role=progressbar][aria-label="準備完成度"]').locator('visible=true').first()];
 
 /** The hospital journey in standalone NAVI /demo (wide three-column workspace on desktop). */
 async function journeySet(browser, dir, contextOptions) {
