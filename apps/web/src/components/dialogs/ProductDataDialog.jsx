@@ -1,0 +1,30 @@
+import {useState,useEffect} from 'react';
+import Modal from './Modal.jsx';
+export default function ProductDataDialog({service,onClose,onJourney,onDeleted,consentOnly=false,onConsent}){
+  const [data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[agreed,setAgreed]=useState(false),[deleting,setDeleting]=useState(false);
+  const [username,setUsername]=useState(''),[password,setPassword]=useState('');
+  useEffect(()=>{service.productInfo().then(setData).catch(e=>setError(e.message));},[service]);
+  async function run(fn){setError('');setBusy(true);try{await fn();}catch(e){setError(e.message??'目前無法完成操作，請稍後再試。');}finally{setBusy(false);}}
+  const refresh=async()=>setData(await service.productInfo());
+  return <Modal title={consentOnly?'資料處理說明':'我的資料與歷程'} onClose={onClose}>
+    <p className="modal-lead">AI 會將你提供的內容交由 Google Gemini 處理。免費服務目前僅接受合成資料，請勿輸入真實病歷、姓名或銀行資料。</p>
+    <p className="modal-footnote">原始檔只在處理期間暫存；旅程與對話加密保存 {data?.session?.retentionDays??30} 天；帳號最多保存 10 年，可自行刪除。關閉瀏覽器後可在同一工作階段恢復；登入後可於其他裝置存取。備份最多保留 7 天。</p>
+    <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">查看 Google 資料處理條款</a>
+    {!data?.session?.consentAccepted&&<><label className="check-row"><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/>我已閱讀說明，這次僅使用合成資料。</label><button className="button button-primary" disabled={!agreed||busy} onClick={()=>run(async()=>{await service.acceptConsent();await refresh();onConsent?.();if(consentOnly)onClose();})}>確認並繼續</button></>}
+    {!consentOnly&&<>
+      <section className="review-section"><h3>{data?.session?.authenticated?'已登入':'保存至帳號'}</h3>
+      {data?.session?.authenticated?<button className="button button-secondary" disabled={busy} onClick={()=>run(async()=>{await service.logout();onDeleted();onClose();})}>登出</button>:<form onSubmit={e=>{e.preventDefault();run(async()=>{await service.login(username,password);setPassword('');onDeleted();await refresh();});}}>
+        <label className="field-label" htmlFor="product-user">電子郵件或測試帳號</label><input id="product-user" autoComplete="username" value={username} minLength={3} maxLength={254} required onChange={e=>setUsername(e.target.value)}/>
+        <label className="field-label" htmlFor="product-password">密碼（至少 12 個字元）</label><input id="product-password" type="password" autoComplete="current-password" value={password} minLength={12} maxLength={128} required onChange={e=>setPassword(e.target.value)}/>
+        <div className="modal-actions"><button className="button button-secondary" disabled={busy} type="submit">登入</button><button className="button button-secondary" type="button" disabled={busy||username.length<3||password.length<12} onClick={()=>run(async()=>{await service.register(username,password);setPassword('');onDeleted();await refresh();})}>建立帳號並保存</button></div>
+      </form>}</section>
+      <section className="review-section"><h3>已保存的旅程</h3>{data?.history?.journeys.length?data.history.journeys.map(j=><button className="button button-ghost" key={j.id} disabled={busy} onClick={()=>run(async()=>{onJourney(await service.openJourney(j.id));onClose();})}>{j.title} · {j.readiness}%</button>):<p>目前沒有已保存的旅程。</p>}</section>
+      <section className="review-section"><h3>待處理任務</h3>{data?.tasks?.filter(t=>t.status==='pending').map(t=><button className="button button-ghost" key={t.taskId} disabled={busy} onClick={()=>run(async()=>{onJourney(await service.continueTask(t.taskId));onClose();})}>{t.summary}</button>)}{!data?.tasks?.some(t=>t.status==='pending')&&<p>目前沒有待處理任務。</p>}</section>
+      {!data?.session?.authenticated&&username.includes('@')&&<div className="modal-actions"><button className="button button-ghost" disabled={busy} onClick={()=>run(async()=>{await service.requestPasswordReset(username);setError('若帳號存在，將寄出密碼重設連結。');})}>忘記密碼</button><button className="button button-ghost" disabled={busy} onClick={()=>run(async()=>{await service.requestVerification(username);setError('若帳號存在，將寄出驗證連結。');})}>重新寄送驗證信</button></div>}
+      <section className="review-section"><h3>資料管理</h3><button className="button button-secondary" disabled={busy} onClick={()=>run(()=>service.exportData())}>下載我的資料</button>
+        {!deleting?<button className="button button-ghost" disabled={busy} onClick={()=>setDeleting(true)}>刪除我的資料</button>:<div role="alert"><p>將刪除目前使用者的旅程、對話與帳號，無法復原。</p><button className="button button-secondary" disabled={busy} onClick={()=>setDeleting(false)}>保留資料</button><button className="button button-primary" disabled={busy} onClick={()=>run(async()=>{await service.deleteData();onDeleted();onClose();})}>確認刪除全部資料</button></div>}
+      </section>
+    </>}
+    {busy&&<p role="status">正在處理…</p>}{error&&<p className="doc-failed" role="alert">{error}</p>}
+  </Modal>;
+}

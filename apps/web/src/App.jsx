@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import ProductDataDialog from './components/dialogs/ProductDataDialog.jsx';
+import AccountRecoveryDialog from './components/dialogs/AccountRecoveryDialog.jsx';
+import ServiceWorkflow from './components/workspace/ServiceWorkflow.jsx';
 import AppHeader, { EmbedHeader } from './components/AppHeader.jsx';
 import Landing from './components/landing/Landing.jsx';
 import Workspace from './components/workspace/Workspace.jsx';
@@ -71,6 +74,9 @@ function wait(ms, signal) {
 
 export default function App() {
   const service = useMemo(() => (mode === 'demo' ? createMockAdapter() : createApiAdapter()), []);
+  const [recovery,setRecovery]=useState(()=>{const action=new URLSearchParams(location.search).get('auth'),token=new URLSearchParams(location.hash.slice(1)).get('token');return service.mode==='live'&&['verify','reset'].includes(action)&&/^[a-f0-9]{64}$/.test(token??'')?{action,token}:null;});
+  const [productReady,setProductReady]=useState(false);
+  const [productDialog,setProductDialog]=useState(null);
   const [snapshot, setSnapshot] = useState(() => service.restore());
   // Embedded NAVI reopens on the journey in progress (the host page may have reloaded the iframe).
   const [view, setView] = useState(() => ((location.hash === '#workspace' || embedded) && snapshot ? 'workspace' : 'landing'));
@@ -112,6 +118,10 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => { window.removeEventListener('popstate', onPop); analysisCtl.current?.abort(); };
   }, []);
+
+  useEffect(()=>{if(!service.init)return;let disposed=false;service.init().then(data=>{if(!data||disposed)return;setProductReady(true);if(data.conversation?.messages)setMessages([{id:'welcome',role:'navi',kind:'welcome'},...data.conversation.messages.map((m,i)=>({id:'stored-'+i,role:m.role==='user'?'user':'navi',kind:'note',tone:'info',title:m.role==='user'?undefined:'先前的對話',text:m.text,body:m.text}))]);}).catch(()=>{});return()=>{disposed=true;};},[service]);
+
+  useEffect(()=>{const change=e=>{if(e.key==='navi.identity.updated'&&service.mode==='live'){service.reset();location.reload();}};window.addEventListener('storage',change);return()=>window.removeEventListener('storage',change);},[service]);
 
   // Formal mode: the server explains each requirement (reason code, earned points) for the Preflight board.
   // Until it arrives — and always in /demo — the board uses the local mirror of the same rules.
@@ -224,11 +234,14 @@ export default function App() {
     const startedAt = performance.now();
     try {
       // 住院醫療理賠 opens the full journey; other services show the official answers when there are any.
-      const openJourney = kind => kind === 'hospital' || !answered;
+      const openJourney = kind => service.productEnabled || kind === 'hospital' || !answered;
       let understanding = picked?.understanding ?? null;
+      if(service.productEnabled){const info=await service.productInfo();if(info.session.authRequired&&!info.session.authenticated){setProductDialog('data');reply({kind:'note',tone:'info',title:'請先登入',body:'登入後才能保存並繼續處理你的服務需求。',retry:{text,label}});return;}if(!info.session.consentAccepted){setProductDialog('consent');reply({kind:'note',tone:'info',title:'請先確認資料處理說明',body:'確認後，請再送出這項需求；資料不會在你同意前交給 AI。',retry:{text,label}});return;}}
       if (!picked && service.capabilities.tasks) {
         // Several independent requests: list them and let the user choose one; nothing opens on its own.
         const split = await service.understandTasks(text, { signal: ctl.signal });
+        if(split?.productReply&&!split.productReply.understanding){const p=split.productReply;reply(p.evidence.status==='answered'?{kind:'answers',result:service.knowledgeResult(p),notice:p.errorCode?'AI 暫時無法回應，以下為已核對來源的資料。':undefined}:{kind:'note',tone:'info',title:'下一步',body:p.answer});return;}
+        if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
           reply({ kind: 'tasks', split, tasks: split.tasks });
@@ -449,17 +462,19 @@ export default function App() {
         {embedded ? (
           <EmbedHeader
             mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onData={productReady?()=>setProductDialog('data'):null}
             onClose={host.connected ? () => host.send(naviMessage('navi:close')) : null}
           />
         ) : (
           <AppHeader
             mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onData={productReady?()=>setProductDialog('data'):null}
             reduceMotion={reduceMotion} onReduceMotion={setReduceMotion}
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
         )}
+        {recovery&&<AccountRecoveryDialog service={service} {...recovery} onClose={()=>{history.replaceState(null,'',location.pathname);setRecovery(null);setProductDialog('data');}}/>}
+        {productDialog&&<ProductDataDialog service={service} consentOnly={productDialog==='consent'} onClose={()=>setProductDialog(null)} onJourney={next=>{setSnapshot(next);goWorkspace();}} onDeleted={reset}/>}
         {mode === 'demo' && !embedded && (
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>
         )}
@@ -472,7 +487,7 @@ export default function App() {
         <LayoutGroup>
           <AnimatePresence mode="popLayout" initial={false}>
             {view === 'workspace' && snapshot ? (
-              <Workspace
+              snapshot.journey.workflowId ? <ServiceWorkflow key='service-workflow' snapshot={snapshot} service={service} onUpdate={setSnapshot} onNavigate={navigate} onBack={goLanding}/> : <Workspace
                 key="workspace" snapshot={snapshot} explanation={explanation} docStates={docStates} busy={busyType}
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
