@@ -33,11 +33,11 @@ for(const width of [390,1280])test(`persistent formal conversation, consent and 
   await dialog.getByRole('checkbox').check();await dialog.getByRole('button',{name:'確認並繼續'}).click();
   await page.locator('#story-input').fill('我搬家了，要變更保單地址');await page.locator('#story-input').press('Enter');
   await expect(page.getByRole('button',{name:'開啟工作區'})).toBeVisible();expect(calls).toBe(1);
-  await page.getByRole('button',{name:'開啟工作區'}).click();await expect(page.getByRole('heading',{name:'地址變更',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'開啟工作區'}).click();await expect(page.getByRole('heading',{name:'地址變更',exact:true,level:1})).toBeVisible();
   await page.getByRole('checkbox').nth(0).click();await expect(page.getByRole('checkbox').nth(0)).toBeChecked();
-  await page.reload();await expect(page.getByRole('heading',{name:'地址變更',exact:true})).toBeVisible();await expect(page.getByRole('checkbox').nth(0)).toBeChecked();expect(calls).toBe(1);
+  await page.reload();await expect(page.getByRole('heading',{name:'地址變更',exact:true,level:1})).toBeVisible();await expect(page.getByRole('checkbox').nth(0)).toBeChecked();expect(calls).toBe(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.getByRole('button',{name:'我的資料與歷程',exact:true}).click();await expect(dialog.getByRole('button',{name:'地址變更 · 30%'})).toBeVisible();
+  await page.getByRole('button',{name:'我的資料與歷程',exact:true}).click();await expect(dialog.getByRole('button',{name:'地址變更 · 資料準備'})).toBeVisible();
   await dialog.getByLabel('電子郵件或測試帳號').fill('synthetic_browser');await dialog.getByLabel('密碼（至少 12 個字元）').fill('SYNTHETIC-password-123');await dialog.getByRole('button',{name:'建立帳號並保存'}).click();await expect(dialog.getByRole('heading',{name:'已登入',exact:true})).toBeVisible();
   await dialog.getByRole('button',{name:'刪除我的資料',exact:true}).click();await dialog.getByRole('button',{name:'確認刪除全部資料'}).click();await expect(dialog).toHaveCount(0);
  }finally{await page.unrouteAll({behavior:'wait'});server.closeAllConnections();await new Promise(r=>server.close(r));await config.store.db.dropDatabase();await app.locals.close();rmSync(dir,{recursive:true,force:true});}
