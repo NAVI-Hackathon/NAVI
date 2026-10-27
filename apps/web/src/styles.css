@@ -225,6 +225,15 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .basic-steps li::before { content: counter(s); font-size: 10px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .safe-note { display: flex; align-items: flex-start; gap: 10px; margin-top: 27px; padding-top: 20px; border-top: var(--border); font-size: 10px; line-height: 1.9; color: var(--color-text-muted); }
 .safe-note svg { margin-top: 3px; }
+/* Compact workspace (services without a document workflow): summary, open conditions, sources. */
+.brief-sections { display: grid; gap: 26px; }
+.brief-text { font-size: 13px; line-height: 1.85; color: var(--color-text-secondary); }
+.brief-text.is-muted { font-size: 12px; color: var(--color-text-muted); }
+.brief-conditions { display: grid; gap: 8px; }
+.brief-conditions li { position: relative; padding-left: 16px; font-size: 12px; line-height: 1.8; color: var(--color-text-secondary); }
+.brief-conditions li::before { content: ''; position: absolute; left: 2px; top: 0.72em; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-muted); }
+.brief-conditions li.is-warn::before { background: var(--color-warning); }
+.brief-sources { display: grid; gap: 10px; }
 
 /* Hospital claim: strip notes, channels, reminders */
 .strip-note { display: block; margin-top: 3px; font-size: 10px; color: var(--color-text-muted); }

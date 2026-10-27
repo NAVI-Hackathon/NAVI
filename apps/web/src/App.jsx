@@ -520,7 +520,7 @@ export default function App() {
               }} />
           )}
           {snapshot && dialog === 'service' && (
-            <ServiceDialog key="service" snapshot={snapshot} onClose={closeDialog} onHandoff={() => setDialog('handoff')} />
+            <ServiceDialog key="service" snapshot={snapshot} onClose={closeDialog} onHandoff={() => setDialog('handoff')} onNavigate={navigate} />
           )}
         </AnimatePresence>
 

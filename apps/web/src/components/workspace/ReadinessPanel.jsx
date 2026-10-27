@@ -95,6 +95,13 @@ function RequirementList({ requirements }) {
   );
 }
 
+/** Compact lead line, from the journey's own state: specialist review, a checklist, or guidance only. */
+function basicLead(journey) {
+  if (journey.currentStage === 'HUMAN_REVIEW') return '這個情況需要專員確認，NAVI 已先整理好你的描述。';
+  if (journey.requirements.length > 0) return '這項服務提供辦理導引。先備妥以下資料，再前往服務入口。';
+  return 'NAVI 已辨識這項需求，目前沒有線上準備流程；請參考官方資料來源，或轉由專員協助。';
+}
+
 export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sampleByAi, onHandoff, onNavigate, preflight, showNextAction = true }) {
   const { journey } = snapshot;
   const isHospital = snapshot.context.kind === 'hospital' && journey.currentStage !== 'HUMAN_REVIEW';
@@ -105,7 +112,7 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sam
   return (
     <aside className="panel readiness-panel" aria-labelledby="readiness-title">
       <header className="panel-header">
-        <h2 id="readiness-title">{isHospital ? '準備完成度' : '需要準備的資料'}</h2>
+        <h2 id="readiness-title">{isHospital ? '準備完成度' : '辦理準備'}</h2>
       </header>
 
       {isHospital ? (
@@ -131,7 +138,7 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sam
         </div>
       ) : (
         <>
-          <p className="readiness-basic">{journey.currentStage === 'HUMAN_REVIEW' ? '這個情況需要專員確認，NAVI 已先整理好你的描述。' : '這項服務目前提供辦理導引。先備妥以下資料，再前往服務入口。'}</p>
+          <p className="readiness-basic">{basicLead(journey)}</p>
           {/* Kept after a correction: shown, but only as something to confirm — never as a verified document. */}
           {journey.documents.length > 0 && (
             <p className="readiness-basic"><Icon name="info" size={13} />先前上傳的文件已保留，需要重新確認，目前不計分：{journey.documents.map(d => documentSpecs[d.documentType]?.title ?? d.filename).join('、')}</p>
@@ -145,7 +152,7 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sam
         ? <PreflightBoard journey={journey} explanation={preflight.explanation} busy={busy} onAction={preflight.onAction} />
         : journey.requirements.length > 0 && <RequirementList requirements={journey.requirements} />}
 
-      <p className="readiness-note"><Icon name="shield" size={14} />NAVI 資料準備度，非核賠結果。只看資料是否齊全，不代表保障適用、理賠核准或已送件。</p>
+      {isHospital && <p className="readiness-note"><Icon name="shield" size={14} />NAVI 資料準備度，非核賠結果。只看資料是否齊全，不代表保障適用、理賠核准或已送件。</p>}
       {journey.nextAction.type !== 'CONTACT_SPECIALIST' && (
         <button type="button" className="link-button specialist-link" onClick={onHandoff}>
           <Icon name="headset" size={16} />需要協助？轉由專員接續<Icon name="chevron" size={14} />
