@@ -15,6 +15,8 @@ import { result } from './fixtures.js';
 import { offlineNetworkStats } from './networkGuard.js';
 import { createApiJourneyService } from '../../web/src/services/apiJourney.js';
 import { understandIntent as clientUnderstand } from '../../web/src/services/intelligence.js';
+import { knowledgeEntries } from '../../../shared/knowledge/index.js';
+import { getKnowledgeVersion } from '../src/services/knowledgeVersionService.js';
 
 const origin = 'https://app.navitw.com';
 const story = '我上週在台中榮總住院五天，要怎麼申請理賠？';
@@ -54,6 +56,31 @@ async function api(t, rawTasks = [{ input: story, data: result('hospitalization_
   return { request, cookie, split, calls, repository, provider, ledger: () => JSON.parse(readFileSync(config.usageFile)), config };
 }
 const select = task => ({ message: task.input, intentResult: task.data });
+
+test('Judge 2 form download and hospital tasks keep their navigation and receipt-created journey separate', async t => {
+  const raw = await demo.understandTasks('我想下載契約變更申請書，也想辦理住院理賠。');
+  const { knowledgeVersion, snapshotHash } = getKnowledgeVersion();
+  // Manifest fixture for this API test; navigationAudit and browser E2E validate the actual built DOM.
+  const navigationManifest = { schemaVersion: 1, knowledgeVersion, snapshotHash, scope: 'built_mock_site_only', issues: [],
+    targets: knowledgeEntries.map(entry => ({ sourceId: entry.id, path: entry.destination.path, anchor: entry.destination.anchor })) };
+  const a = await api(t, raw.tasks, { sessionRequestLimit: 1, navigationManifest });
+  assert.deepEqual(a.split.tasks.map(task => task.input), ['我想下載契約變更申請書', '我也想辦理住院理賠']);
+  const plans = [];
+  for (const task of a.split.tasks) {
+    const response = await a.request('/navigation/plans', { query: task.input }, a.cookie);
+    assert.equal(response.status, 200);
+    const navigation = await response.json();
+    assert.equal(navigation.status, 'answered'); plans.push(navigation.plan);
+  }
+  assert.deepEqual(plans[0].steps.map(step => step.sourceId), ['form:form_contract_change']);
+  assert.ok(plans[1].steps.every(step => step.sourceId !== 'form:form_contract_change'));
+  const created = await a.request('/journeys', select(a.split.tasks[1]), a.cookie);
+  assert.equal(created.status, 201);
+  const journey = await created.json();
+  assert.equal(journey.serviceType, 'hospitalization_claim'); assert.equal(journey.readiness, 35);
+  assert.ok(journey.sources.every(source => source.id !== 'form:form_contract_change'));
+  assert.equal(a.repository.entries.size, 1); assert.deepEqual(a.calls, ['tasks']); assert.equal(a.ledger().used, 1);
+});
 
 test('Single task → receipt create → two documents uses exactly 3 Gemini transport generations and a 3-attempt session', async t => {
   const a = await api(t, undefined, { sessionRequestLimit: 3 });
