@@ -5,18 +5,19 @@ import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ApiError} from '../middleware/errorHandler.js';
 const run=promisify(execFile);
-export async function validateMedia(upload,config,signal){
+export async function validateMedia(upload,config,signal,runPdf=run){
  if(!config.productMode||!config.production)return;
  const options={timeout:4000,maxBuffer:1024*1024,signal};
  let folder;
  try{
   if(upload.mimeType==='application/pdf'){
+   const pdf=args=>runPdf('/usr/bin/prlimit',['--as=268435456','--cpu=3','--','/usr/bin/qpdf',...args],options);
    const directory=join(config.databasePath,'uploads');await mkdir(directory,{recursive:true,mode:0o700});folder=await mkdtemp(join(directory,'doc-'));
    const path=join(folder,'upload.pdf');await writeFile(path,upload.bytes,{mode:0o600,flag:'wx'});
-   await run('/usr/bin/qpdf',['--check',path],options);
-   const {stdout:pages}=await run('/usr/bin/qpdf',['--show-npages',path],options);
+   await pdf(['--check',path]);
+   const {stdout:pages}=await pdf(['--show-npages',path]);
    if(!/^\d+\s*$/.test(pages)||Number(pages)<1||Number(pages)>20)throw Error('pages');
-   const {stdout}=await run('/usr/bin/qpdf',['--json',path],options);const data=JSON.parse(stdout);
+   const {stdout}=await pdf(['--json',path]);const data=JSON.parse(stdout);
    if(data.encrypt?.encrypted||Object.keys(data.attachments??{}).length||/"\/(?:JavaScript|JS|Launch|EmbeddedFiles|OpenAction|AA)"/.test(stdout))throw Error('active_pdf');
   }else await new Promise((resolve,reject)=>{
     const child=spawn('/usr/bin/python3',[fileURLToPath(new URL('./decodeImage.py',import.meta.url)),upload.mimeType],{signal,timeout:4000,stdio:['pipe','ignore','ignore']});

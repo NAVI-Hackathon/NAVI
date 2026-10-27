@@ -58,7 +58,7 @@ All routes are under `/api`. Existing routes and fields remain. See `shared/prod
 - `GET /ready`: database integrity and Knowledge version readiness.
 - `GET /ops/status`, `POST /ops/backup`: root-managed bearer token (at least 32 characters), sanitized metrics/backup only; not a public dashboard.
 
-Optional journey fields: `revision`, `workflowId`, `checklist`. Optional document fields: `contentSha256`, `missingFields`, `fieldConfidence`, `confidenceBasis`. Field confidence is an **uncalibrated model estimate**, not proof of correctness. Missing fields remain null. Hashes identify duplicate uploaded bytes, not document authenticity or upload authorization. Production accepts structurally valid PDF (up to 20 pages), PNG/JPEG/WebP; Linux qpdf and Pillow must be installed before enabling product mode. Declared type is checked against actual content and model classification.
+Optional journey fields: `revision`, `workflowId`, `checklist`. Optional document fields: `contentSha256`, `missingFields`, `fieldConfidence`, `confidenceBasis`. Field confidence is an **uncalibrated model estimate**, not proof of correctness. Missing fields remain null. Hashes identify duplicate uploaded bytes, not document authenticity or upload authorization. Production accepts structurally valid PDF (up to 20 pages), PNG/JPEG/WebP; Linux qpdf, util-linux prlimit and Pillow must be installed before enabling product mode. PDF parser children have a 256 MiB address-space / 3 CPU-second limit and a four-second wall deadline; images retain their bounded decoder. Declared type is checked against actual content and model classification.
 
 ## Service workflows
 
