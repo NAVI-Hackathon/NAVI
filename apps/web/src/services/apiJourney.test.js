@@ -79,7 +79,8 @@ test('the browser keeps only the journey id; the description is masked and never
   await service.uploadDocument('diagnosis_certificate', { sample: true });
 
   const stored = storage.getItem('navi.journey');
-  assert.deepEqual(Object.keys(JSON.parse(stored)).sort(), ['handoffRequested', 'journeyId', 'source', 'v']);
+  assert.deepEqual(Object.keys(JSON.parse(stored)).sort(), ['current', 'journeys', 'v']);
+  assert.deepEqual(Object.keys(JSON.parse(stored).journeys[0]).sort(), ['handoffRequested', 'journeyId', 'source']);
   for (const secret of ['0912', 'A123456789', '台中榮總', 'NAVI SYNTHETIC PATIENT']) assert.ok(!stored.includes(secret), secret);
   assert.doesNotMatch(snapshot.context.story, /0912|A123456789/);
   assert.match(snapshot.context.story, /台中榮總住院五天/);
@@ -93,6 +94,55 @@ test('the browser keeps only the journey id; the description is masked and never
   legacy.setItem('navi.journey', JSON.stringify({ v: 1, story, journey: snapshot.journey, source: 'demo_fallback', handoffRequested: false }));
   assert.equal(client('http://unused', legacy).restore(), null);
   assert.equal(legacy.getItem('navi.journey'), null);
+});
+
+test('several journeys: each is listed and read back from the server, switching never mixes their state', async t => {
+  const storage = memoryStorage();
+  const baseUrl = await backend(t);
+  const service = client(baseUrl, storage);
+  const first = (await service.analyze(DEMO_STORY)).snapshot.journey;
+  await service.uploadDocument('diagnosis_certificate', { sample: true });
+  const second = (await service.analyze('我上個月在臺大醫院住院三天，想申請住院理賠')).snapshot.journey;
+  assert.notEqual(first.id, second.id);
+
+  const listed = await service.listJourneys();
+  assert.deepEqual(listed.map(item => [item.id, item.current, item.readiness]), [[second.id, true, 35], [first.id, false, 70]]);
+  assert.equal(listed[1].title, '住院醫療理賠');
+
+  const back = await service.switchJourney(first.id);
+  assert.equal(back.journey.id, first.id);
+  assert.equal(back.journey.readiness, 70, 'state comes from the server, not from a local copy');
+  assert.equal((await service.uploadDocument('bank_passbook', { sample: true })).journey.readiness, 90);
+  assert.equal((await service.switchJourney(second.id)).journey.readiness, 35, 'the other journey is untouched');
+
+  // After a reload the browser still knows both ids and shows the one in use.
+  const reloaded = client(baseUrl, storage);
+  reloaded.restore();
+  assert.equal((await reloaded.resume()).journey.id, second.id);
+  assert.equal((await reloaded.listJourneys()).length, 2);
+});
+
+test('one expired journey leaves the list; the others stay', async t => {
+  const storage = memoryStorage();
+  const service = client(await backend(t), storage);
+  const first = (await service.analyze(DEMO_STORY)).snapshot.journey;
+  await service.analyze('我上個月在臺大醫院住院三天，想申請住院理賠');
+  // The server restarted (in-memory journeys are gone): every id is unknown there now.
+  const restarted = client(await backend(t), storage);
+  restarted.restore();
+  await assert.rejects(restarted.switchJourney(first.id), { code: 'JOURNEY_NOT_FOUND' });
+  assert.equal(JSON.parse(storage.getItem('navi.journey')).journeys.length, 1, 'only the expired journey was dropped');
+  assert.deepEqual(await restarted.listJourneys(), []);
+  assert.equal(storage.getItem('navi.journey'), null);
+});
+
+test('the earlier single-journey format is kept as a one-item list', () => {
+  const storage = memoryStorage();
+  const journeyId = '00000000-0000-4000-8000-000000000001';
+  storage.setItem('navi.journey', JSON.stringify({ v: 2, journeyId, source: 'gemini', handoffRequested: false }));
+  const service = client('http://unused', storage);
+  service.restore();
+  assert.equal(service.hasStoredJourney(), true);
 });
 
 test('only 住院醫療理賠 opens a server journey; outpatient-only and other services stay on the landing page', async t => {
@@ -155,7 +205,7 @@ test('fixture fields returned for the user\'s own file are withdrawn when the mo
 
 test('formal-mode manual information is stored as 待確認: no readiness, no document, no review; a verified upload replaces it', async t => {
   const service = client(await backend(t));
-  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true });
+  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true });
   await service.analyze(DEMO_STORY);
   const typed = await service.submitManual('diagnosis_certificate', { hospitalName: '臺中榮民總醫院', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', reportedInpatientDays: 5 });
   assert.equal(typed.journey.readiness, 35, 'manual information adds no readiness');

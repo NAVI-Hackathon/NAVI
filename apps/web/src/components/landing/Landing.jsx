@@ -36,7 +36,7 @@ function TaskOptions({ split, tasks, disabled, onPickTask, first }) {
       <p className="chat-question">{first ? '想先處理哪一件？' : `還有 ${tasks.length} 件事，要接著處理嗎？`}</p>
       <div className="chat-option-list">
         {tasks.map(task => (
-          <button key={task.id} type="button" className="chat-option" disabled={disabled} onClick={() => onPickTask(split, task, tasks)}>
+          <button key={task.id} type="button" className="chat-option" disabled={disabled} onClick={() => onPickTask(split, task)}>
             <Icon name="route" size={15} />{task.input.replace(/[。！？!?]+$/, '')}
           </button>
         ))}
@@ -57,8 +57,17 @@ function RetryOptions({ retry, busy, mode, onSend }) {
 }
 
 /** The journey NAVI opened: a compact card in the chat, entered with 開啟工作區. */
-function JourneyCard({ message, snapshot, onOpen }) {
+function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   const current = snapshot?.journey.id === message.journeyId ? snapshot.journey : null;
+  // Formal mode keeps earlier journeys (read back from the server on switching); /demo holds one.
+  if (!current && onSwitch) {
+    return (
+      <div className="chat-journey-past">
+        <p className="chat-text chat-muted">這份服務旅程仍保留，目前顯示的是另一件事。</p>
+        <button type="button" className="link-button" onClick={() => onSwitch(message.journeyId)}><Icon name="route" size={14} />切換回這件事</button>
+      </div>
+    );
+  }
   if (!current) return <p className="chat-text chat-muted">這份服務旅程已由新的旅程取代。</p>;
   return (
     <div className="chat-journey">
@@ -74,7 +83,7 @@ function JourneyCard({ message, snapshot, onOpen }) {
   );
 }
 
-function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace }) {
+function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journeysSlot, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney }) {
   const followUp = latest ? message.followUp : null;
   let body = null;
   if (message.kind === 'welcome') {
@@ -99,13 +108,13 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onPickTask
   } else if (message.kind === 'tasks') {
     body = (
       <>
-        <p className="chat-title">我聽到你有 {message.tasks.length} 件事</p>
+        <p className="chat-title">我聽到你有 {message.split.tasks.length} 件事</p>
         <p className="chat-text">NAVI 一次處理一件：先選一件，其他的會留著，處理完可以接著選。</p>
         <p className="chat-notice" role="note">{message.split.disclaimer}</p>
       </>
     );
   } else if (message.kind === 'journey') {
-    body = <JourneyCard message={message} snapshot={snapshot} onOpen={onOpenWorkspace} />;
+    body = <JourneyCard message={message} snapshot={snapshot} onOpen={onOpenWorkspace} onSwitch={onSwitchJourney} />;
   } else {
     body = (
       <>
@@ -120,7 +129,9 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onPickTask
       <span className="msg-avatar" aria-hidden="true">N</span>
       <div className="msg-bubble">
         {body}
-        {latest && message.tasks?.length > 0 && <TaskOptions split={message.split} tasks={message.tasks} disabled={busy} onPickTask={onPickTask} first={message.kind === 'tasks'} />}
+        {/* Requests from one message not handled yet stay offered under the latest reply, whatever came between. */}
+        {latest && openTasks?.tasks.length > 0 && <TaskOptions split={openTasks.split} tasks={openTasks.tasks} disabled={busy} onPickTask={onPickTask} first={message.kind === 'tasks'} />}
+        {latest && journeysSlot}
         {/* Older replies keep their question; only the latest offers buttons. */}
         {message.kind !== 'welcome' && (followUp
           ? <Options followUp={followUp} disabled={busy} onSend={onSend} onHotline={onHotline} />
@@ -134,7 +145,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, onSend, onPickTask
  * NAVI landing as a chat: the conversation scrolls above, the input stays at the bottom.
  * Replies come from the official-site search and the backend; option buttons only send text back.
  */
-export default function Landing({ messages, analysisPhase, snapshot, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, ref }) {
+export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, ref }) {
   const [text, setText] = useState('');
   const textarea = useRef(null);
   const dockRef = useRef(null);
@@ -207,8 +218,8 @@ export default function Landing({ messages, analysisPhase, snapshot, mode, dock,
             <motion.div key={message.id} layout="position" variants={fadeUp} initial="hidden" animate="show">
               {message.role === 'user'
                 ? <div className="msg msg-user"><p className="msg-bubble">{message.text}</p></div>
-                : <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot}
-                  onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} />}
+                : <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot} openTasks={openTasks} journeysSlot={journeysSlot}
+                  onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />}
             </motion.div>
           ))}
           {busy && (

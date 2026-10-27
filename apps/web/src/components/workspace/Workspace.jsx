@@ -50,7 +50,7 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
   );
 }
 
-export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, ref }) {
+export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, taskBar = null, ref }) {
   const breakpoint = useBreakpoint();
   const { journey } = snapshot;
   // Full: the document workflow (timeline, documents, readiness score). Compact: every other service.
@@ -99,6 +99,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
           )}
         </div>
       </div>
+      {taskBar}
 
       {breakpoint === 'desktop' && (
         <div className="workspace-grid">

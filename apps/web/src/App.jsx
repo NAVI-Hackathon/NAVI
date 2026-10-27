@@ -13,8 +13,9 @@ import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
 import GuideCard from './components/guide/GuideCard.jsx';
+import TaskBar from './components/tasks/TaskBar.jsx';
 import { transition } from './motion/tokens.js';
-import { JOURNEY_EXPIRED_MESSAGE, understandingOfTask } from './services/apiJourney.js';
+import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 
 const embedded = isEmbedPath(location.pathname);
@@ -38,6 +39,8 @@ const errorCopy = {
   AI_NOT_CONFIGURED: ['AI 分析服務尚未啟用', '目前無法使用 AI 分析。你可以改用示範模式，體驗完整的服務旅程。'],
   API_UNAVAILABLE: ['分析服務暫時無法使用', '請稍後再試一次，或改用示範模式。'],
   AI_PROVIDER_ERROR: ['分析服務暫時無法回應', '請稍後再試一次，或改用示範模式。'],
+  // The server's receipt for a chosen task lasts 5 minutes; nothing is re-sent on its own.
+  INTENT_RECEIPT_REQUIRED: ['這件事的需求分析已失效', '從分析到選擇超過 5 分鐘，或內容已改變。按「重新分析」，NAVI 會再理解一次這件事；其他尚未處理的事情仍會保留。'],
 };
 
 // NAVI's chat replies. Answers are quoted from official data; NAVI never writes policy text itself.
@@ -88,6 +91,10 @@ export default function App() {
   const [guide, setGuide] = useState(null); // { plan, index } while a step-by-step guide is open
   const [guidePending, setGuidePending] = useState(false); // plan request slower than a blink
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // Requests from one message not handled yet (from POST /intelligence/tasks), and this browser's journeys
+  // as the server has them (formal mode). Neither is a local copy of journey state.
+  const [openTasks, setOpenTasks] = useState(null);
+  const [journeys, setJourneys] = useState([]);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
   const systemReduced = useReducedMotion();
@@ -125,14 +132,18 @@ export default function App() {
   /** The server no longer has this journey (expired or restarted): start over cleanly. */
   const expire = useCallback(() => {
     analysisCtl.current?.abort();
-    service.reset();
+    // Only the expired journey is dropped; this browser's other journeys stay listed.
+    const others = service.forgetCurrent ? service.forgetCurrent() : (service.reset(), 0);
     setSnapshot(null);
     setDocStates({});
     setDialog(null);
     setAnalysisPhase(null);
     history.replaceState(null, '', location.pathname + location.search);
     setView('landing');
-    say({ kind: 'note', tone: 'info', title: '這份服務旅程已失效', body: `${JOURNEY_EXPIRED_MESSAGE}描述你的情況，就能建立新的服務旅程。` });
+    say({
+      kind: 'note', tone: 'info', title: '這份服務旅程已失效',
+      body: others ? `${JOURNEY_EXPIRED_MESSAGE}你的其他 ${others} 件事仍保留，可以從下方繼續處理。` : `${JOURNEY_EXPIRED_MESSAGE}描述你的情況，就能建立新的服務旅程。`,
+    });
   }, [service]);
 
   // Formal mode keeps only the journey id in the browser; read the journey back after a reload.
@@ -154,6 +165,21 @@ export default function App() {
     });
     return () => ctl.abort();
   }, [service, expire]);
+
+  // The journey list is read from the server when the shown journey changes (GET only, no AI call);
+  // the shown journey's own entry follows the snapshot, which is the server's latest answer.
+  const refreshJourneys = useCallback(() => {
+    if (!service.listJourneys) return undefined;
+    const ctl = new AbortController();
+    service.listJourneys({ signal: ctl.signal }).then(setJourneys).catch(() => { /* keep the last list */ });
+    return () => ctl.abort();
+  }, [service]);
+  const shownId = snapshot?.journey.id ?? null;
+  useEffect(() => refreshJourneys(), [refreshJourneys, shownId, resuming]);
+  // Earlier journeys are offered in the chat when none is shown, or when there are several.
+  const journeyList = useMemo(() => journeys.map(item => (snapshot && item.id === snapshot.journey.id
+    ? { ...item, current: true, unavailable: false, ...journeySummary(snapshot.journey) }
+    : { ...item, current: false })), [journeys, snapshot]);
 
   /** Run a journey action; server failures become a toast, an expired journey restarts. */
   async function attempt(run) {
@@ -205,7 +231,7 @@ export default function App() {
    */
   /**
    * `picked`: a task the user chose from several in one message — its understanding is reused (no second
-   * AI call), and the tasks not handled yet stay offered under the reply.
+   * AI call). The tasks not handled yet stay in openTasks, offered under the latest reply.
    */
   async function send(text, label = text, picked = null) {
     analysisCtl.current?.abort();
@@ -217,8 +243,7 @@ export default function App() {
     const knowledge = searchKnowledge(text);
     if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return; }
     const answered = knowledge.status === 'answered';
-    const pending = picked?.remaining.length ? { tasks: picked.remaining, split: picked.split } : {};
-    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text), ...pending });
+    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text) });
     setAnalysisPhase(0);
     const step = reduced ? 0 : 520;
     const startedAt = performance.now();
@@ -231,7 +256,8 @@ export default function App() {
         const split = await service.understandTasks(text, { signal: ctl.signal });
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
-          reply({ kind: 'tasks', split, tasks: split.tasks });
+          setOpenTasks({ split, tasks: split.tasks });
+          reply({ kind: 'tasks', split });
           return;
         }
         if (split) understanding = understandingOfTask(split, split.tasks[0]);
@@ -240,28 +266,63 @@ export default function App() {
       await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
       setAnalysisPhase(1);
       await wait(step, ctl.signal);
-      if (!result.snapshot) { reply(answered ? answers() : { ...replyFor(result.understanding, text, knowledge.hotline), ...pending }); return; }
+      if (!result.snapshot) { reply(answered ? answers() : replyFor(result.understanding, text, knowledge.hotline)); return; }
       setAnalysisPhase(2);
       await wait(step, ctl.signal);
       setDocStates({});
       setTab('journey');
       setSnapshot(result.snapshot);
       // The journey opens as a card in the chat; the user enters the workspace from there.
-      reply({ kind: 'journey', journeyId: result.snapshot.journey.id, ...pending });
+      reply({ kind: 'journey', journeyId: result.snapshot.journey.id });
     } catch (error) {
       if (ctl.signal.aborted) return;
       // The official answers do not depend on the AI service, so they still help when it is down.
       // The analysis can still be retried (manually: a timeout is never re-sent on its own).
-      if (answered) { reply({ ...answers('AI 分析暫時無法使用，以下是官網資料中的相關說明。'), retry: { text, label } }); return; }
+      if (answered) {
+        const notice = error?.code === 'INTENT_RECEIPT_REQUIRED'
+          ? `${errorCopy.INTENT_RECEIPT_REQUIRED[0]}，以下先列出官網資料中的相關說明；按「重新分析」可再建立服務旅程。`
+          : 'AI 分析暫時無法使用，以下是官網資料中的相關說明。';
+        reply({ ...answers(notice), retry: { text, label } });
+        return;
+      }
       const [title, body] = errorCopy[error?.code] ?? errorCopy.DEFAULT;
-      reply({ kind: 'note', tone: 'error', title, body, retry: { text, label }, ...pending });
+      reply({ kind: 'note', tone: 'error', title, body, retry: { text, label } });
     }
   }
 
   /** Handle one task of several; the others stay listed for later. */
-  function pickTask(split, task, tasks) {
+  function pickTask(split, task) {
     const understanding = understandingOfTask(split, task);
-    send(task.input, task.input, understanding ? { understanding, split, remaining: tasks.filter(other => other.id !== task.id) } : null);
+    setOpenTasks(current => {
+      const tasks = current?.tasks.filter(other => other.id !== task.id) ?? [];
+      return tasks.length ? { split: current.split, tasks } : null;
+    });
+    send(task.input, task.input, understanding ? { understanding, split } : null);
+  }
+  /** From the workspace: back to the chat, where the chosen request is handled. */
+  function pickOpenTask(split, task) {
+    goLanding();
+    pickTask(split, task);
+  }
+
+  /** Show another journey of this browser, read again from the server. */
+  async function switchJourney(id) {
+    if (id === snapshotRef.current?.journey.id) { goWorkspace(); return; }
+    try {
+      const next = await service.switchJourney(id);
+      analysisCtl.current?.abort();
+      setSnapshot(next);
+      setDocStates({});
+      setExplanation(null);
+      setDialog(null);
+      setTab('journey');
+      if (view !== 'workspace') goWorkspace();
+      notify(`已切換到「${next.journey.title}」。`);
+    } catch (error) {
+      if (error?.code === 'JOURNEY_NOT_FOUND') notify('這件事的服務旅程已失效（超過 1 小時或服務重新啟動），已從清單移除；其他事情不受影響。');
+      else notify(error?.message && error?.code ? error.message : '目前無法讀取這件事，請確認網路後再試一次。');
+      refreshJourneys();
+    }
   }
 
   async function upload(type, source) {
@@ -417,6 +478,8 @@ export default function App() {
     service.reset();
     setSnapshot(null);
     setAnalysisPhase(null);
+    setOpenTasks(null);
+    setJourneys([]);
     setMessages(welcome());
     setDocStates({});
     setDialog(null);
@@ -476,10 +539,13 @@ export default function App() {
                 key="workspace" snapshot={snapshot} explanation={explanation} docStates={docStates} busy={busyType}
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
+                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} />}
               />
             ) : (
               <Landing
-                key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot}
+                key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot} openTasks={openTasks}
+                journeysSlot={journeyList.length > (snapshot ? 1 : 0) ? <TaskBar variant="chat" journeys={journeyList} busy={analysisPhase !== null} onSwitch={switchJourney} /> : null}
+                onSwitchJourney={service.switchJourney ? switchJourney : null}
                 dock={guideLayer} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
