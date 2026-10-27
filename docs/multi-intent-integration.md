@@ -2,6 +2,8 @@
 
 基準 main：`cebbcbc4772f88daabeca309816b63688c8d4158`，已包含 A 的 `ed8ff58`。A 已同意本輪相容行為修正、測試更新及 optional `Document.requiresRevalidation`；不修改 UI、動畫或 Guided Action 元件。最終測試／部署 SHA 以該次本機發布報告為準。
 
+整合期間另合併 A 的 `eb6d3d6c9e1b53db1ad8bde5ffb69dfe890f4cd0`：管道資格與未驗真文案、桌面 dock、雙站 E2E。保留全部 A 的 UI 修改，只把其新 E2E 的地址三步預期更新為兩個不同目標，並加入既有 evidence runner；部署以再次驗收的最新合併版本為準。
+
 ## 呼叫圖與額度
 
 1. `POST /api/intelligence/tasks` → 一次 Provider `understandTasks` → 一次 Gemini structured generation（正式模式）。完整性／否定／schema 驗證後，每個任務在伺服器建立 Receipt。
