@@ -55,8 +55,9 @@ export function createModelRouter(config, fetchImpl, { store = config.store, quo
           const res=await bounded(combined,()=>fetchImpl(`${endpoint}models/${selected.id}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':config.apiKey},body:JSON.stringify(body),signal:combined}));
           const data=await res.json().catch(()=>null);
           if (!res.ok) {
-            const details=JSON.stringify(data?.error?.details ?? []);
-            const modelQuota=/PerModel|per_model|\bmodel\b/i.test(details);
+            const details=Array.isArray(data?.error?.details)?data.error.details:[];
+            const quotaIds=details.flatMap(d=>[d?.quotaId,...(Array.isArray(d?.violations)?d.violations.map(v=>v.quotaId):[])]).filter(id=>typeof id==='string');
+            const modelQuota=quotaIds.length>0&&quotaIds.every(id=>/PerModel|per_model/i.test(id));
             if (res.status===429 && !modelQuota) throw new ApiError('AI_PROJECT_QUOTA_REACHED','目前 Google 專案額度暫時不足；可繼續使用有來源的服務查詢。',429,false);
             throw new ApiError(res.status===429?'AI_RATE_LIMITED':res.status===404?'AI_MODEL_UNAVAILABLE':'AI_PROVIDER_ERROR','目前模型暫時無法回應，請稍後再試。',res.status===429?429:503,[429,404,408,500,502,503,504].includes(res.status));
           }
