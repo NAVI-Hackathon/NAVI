@@ -12,11 +12,20 @@ export const ObservationSchema = z.object({
   latencyMs: z.number().finite().nonnegative(), requests: z.number().int().min(0).max(1),
   tokenUsage: z.object({ input: z.number().int().nonnegative(), output: z.number().int().nonnegative() }).strict().nullable(),
   fallbackUsed: z.literal(false), errorCode: z.string().nullable(),
-  tasks: z.array(z.object({ serviceType: z.string(), outcome: z.string() }).strict()).optional(),
+  tasks: z.array(z.object({ serviceType: z.string(), outcome: z.string(), extractedData: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional() }).strict()).optional(),
   extraction: z.object({ documentType: z.string(), fields: z.record(z.string(), z.union([z.string(), z.number(), z.null()])) }).strict().optional(),
   documentStatus: z.enum(['verified', 'needs_review', 'rejected']).optional(), issues: z.array(z.string()).optional(),
 }).strict();
-const sameTasks = (a = []) => a.map(t => `${t.serviceType}:${t.outcome}`).sort().join('|');
+function sameTasks(expected, actual = []) {
+  if (expected.length !== actual.length) return false;
+  const remaining = [...actual];
+  return expected.every(task => {
+    const index = remaining.findIndex(row => row.serviceType === task.serviceType && row.outcome === task.outcome &&
+      Object.entries(task.extractedData ?? {}).every(([key, value]) => (row.extractedData?.[key] ?? null) === value));
+    if (index < 0) return false;
+    remaining.splice(index, 1); return true;
+  });
+}
 const label = (a = []) => a.map(t => t.serviceType).sort().join('+') || '__error__';
 const present = value => value !== null && value !== undefined;
 
@@ -29,7 +38,7 @@ export function scoreObservations(cases, input) {
   const rows = observations.map(actual => {
     const entry = indexed.get(actual.id); const gt = entry.groundTruth;
     let pass;
-    if (entry.kind === 'intent') pass = !actual.errorCode && sameTasks(actual.tasks) === sameTasks(gt.tasks);
+    if (entry.kind === 'intent') pass = !actual.errorCode && sameTasks(gt.tasks, actual.tasks);
     else {
       const expectedError = gt.status === 'rejected';
       pass = expectedError ? gt.errorCodes.includes(actual.errorCode) && actual.documentStatus !== 'verified'

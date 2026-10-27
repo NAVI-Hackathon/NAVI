@@ -14,9 +14,11 @@ import { offlineNetworkStats } from '../../test/networkGuard.js';
 import { scoreObservations } from './score.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
-export async function loadHoldout() {
-  const text = await readFile(new URL('./cases.jsonl', import.meta.url), 'utf8');
-  const manifest = JSON.parse(await readFile(new URL('./manifest.json', import.meta.url)));
+const suiteDirectory = suite => { assert.ok(['v1', 'v2'].includes(suite)); return new URL(suite === 'v2' ? './v2/' : './', import.meta.url); };
+export async function loadHoldout(suite = 'v1') {
+  const directory = suiteDirectory(suite);
+  const text = await readFile(new URL('cases.jsonl', directory), 'utf8');
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', directory)));
   assert.equal(hash(text), manifest.datasetSha256, 'Ground Truth changed after freeze: create a new dataset version, never silently amend it');
   const cases = text.trim().split('\n').map(line => JSON.parse(line));
   assert.equal(cases.length, manifest.caseCount); assert.equal(new Set(cases.map(row => row.id)).size, cases.length);
@@ -24,6 +26,12 @@ export async function loadHoldout() {
   return { cases, manifest };
 }
 export async function fixtureBytes(fixture) {
+  if (fixture.file) {
+    assert.match(fixture.file, /^[a-z][a-z-]*\.(?:pdf|png)$/); assert.match(fixture.sha256, /^[a-f0-9]{64}$/);
+    const bytes = await readFile(new URL(`./v2/fixtures/${fixture.file}`, import.meta.url));
+    assert.equal(hash(bytes), fixture.sha256, 'Frozen evaluation media changed');
+    return { bytes, mimeType: fixture.file.endsWith('.pdf') ? 'application/pdf' : 'image/png', filename: fixture.file };
+  }
   if (fixture.lines) return { bytes: syntheticPdf(fixture.lines), mimeType: 'application/pdf', filename: 'holdout-synthetic.pdf' };
   if (fixture.invalidPdf) return { bytes: Buffer.from('%PDF-1.4\ntruncated synthetic test'), mimeType: 'application/pdf', filename: 'invalid.pdf' };
   assert.ok(['blank.png', 'unrelated-landscape.png', 'unrelated-pet.png', 'blurred.png', 'tilted.png', 'multi-page.pdf', 'prompt-injection.pdf'].includes(fixture.existing));
@@ -35,8 +43,8 @@ async function parsedUpload(input) {
   const request = new Request('http://127.0.0.1/synthetic-test', { method: 'POST', body: form });
   return parseUpload({ is: type => type === 'multipart/form-data', body: Buffer.from(await request.arrayBuffer()), get: key => request.headers.get(key) });
 }
-export async function runMock(cases, gitSha) {
-  const outputs = JSON.parse(await readFile(new URL('./mock-outputs.json', import.meta.url)));
+export async function runMock(cases, gitSha, suite = 'v1') {
+  const outputs = JSON.parse(await readFile(new URL('mock-outputs.json', suiteDirectory(suite))));
   const config = loadConfig({ AI_MODE: 'live', GEMINI_API_KEY: 'synthetic-mock-only', GEMINI_FREE_TIER_CONFIRMED: 'true', AI_MAX_ATTEMPTS: '1' });
   const rows = [];
   for (const entry of cases) {
@@ -53,7 +61,7 @@ export async function runMock(cases, gitSha) {
     const originalAnalyze = provider.analyzeDocument;
     provider.analyzeDocument = async (...args) => { const data = await originalAnalyze(...args); extraction = { documentType: data.documentType, fields: data.fields }; return data; };
     try {
-      if (entry.kind === 'intent') tasks = (await understandTasks(entry.message, { provider, config })).tasks.map(t => ({ serviceType: t.data.serviceType, outcome: t.outcome }));
+      if (entry.kind === 'intent') tasks = (await understandTasks(entry.message, { provider, config })).tasks.map(t => ({ serviceType: t.data.serviceType, outcome: t.outcome, extractedData: t.data.extractedData }));
       else {
         upload = await parsedUpload(input);
         const doc = await analyzeDocument(upload, { provider, config });
@@ -69,10 +77,13 @@ export async function runMock(cases, gitSha) {
   return rows;
 }
 async function main() {
-  const [mode = '--dry-run', input, ...extra] = process.argv.slice(2);
+  const args = process.argv.slice(2); let suite = 'v1';
+  const suiteIndex = args.indexOf('--suite');
+  if (suiteIndex >= 0) { suite = args[suiteIndex + 1]; suiteDirectory(suite); args.splice(suiteIndex, 2); }
+  const [mode = '--dry-run', input, ...extra] = args;
   assert.ok(['--dry-run', '--mock', '--score'].includes(mode), 'Live execution is deliberately unavailable; separate approval and current Free Tier verification are required');
   assert.equal(extra.length, 0); assert.ok(mode === '--score' ? input : !input);
-  const { cases, manifest } = await loadHoldout();
+  const { cases, manifest } = await loadHoldout(suite);
   const gitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim());
   const fixtures = {};
@@ -84,7 +95,7 @@ async function main() {
       observedProductionLimits: null, requiredBeforeExecution: ['人工核對當前 AI Studio Free Tier、模型與可用配額', '讀取 Production 持久化帳本與 Session 額度；不得用舊帳本日期推算 Google 剩餘量', '另行核准固定請求預算；本程式沒有 Live 開關'], liveGeminiRequests: 0 }, null, 2)); return;
   }
   let rows; let originalReportSha256 = null;
-  if (mode === '--mock') rows = await runMock(cases, gitSha);
+  if (mode === '--mock') rows = await runMock(cases, gitSha, suite);
   else {
     const source = await readFile(resolve(input)); originalReportSha256 = hash(source);
     const imported = JSON.parse(source);

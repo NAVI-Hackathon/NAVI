@@ -64,3 +64,23 @@ test('Dry Run has no live option, no secrets, exact proposed request cost and di
   await assert.rejects(fixtureBytes({ existing: '../../../../.env' }));
   assert.throws(() => execFileSync(process.execPath, ['apps/api/eval/holdout/run.js', '--live'], { cwd: new URL('../../../', import.meta.url), stdio: 'pipe' }));
 });
+test('Evaluation-only v2 media is separate, frozen and uses the same real validation pipeline under mock transport', async () => {
+  const { cases, manifest } = await loadHoldout('v2');
+  assert.equal(cases.length, 28); assert.equal(manifest.originalDevelopmentFixturesReused, false); assert.equal(manifest.independentHeldOut, false);
+  assert.ok(cases.filter(row => row.kind === 'document').every(row => row.fixture.file && !row.fixture.existing));
+  const results = await runMock(cases, sha, 'v2'); const score = scoreObservations(cases, results);
+  assert.equal(score.pass.numerator, 28); assert.equal(score.requests, 27);
+  assert.equal(results.find(row => row.id === 'D29').requests, 0);
+  assert.equal(results.find(row => row.id === 'D30').documentStatus, 'rejected');
+  assert.equal(results.find(row => row.id === 'D28').documentStatus, 'needs_review');
+  assert.deepEqual(offlineNetworkStats(), { blockedExternalAttempts: 0, externalRequests: 0 });
+});
+test('Frozen v2 files reject traversal/hash replacement; factual intent loss is a failure even if the service label matches', async () => {
+  const { cases } = await loadHoldout('v2');
+  const docCase = cases.find(row => row.id === 'D21');
+  await assert.rejects(fixtureBytes({ ...docCase.fixture, sha256: '0'.repeat(64) }));
+  await assert.rejects(fixtureBytes({ file: '../.env', sha256: '0'.repeat(64) }));
+  const hospital = cases.find(row => row.id === 'I28');
+  const actual = observation(hospital.id, { tasks: [{ serviceType: 'hospitalization_claim', outcome: 'supported', extractedData: { hospitalName: '台大' } }] });
+  assert.equal(scoreObservations([hospital], [actual]).pass.numerator, 0);
+});
