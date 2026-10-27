@@ -168,9 +168,10 @@ export default function App() {
       setResuming(false);
     }).catch(error => {
       if (ctl.signal.aborted) return;
-      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      if(['AUTH_REQUIRED','SESSION_EXPIRED','EMAIL_NOT_VERIFIED'].includes(error?.code)){setProductDialog('data');say({kind:'note',tone:'info',title:'請重新登入',body:'登入並完成信箱驗證後，可從我的資料與歷程繼續處理。'});}
+      else if (error?.code === 'JOURNEY_NOT_FOUND') expire();
       // Any other failure keeps the stored journey: say so instead of opening on an empty chat.
-      else say({ kind: 'note', tone: 'error', title: '暫時無法讀回你的服務旅程', body: '請確認網路連線後重新整理頁面；旅程會在建立後 1 小時內保留。也可以直接重新描述你的情況。' });
+      else say({ kind: 'note', tone: 'error', title: '暫時無法讀回你的服務旅程', body: '請確認網路連線後重新整理頁面；已保存的資料會依服務保存政策保留。也可以先查詢有來源的服務資訊。' });
       setResuming(false);
     });
     return () => ctl.abort();
@@ -265,6 +266,7 @@ export default function App() {
       if (!picked && service.capabilities.tasks) {
         // Several independent requests: list them and let the user choose one; nothing opens on its own.
         const split = await service.understandTasks(text, { signal: ctl.signal });
+        if(split?.productReply?.correctionRequired){reply({kind:'note',tone:'info',title:'請選擇要修正的事情',body:split.productReply.answer});return;}
         if(split?.productReply&&!split.productReply.understanding){const p=split.productReply;reply(p.evidence.status==='answered'?{kind:'answers',result:service.knowledgeResult(p),notice:p.errorCode?'AI 暫時無法回應，以下為已核對來源的資料。':undefined}:{kind:'note',tone:'info',title:'下一步',body:p.answer});return;}
         if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {

@@ -1,3 +1,4 @@
+import HandoffDraftEditor from './HandoffDraftEditor.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import Icon from '../Icon.jsx';
@@ -260,6 +261,7 @@ export function HandoffDialog({ snapshot, service, onConfirmed, onClose }) {
         </div>
       )}
       {summary && phase !== 'loading' && phase !== 'error' && <HandoffSummaryCard summary={summary} />}
+      {service.productEnabled&&<HandoffDraftEditor service={service} journeyId={snapshot.journey.id}/>}
 
       {confirmed ? (
         <motion.div className="success-note" role="status" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: transition.enter }}>
