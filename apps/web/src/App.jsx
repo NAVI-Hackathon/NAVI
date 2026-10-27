@@ -17,6 +17,7 @@ import TaskBar from './components/tasks/TaskBar.jsx';
 import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
+import { documentRecovery } from './domain/documentRecovery.js';
 
 const embedded = isEmbedPath(location.pathname);
 const mode = resolveMode(location);
@@ -104,6 +105,7 @@ export default function App() {
   const analysisCtl = useRef(null);
   const snapshotRef = useRef(snapshot);
   const fileInputs = useRef({});
+  const uploads = useRef({}); // document type → AbortController of the upload in progress
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(reduced); }, [reduced]);
   useEffect(() => { document.documentElement.dataset.embedded = String(embedded); }, []);
@@ -327,25 +329,37 @@ export default function App() {
 
   async function upload(type, source) {
     if (busyType) return;
-    setDocStates(s => ({ ...s, [type]: { status: 'processing' } }));
+    const ctl = new AbortController();
+    uploads.current[type] = ctl;
+    // Formal mode reports real progress (bytes sent, then the server reading the file); /demo sends nothing.
+    setDocStates(s => ({ ...s, [type]: { status: 'processing', phase: service.capabilities.uploadProgress ? 'sending' : 'demo', startedAt: Date.now() } }));
+    const onProgress = progress => setDocStates(s => (s[type]?.status === 'processing' && !ctl.signal.aborted
+      ? { ...s, [type]: { ...s[type], ...progress, ...(progress.phase === 'analyzing' && s[type].phase !== 'analyzing' ? { analyzingSince: Date.now() } : {}) } }
+      : s));
     try {
-      const next = await service.uploadDocument(type, source);
+      const next = await service.uploadDocument(type, source, { signal: ctl.signal, onProgress });
       setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       const added = next.journey.documents.find(d => d.documentType === type);
       notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有欄位待人工確認：可重新上傳較清楚的文件，或轉由專員協助確認。` : `${documentSpecs[type].title}欄位檢查通過，準備度已更新（尚未驗證文件真偽）。`);
     } catch (error) {
+      if (ctl.signal.aborted) { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); notify(`已取消上傳${documentSpecs[type].title}，準備完成度未改變。`); return; }
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
       if (error?.code === 'JOURNEY_STALE') { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); await reloadStale(); return; }
       // Server messages (e.g. 文件類型與目前服務需求不同, JOURNEY_BUSY) are written for the user.
       const message = error?.code && error.message ? error.message : null;
-      setDocStates(s => ({ ...s, [type]: { status: 'failed', message } }));
+      // The file stays in memory only, so「再試一次」can send the same file again when the user asks.
+      const retrySource = documentRecovery(error?.code).actions.includes('retry') ? source : null;
+      setDocStates(s => ({ ...s, [type]: { status: 'failed', code: error?.code ?? null, message, retrySource } }));
       // The document card may be off screen (the upload started from 下一步), so say it where the user is too.
       notify(`${documentSpecs[type].title}沒有完成辨識，準備完成度未改變。${message ?? '請稍後再試，或改為先提供資訊。'}`);
     } finally {
+      if (uploads.current[type] === ctl) delete uploads.current[type];
       setFailNext(false);
     }
   }
+  /** Stop sending a file (only offered while the bytes are still going out). */
+  const cancelUpload = type => uploads.current[type]?.abort();
 
   /** Take the user to the step's page on the insurer site (embedded: host navigates; standalone: new tab). */
   const openOnSite = host.connected
@@ -398,12 +412,14 @@ export default function App() {
     // Where uploaded files go differs by mode; say so plainly next to the upload cards.
     documentNotice: service.capabilities.manualEntry
       ? '文件辨識使用示範資料；你的檔案不會被讀取或上傳。'
-      : '文件會傳送到 NAVI 服務辨識，不會保存檔案本身；這是示範原型，請勿上傳真實病歷或銀行資料。',
+      : '檔案會傳送到 NAVI 服務由 AI 辨識；伺服器不保存檔案本身，只保留辨識出的欄位，案件 1 小時後失效。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。',
     footerNotice: service.capabilities.manualEntry
       ? '進度只保留在這個分頁；文件不會被上傳。'
       : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
     manualVerifies: service.capabilities.manualEntry,
     upload,
+    cancelUpload,
+    analysisLimitSeconds: Math.round((service.documentTimeoutMs ?? 0) / 1000) || null,
     // /demo fills in local sample data; formal mode sends the synthetic PDF for real AI recognition.
     sample: service.capabilities.samples ? type => upload(type, { sample: true }) : null,
     sampleByAi: service.capabilities.samples === 'ai',
