@@ -33,11 +33,13 @@ test('a failed upload says so and keeps the score; the retry works; 100% is prel
   for (const label of [/我已確認以上資料正確/, /我已下載並填妥/]) await page.getByText(label).click();
   await page.getByRole('dialog').getByRole('button', { name: '確認資料' }).click();
   await expect(ring(page)).toHaveAttribute('aria-valuenow', '100');
-  await expect(page.getByText('資料初步準備完成・尚未送件').first()).toBeVisible();
+  await expect(page.getByText('已完成 NAVI 初步資料準備，仍需依正式規定確認與送件。').first()).toBeVisible();
   await expect(page.getByText('資料已準備完成')).toHaveCount(0);
 
   await page.getByRole('button', { name: '前往服務入口' }).first().click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('heading', { name: '資料初步準備完成' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: '已完成 NAVI 初步資料準備' })).toBeVisible();
+  await expect(dialog).toContainText('資格待確認');
+  await expect(dialog).toContainText('此管道可供查詢，實際適用資格仍需確認。');
   await expect(dialog).toContainText('尚未送件');
 });

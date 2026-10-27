@@ -7,6 +7,7 @@ import { documentSpecs } from '../../mocks/hospitalClaim.js';
 import { claimApplicationForm } from '../../content/cardifData.js';
 import { maskAccount, stayDays, stayText } from '../../content/format.js';
 import { CheckDraw } from '../../motion/primitives.jsx';
+import { channelStatus } from '../../domain/channels.js';
 import { transition } from '../../motion/tokens.js';
 
 const fieldsOf = (journey, type) => journey.documents.find(d => d.documentType === type)?.fields ?? {};
@@ -97,19 +98,22 @@ export function CorrectionDialog({ onClose, onSubmit }) {
 export function ProceedDialog({ snapshot, onClose, onDone, onNavigate }) {
   const { journey } = snapshot;
   const channel = journey.claimContext?.channels.find(c => c.id === journey.nextAction.target);
+  const shown = channel ? channelStatus(channel, journey.claimContext.hospital) : null;
   return (
     <Modal title="前往服務入口" onClose={onClose}>
       <div className="proceed">
         <motion.span className="proceed-mark" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1, transition: transition.enter }}>
           <CheckDraw size={26} strokeWidth={2.2} delay={0.1} />
         </motion.span>
-        <h3>資料初步準備完成</h3>
-        <p>NAVI 已整理好案件資料與 {journey.documents.length} 份文件，<strong>尚未送件</strong>。請透過下方建議管道向法國巴黎人壽提出申請，理賠服務會依保單條款審核。</p>
+        <h3>已完成 NAVI 初步資料準備</h3>
+        <p>NAVI 已整理好案件資料與 {journey.documents.length} 份文件，<strong>尚未送件</strong>。仍需依正式規定確認，再透過下方管道向法國巴黎人壽提出申請；理賠服務會依保單條款審核。</p>
         <ul className="proceed-summary">
-          <li><span>建議管道</span><strong>{channel?.name ?? '理賠服務'}</strong></li>
-          <li><span>準備完成度</span><strong>{journey.readiness}%</strong></li>
+          <li><span>建議先查看的管道</span><strong>{channel?.name ?? '理賠服務'}</strong></li>
+          {shown && <li><span>管道資格</span><strong>{shown.tag}</strong></li>}
+          <li><span>NAVI 資料準備度</span><strong>{journey.readiness}%・非核賠結果</strong></li>
         </ul>
-        {channel && <ul className="proceed-notes">{channel.notes.map(note => <li key={note}>{note}</li>)}</ul>}
+        {shown && <p className="proceed-eligibility">{shown.text}{shown.partnerHint ? ` ${shown.partnerHint}` : ''}</p>}
+        {channel && <ul className="proceed-notes">{(shown?.toConfirm.length ? shown.toConfirm : channel.notes).map(note => <li key={note}>{note}</li>)}</ul>}
         <p className="modal-footnote"><Icon name="info" size={14} />本原型僅展示服務導引，不會連線正式平台或送出申請。</p>
         {channel && onNavigate && (
           <button type="button" className="button button-secondary full-width" onClick={() => { onNavigate(channel.destination); onDone(); }}>

@@ -272,7 +272,7 @@ export default function App() {
       setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       const added = next.journey.documents.find(d => d.documentType === type);
-      notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有資料需要確認：可重新上傳較清楚的文件，或轉由專員協助確認。` : `${documentSpecs[type].title}已辨識，準備完成度已更新。`);
+      notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有欄位待人工確認：可重新上傳較清楚的文件，或轉由專員協助確認。` : `${documentSpecs[type].title}欄位檢查通過，準備度已更新（尚未驗證文件真偽）。`);
     } catch (error) {
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
       if (error?.code === 'JOURNEY_STALE') { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); await reloadStale(); return; }
@@ -494,7 +494,7 @@ export default function App() {
               onConfirm={async () => {
                 const next = await attempt(() => service.confirm());
                 if (!next) return;
-                setSnapshot(next); setDialog(null); notify('資料已確認：NAVI 資料初步準備完成（100%），尚未送件。');
+                setSnapshot(next); setDialog(null); notify('資料已確認：已完成 NAVI 初步資料準備（100%），仍需依正式規定確認與送件。');
               }}
               onProceed={() => setDialog('proceed')} />
           )}

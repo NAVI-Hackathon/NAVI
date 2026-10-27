@@ -125,7 +125,7 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sam
           <AnimatePresence mode="wait" initial={false}>
             <motion.p key={complete ? 'done' : missing} className={`readiness-caption ${complete ? 'is-complete' : ''}`}
               initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
-              {complete ? '資料初步準備完成・尚未送件' : missing ? `還有 ${missing} 項資料待補齊` : '必要文件已備齊，請確認資料'}
+              {complete ? '已完成 NAVI 初步資料準備，仍需依正式規定確認與送件。' : missing ? `還有 ${missing} 項資料待補齊` : '必要文件已備齊，請確認資料'}
             </motion.p>
           </AnimatePresence>
         </div>
@@ -145,7 +145,7 @@ export default function ReadinessPanel({ snapshot, busy, onAction, onSample, sam
         ? <PreflightBoard journey={journey} explanation={preflight.explanation} busy={busy} onAction={preflight.onAction} />
         : journey.requirements.length > 0 && <RequirementList requirements={journey.requirements} />}
 
-      <p className="readiness-note"><Icon name="shield" size={14} />準備完成度是 NAVI 對資料的初步檢核，不代表理賠核准、保障判斷或已送件。</p>
+      <p className="readiness-note"><Icon name="shield" size={14} />NAVI 資料準備度，非核賠結果。只看資料是否齊全，不代表保障適用、理賠核准或已送件。</p>
       {journey.nextAction.type !== 'CONTACT_SPECIALIST' && (
         <button type="button" className="link-button specialist-link" onClick={onHandoff}>
           <Icon name="headset" size={16} />需要協助？轉由專員接續<Icon name="chevron" size={14} />

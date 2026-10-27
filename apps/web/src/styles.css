@@ -309,6 +309,13 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .field textarea { min-height: 88px; padding: 10px; resize: vertical; background: var(--color-surface-muted); border: var(--border); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; color: var(--color-text); }
 .field textarea:focus { outline: 0; border-color: rgba(151, 201, 179, 0.6); box-shadow: 0 0 0 3px rgba(0, 178, 110, 0.35); }
 .correct-link { font-size: 11px; color: var(--color-text-muted); gap: 6px; }
+.channel-confirm { margin-top: 4px; font-size: 11px; color: var(--color-text-muted); }
+.channel-confirm summary { display: flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; list-style: none; }
+.channel-confirm summary::-webkit-details-marker { display: none; }
+.channel-confirm[open] summary svg { transform: rotate(90deg); }
+.channel-confirm ul { padding-left: 16px; list-style: disc; line-height: 1.8; }
+.proceed-eligibility { width: 100%; margin: -6px 0 10px; font-size: 12px; color: var(--color-text-secondary); }
+.chat-journey-note, .mobile-readiness-note { margin-top: 2px; font-size: 11px; color: var(--color-text-muted); }
 .manual-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
 /* Readiness (right) */
