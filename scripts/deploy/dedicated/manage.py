@@ -72,11 +72,38 @@ def healthy():
         state = json.load(r)
         if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
 
-def activate(target):
+def private_environment(path):
+    path = pathlib.Path(path)
+    if path.parent not in (ROOT / 'config', ROOT / 'config/release-env') or path.is_symlink(): raise RuntimeError('Unsafe environment path')
+    st = path.stat()
+    if not path.is_file() or st.st_uid != ROOT.stat().st_uid or st.st_mode & 0o077: raise RuntimeError('Unsafe environment permissions')
+    return path.read_bytes()
+
+def write_environment(path, data):
+    if path.is_symlink(): raise RuntimeError('Unsafe environment destination')
+    temp = path.with_suffix('.new')
+    if temp.exists() or temp.is_symlink(): raise RuntimeError('Pending environment update exists')
+    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as f: f.write(data); f.flush(); os.fsync(f.fileno())
+    temp.replace(path)
+
+def activate(target, environment=None):
     target = release(target)
     if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True: raise RuntimeError('Legacy releases cannot be activated; use an isolated rollback target')
     old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
     owned_service(); run(['nginx', '-t'])
+    env = ROOT / 'config/api.env'
+    old_env = private_environment(env) if env.exists() else None
+    snapshots = ROOT / 'config/release-env'
+    if snapshots.is_symlink(): raise RuntimeError('Unsafe environment snapshots')
+    if env.exists():
+        snapshots.mkdir(mode=0o700, exist_ok=True)
+        if snapshots.stat().st_uid != ROOT.stat().st_uid or snapshots.stat().st_mode & 0o077: raise RuntimeError('Unsafe snapshots permissions')
+        if old: write_environment(snapshots / (old.name + '.env'), old_env)
+    saved = snapshots / (target.name + '.env')
+    next_env = private_environment(environment) if environment else private_environment(saved) if saved.exists() else old_env
+    if environment and old_env is None: raise RuntimeError('Missing existing environment')
+    if next_env is not None: write_environment(env, next_env)
     link('current', target)
     try:
         run(['systemctl', 'restart', UNIT])
@@ -87,6 +114,7 @@ def activate(target):
                 time.sleep(.5)
         run(['systemctl', 'reload', 'nginx'])
     except BaseException:
+        if old_env is not None: write_environment(env, old_env)
         if old:
             link('current', old)
             # Never restore a legacy public Demo API after a live-isolation failure.
@@ -94,14 +122,15 @@ def activate(target):
             run(['systemctl', 'restart' if isolated else 'stop', UNIT]); run(['systemctl', 'reload', 'nginx'])
         else: run(['systemctl', 'stop', UNIT])
         raise
+    if next_env is not None: write_environment(saved, next_env)
     if old and old != target: link('previous', old)
     print('Active: ' + str(target))
 
 def main():
-    p = argparse.ArgumentParser(); p.add_argument('action', choices=['install', 'activate', 'rollback', 'restart', 'stop', 'status']); p.add_argument('target', nargs='?'); p.add_argument('checksum', nargs='?'); args = p.parse_args()
+    p = argparse.ArgumentParser(); p.add_argument('action', choices=['install', 'activate', 'rollback', 'restart', 'stop', 'status']); p.add_argument('target', nargs='?'); p.add_argument('checksum', nargs='?'); p.add_argument('--environment'); args = p.parse_args()
     m = load()
     if args.action == 'install': install(m, args.target, args.checksum)
-    elif args.action == 'activate': activate(args.target)
+    elif args.action == 'activate': activate(args.target, args.environment)
     elif args.action == 'rollback': activate(ROOT / 'previous')
     else:
         owned_service()
