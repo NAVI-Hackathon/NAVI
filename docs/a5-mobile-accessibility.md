@@ -58,7 +58,7 @@
 | 長對話（30 則）：最新回覆與輸入框都在畫面中 | 通過 |
 | 請求沒送到 NAVI：說明並提供「重新分析」，不會自動重送 | 通過 |
 | Android Chrome（Pixel 7 user agent）跑完整 e2e | 9/9 通過 |
-| Safari 引擎（WebKit） | **尚未執行**：本機磁碟空間不足，WebKit 下載失敗。空出空間後執行 `npx playwright install webkit`，再跑 `npm run test:layout:webkit`、`npm run test:e2e:webkit` |
+| Safari 引擎（WebKit） | **無法在這台電腦執行**：Playwright 1.64.1 的 WebKit（v2370）在 macOS 26.0.1 開頁面就閃退（AppKit `_cornerConfiguration` 崩潰，與 NAVI 無關）。升級 macOS 或 Playwright 後執行 `npm run test:layout:webkit`、`npm run test:e2e:webkit`；在那之前以 iPhone Safari 實機清單為準 |
 
 ### Android Chrome 實機清單（Sh 實測後填寫）
 
