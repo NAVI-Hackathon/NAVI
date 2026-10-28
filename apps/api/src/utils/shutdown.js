@@ -7,9 +7,9 @@ export function installShutdown({server,app,signals=process,exit=code=>process.e
   const force=setTimeout(()=>server.closeAllConnections(),graceMs);force.unref();
   const deadline=setTimeout(()=>{
    console.warn(JSON.stringify({event:'shutdown_incomplete'}));server.closeAllConnections();
-   Promise.resolve().then(()=>app.locals.store?.close()).catch(()=>{});
-   exit(1);
-  },deadlineMs);deadline.unref();
+   const finalExit=setTimeout(()=>exit(1),250);
+   Promise.resolve().then(()=>app.locals.store?.close()).catch(()=>{}).finally(()=>{clearTimeout(finalExit);exit(1);});
+  },deadlineMs);
   server.close(async()=>{
    try{await app.locals.close?.();clearTimeout(force);clearTimeout(deadline);exit(0);}
    catch{clearTimeout(force);clearTimeout(deadline);console.warn(JSON.stringify({event:'shutdown_failed'}));exit(1);}
