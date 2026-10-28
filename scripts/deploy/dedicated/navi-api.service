@@ -8,9 +8,9 @@ StartLimitBurst=3
 Type=simple
 User=navi-hackathon
 Group=navi-hackathon
-WorkingDirectory=/opt/navi-hackathon/current
+WorkingDirectory=/opt/navi-hackathon/api-current
 EnvironmentFile=/opt/navi-hackathon/config/api.env
-ExecStart=/opt/navi-hackathon/runtime/node/bin/node --max-old-space-size=192 /opt/navi-hackathon/current/apps/api/src/server.js
+ExecStart=/opt/navi-hackathon/runtime/node/bin/node --max-old-space-size=192 /opt/navi-hackathon/api-current/apps/api/src/server.js
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=10
