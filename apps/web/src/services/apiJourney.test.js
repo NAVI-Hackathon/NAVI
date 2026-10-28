@@ -293,3 +293,27 @@ test('correcting the need re-reads it on the server: kept documents earn nothing
   assert.equal(snapshot.context.kind, snapshot.journey.serviceType, 'the client follows the corrected service');
   assert.equal((await service.refresh()).journey.id, snapshot.journey.id);
 });
+
+
+test('a delayed journey selection cannot overwrite the latest selected journey', async t => {
+ const baseUrl=await backend(t),storage=memoryStorage();let delayedId,arrived,release;const waiting=new Promise(r=>arrived=r),hold=new Promise(r=>release=r);
+ const service=createApiJourneyService({baseUrl,storage,understand:(message,options)=>understandIntent(message,{...options,baseUrl}),fetchImpl:async(url,init)=>{const response=await fetch(url,init);if(new URL(url).pathname==='/api/journeys/'+delayedId&&(!init.method||init.method==='GET')){arrived();await hold;}return response;}});
+ const first=(await service.analyze(DEMO_STORY)).snapshot.journey,second=(await service.analyze('我在臺大醫院住院三天')).snapshot.journey;delayedId=first.id;
+ const older=service.switchJourney(first.id);await waiting;await service.switchJourney(second.id);const rejected=assert.rejects(older,{name:'AbortError'});release();await rejected;
+ assert.equal(JSON.parse(storage.getItem('navi.journey')).current,second.id);assert.equal((await service.listJourneys()).find(j=>j.current).id,second.id);
+});
+
+test('a late upload response stays with its original journey after a selection changes', async t => {
+ const baseUrl=await backend(t),storage=memoryStorage();let arrived,release;const waiting=new Promise(r=>arrived=r),hold=new Promise(r=>release=r);
+ const service=createApiJourneyService({baseUrl,storage,understand:(message,options)=>understandIntent(message,{...options,baseUrl}),fetchImpl:async(url,init)=>{const response=await fetch(url,init);if(String(url).endsWith('/documents')&&init.method==='POST'){arrived();await hold;}return response;}});
+ const first=(await service.analyze(DEMO_STORY)).snapshot.journey,second=(await service.analyze('我在臺大醫院住院三天')).snapshot.journey;await service.switchJourney(first.id);
+ const uploading=service.uploadDocument('diagnosis_certificate',{sample:true});await waiting;await service.switchJourney(second.id);const rejected=assert.rejects(uploading,{code:'JOURNEY_STALE'});release();await rejected;
+ const list=await service.listJourneys();assert.equal(list.find(j=>j.current).id,second.id);assert.equal(list.find(j=>j.id===second.id).readiness,35);assert.equal(list.find(j=>j.id===first.id).readiness,70);
+});
+
+
+test('late handoff confirmation cannot mark a different selected journey as confirmed', async t => {
+ const baseUrl=await backend(t),storage=memoryStorage();let arrived,release;const waiting=new Promise(r=>arrived=r),hold=new Promise(r=>release=r);
+ const service=createApiJourneyService({baseUrl,storage,understand:(message,options)=>understandIntent(message,{...options,baseUrl}),fetchImpl:async(url,init)=>{const response=await fetch(url,init);if(String(url).endsWith('/handoff/confirm')){arrived();await hold;}return response;}});
+ const first=(await service.analyze(DEMO_STORY)).snapshot.journey,second=(await service.analyze('我在臺大醫院住院三天')).snapshot.journey;await service.switchJourney(first.id);const p=await service.handoffPreview(),confirming=service.confirmHandoff(p.previewId);await waiting;await service.switchJourney(second.id);const rejected=assert.rejects(confirming,{code:'JOURNEY_STALE'});release();await rejected;const stored=JSON.parse(storage.getItem('navi.journey'));assert.equal(stored.current,second.id);assert.equal(stored.journeys.find(j=>j.journeyId===second.id).handoffRequested,false);
+});

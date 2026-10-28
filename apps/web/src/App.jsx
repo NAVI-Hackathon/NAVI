@@ -241,7 +241,7 @@ export default function App() {
     const reply = next => { setAnalysisPhase(null); say(next); };
     // Official-site answers are searched locally; refused questions never reach the AI.
     const knowledge = searchKnowledge(text);
-    if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return; }
+    if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return true; }
     const answered = knowledge.status === 'answered';
     const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text) });
     setAnalysisPhase(0);
@@ -258,7 +258,7 @@ export default function App() {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
           setOpenTasks({ split, tasks: split.tasks });
           reply({ kind: 'tasks', split });
-          return;
+          return true;
         }
         if (split) understanding = understandingOfTask(split, split.tasks[0]);
       }
@@ -266,7 +266,7 @@ export default function App() {
       await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
       setAnalysisPhase(1);
       await wait(step, ctl.signal);
-      if (!result.snapshot) { reply(answered ? answers() : replyFor(result.understanding, text, knowledge.hotline)); return; }
+      if (!result.snapshot) { reply(answered ? answers() : replyFor(result.understanding, text, knowledge.hotline)); return true; }
       setAnalysisPhase(2);
       await wait(step, ctl.signal);
       setDocStates({});
@@ -274,8 +274,9 @@ export default function App() {
       setSnapshot(result.snapshot);
       // The journey opens as a card in the chat; the user enters the workspace from there.
       reply({ kind: 'journey', journeyId: result.snapshot.journey.id });
+      return true;
     } catch (error) {
-      if (ctl.signal.aborted) return;
+      if (ctl.signal.aborted) return false;
       // The official answers do not depend on the AI service, so they still help when it is down.
       // The analysis can still be retried (manually: a timeout is never re-sent on its own).
       if (answered) {
@@ -283,21 +284,23 @@ export default function App() {
           ? `${errorCopy.INTENT_RECEIPT_REQUIRED[0]}，以下先列出官網資料中的相關說明；按「重新分析」可再建立服務旅程。`
           : 'AI 分析暫時無法使用，以下是官網資料中的相關說明。';
         reply({ ...answers(notice), retry: { text, label } });
-        return;
+        return false;
       }
       const [title, body] = errorCopy[error?.code] ?? errorCopy.DEFAULT;
       reply({ kind: 'note', tone: 'error', title, body, retry: { text, label } });
+      return false;
     }
   }
 
   /** Handle one task of several; the others stay listed for later. */
-  function pickTask(split, task) {
+  async function pickTask(split, task) {
     const understanding = understandingOfTask(split, task);
-    setOpenTasks(current => {
-      const tasks = current?.tasks.filter(other => other.id !== task.id) ?? [];
+    const handled = await send(task.input, task.input, understanding ? { understanding, split } : null);
+    if (handled) setOpenTasks(current => {
+      if (current?.split !== split) return current;
+      const tasks = current.tasks.filter(other => other.id !== task.id);
       return tasks.length ? { split: current.split, tasks } : null;
     });
-    send(task.input, task.input, understanding ? { understanding, split } : null);
   }
   /** From the workspace: back to the chat, where the chosen request is handled. */
   function pickOpenTask(split, task) {
@@ -319,6 +322,7 @@ export default function App() {
       if (view !== 'workspace') goWorkspace();
       notify(`已切換到「${next.journey.title}」。`);
     } catch (error) {
+      if (error?.name === 'AbortError') return;
       if (error?.code === 'JOURNEY_NOT_FOUND') notify('這件事的服務旅程已失效（超過 1 小時或服務重新啟動），已從清單移除；其他事情不受影響。');
       else notify(error?.message && error?.code ? error.message : '目前無法讀取這件事，請確認網路後再試一次。');
       refreshJourneys();

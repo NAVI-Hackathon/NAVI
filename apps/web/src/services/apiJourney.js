@@ -56,6 +56,7 @@ export function createApiJourneyService({
   baseUrl = import.meta.env?.VITE_API_BASE_URL || '', timeoutMs = 15000, documentTimeoutMs = 45000,
 }) {
   let state = null;
+  let selection = 0;
   let pending = null; // stored journey reference waiting to be read back from the server
   let refs = []; // journeys of this browser, most recent first: ids and display flags only
   // The server's latest answer for each journey seen in this tab (memory only), so listing the tasks does
@@ -84,7 +85,13 @@ export function createApiJourneyService({
     }
   }
   const snapshot = () => (state ? { journey: state.journey, context: { kind: kindOf(state.journey.serviceType), story: state.story ?? storyOf(state.journey), source: state.source, handoffRequested: state.handoffRequested } } : null);
-  function commit(journey) { state = { ...state, journey: remember(journey) }; save(); return snapshot(); }
+  function commit(journey, changes = {}) {
+    if (state?.journey.id !== journey.id) {
+      if (refs.some(ref => ref.journeyId === journey.id)) remember(journey);
+      throw new JourneyApiError('JOURNEY_STALE', '已切換到其他旅程；請回到原旅程查看這次操作的結果。', 409);
+    }
+    state = { ...state, ...changes, journey: remember(journey) }; save(); return snapshot();
+  }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
   async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema } = {}) {
@@ -122,6 +129,7 @@ export function createApiJourneyService({
     capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true },
     /** Nothing to show synchronously: the journeys themselves are only on the server (see resume). */
     restore() {
+      selection++;
       state = null;
       pending = null;
       refs = [];
@@ -141,9 +149,11 @@ export function createApiJourneyService({
     /** Read a stored journey back from the server (it may have expired: 1 hour TTL, cleared on restart). */
     async resume({ signal } = {}) {
       if (!pending) return null;
+      const stamp = ++selection;
       const { journeyId, source, handoffRequested } = pending;
       try {
         const journey = await read(journeyId, { signal });
+        if (stamp !== selection) throw new DOMException('已選擇其他旅程。', 'AbortError');
         pending = null;
         state = { journey, source, handoffRequested };
         save();
@@ -176,7 +186,9 @@ export function createApiJourneyService({
     async switchJourney(id, { signal } = {}) {
       const ref = refs.find(item => item.journeyId === id);
       if (!ref) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404);
+      const stamp = ++selection;
       const journey = await read(id, { signal });
+      if (stamp !== selection) throw new DOMException('已選擇其他旅程。', 'AbortError');
       state = { journey, source: ref.source, handoffRequested: ref.handoffRequested };
       pending = null;
       save();
@@ -184,6 +196,7 @@ export function createApiJourneyService({
     },
     /** The shown journey expired: drop only it. Returns how many other journeys this browser still has. */
     forgetCurrent() {
+      selection++;
       if (state) drop(state.journey.id);
       if (pending) drop(pending.journeyId);
       state = null;
@@ -205,6 +218,7 @@ export function createApiJourneyService({
     },
     /** `understanding`: already known (a chosen task) — then the message is not sent to the AI again. */
     async analyze(message, { signal, openJourney = () => true, understanding: known = null } = {}) {
+      const stamp = ++selection;
       const understanding = known ?? await understand(message, { signal });
       const kind = kindOf(understanding.data.serviceType);
       // Only a 住院醫療理賠 service request has a server-owned journey. Information questions
@@ -212,6 +226,7 @@ export function createApiJourneyService({
       const serviceRequest = understanding.data.intent === 'service_request';
       if (kind !== 'hospital' || !serviceRequest || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
       const journey = await request('/journeys', { method: 'POST', json: { message: message.trim(), intentResult: understanding.data }, signal });
+      if (stamp !== selection) throw new DOMException('已選擇其他旅程。', 'AbortError');
       pending = null; // the new journey is the one shown; earlier ones stay in the list
       if (journey.serviceType !== 'hospitalization_claim') return { understanding, kind: kindOf(journey.serviceType), snapshot: null };
       state = { journey: remember(journey), story: redactIdentifiers(message.trim()), source: understanding.meta.source, handoffRequested: false };
@@ -277,7 +292,9 @@ export function createApiJourneyService({
     },
     async confirmHandoff(previewId, { signal } = {}) {
       const { journey } = requireState();
-      return request(`/journeys/${journey.id}/handoff/confirm`, { method: 'POST', json: { previewId, confirmed: true }, signal, schema: HandoffConfirmationSchema });
+      const result = await request(`/journeys/${journey.id}/handoff/confirm`, { method: 'POST', json: { previewId, confirmed: true }, signal, schema: HandoffConfirmationSchema });
+      if (state?.journey.id !== journey.id) throw new JourneyApiError('JOURNEY_STALE', '已切換到其他旅程；原旅程的摘要確認不會套用到目前旅程。', 409);
+      return result;
     },
     requestHandoff() { requireState(); state = { ...state, handoffRequested: true }; save(); return snapshot(); },
     /** Read the journey again (after JOURNEY_STALE: another change won; nothing is retried automatically). */
@@ -292,11 +309,10 @@ export function createApiJourneyService({
     async correctIntent(message, { signal } = {}) {
       const { journey } = requireState();
       const result = await request(`/journeys/${journey.id}/intent-correction`, { method: 'POST', json: { message: message.trim() }, signal, timeout: timeoutMs, schema: CorrectJourneyIntentResponseSchema });
-      state = { ...state, story: redactIdentifiers(message.trim()) };
-      return { snapshot: commit(result.journey), previousServiceType: result.previousServiceType };
+      return { snapshot: commit(result.journey, { story: redactIdentifiers(message.trim()) }), previousServiceType: result.previousServiceType };
     },
     /** 重新開始: this browser forgets every journey (the server copies expire on their own). */
-    reset() { state = null; pending = null; refs = []; seen.clear(); save(); },
+    reset() { selection++; state = null; pending = null; refs = []; seen.clear(); save(); },
     setFailNextDocument() { /* Demo-only control; the server decides recognition outcomes. */ },
   };
 }
