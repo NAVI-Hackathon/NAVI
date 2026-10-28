@@ -28,6 +28,15 @@ export async function atlasAddresses(uri,dns={resolveSrv,resolve4,resolve6}){
 }
 function atomic(path,data){const temp=path+'.'+process.pid+'.new';try{writeFileSync(temp,data,{mode:0o600,flag:'wx'});renameSync(temp,path);}finally{try{unlinkSync(temp);}catch(e){if(e.code!=='ENOENT')throw e;}}}
 function command(args){return execFileSync('systemctl',args,{encoding:'utf8',timeout:10000,stdio:['ignore','pipe','pipe']}).trim();}
+export function applyPolicy(addresses,run=command){
+ const actual=()=>run(['show',UNIT,'-p','IPAddressAllow','--value']).split(/\s+/).filter(Boolean).sort();
+ const expected=[...addresses].sort();
+ if(JSON.stringify(actual())===JSON.stringify(expected))return;
+ // systemd appends address lists; explicitly reset before replacing rotated Atlas targets.
+ run(['set-property','--runtime',UNIT,'IPAddressAllow=']);
+ run(['set-property','--runtime',UNIT,'IPAddressAllow='+expected.join(' ')]);
+ if(JSON.stringify(actual())!==JSON.stringify(expected))throw Error('Policy mismatch');
+}
 function trusted(path){const s=lstatSync(path,{throwIfNoEntry:false});if(!s||s.isSymbolicLink()||s.uid!==0||(s.mode&0o022))throw Error('UNSAFE_DEPLOYMENT_PATH');}
 async function main(){
  if(process.getuid()!==0)throw Error('ROOT_REQUIRED');
@@ -43,10 +52,10 @@ async function main(){
  const allowed=[...new Set([...state.baseAddresses,...atlas])].sort();
  if(!process.argv.includes('--apply')){console.log(JSON.stringify({dryRun:true,baseAddresses:state.baseAddresses.length,atlasAddresses:atlas.length,totalAddresses:allowed.length}));return;}
  const dropin='/etc/systemd/system/'+UNIT+'.d/30-atlas-egress.conf';
- const text='[Unit]\nWants=navi-atlas-egress.service\nAfter=navi-atlas-egress.service\n[Service]\nIPAddressAllow='+atlas.join(' ')+'\n';
+ const text='[Unit]\nWants=navi-atlas-egress.service\nAfter=navi-atlas-egress.service\n[Service]\nIPAddressAllow=\nIPAddressAllow='+allowed.join(' ')+'\n';
  let previous='';try{previous=readFileSync(dropin,'utf8');}catch(e){if(e.code!=='ENOENT')throw e;}
  if(previous!==text){atomic(dropin,text);command(['daemon-reload']);}
- try{command(['set-property','--runtime',UNIT,'IPAddressAllow='+allowed.join(' ')]);const actual=command(['show',UNIT,'-p','IPAddressAllow','--value']).split(/\s+/).filter(Boolean).sort();if(JSON.stringify(actual)!==JSON.stringify(allowed))throw Error('Policy mismatch');}catch{command(['set-property','--runtime',UNIT,'IPAddressAllow='+current.join(' ')]);throw Error('ATLAS_EGRESS_APPLY_FAILED');}
+ try{applyPolicy(allowed);}catch{applyPolicy(current);throw Error('ATLAS_EGRESS_APPLY_FAILED');}
  atomic(STATE,JSON.stringify({...state,atlasAddresses:atlas,updatedAt:new Date().toISOString()},null,2)+'\n');
  console.log(JSON.stringify({updated:true,atlasAddresses:atlas.length,totalAddresses:allowed.length}));
 }
