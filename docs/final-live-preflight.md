@@ -25,7 +25,7 @@ D21 檔案 SHA：`851be9ae3c619baec56aa4a8ef7a6df3d5394853ca4592bc5fdca4c0ec177e
 - 真正 VPS Key 對 Models API 的 metadata GET：200，支援 generateContent；GET 1 次，生成 0 次。不是成功推論或文件能力品質測試。
 - Production 實測：每日 20、Session 6、併發 1、timeout 10000ms、attempts 1、paid=false；Pacific day 2026-10-28 used=0（2026-10-28T15:27:42.841Z）。不是原子預留，其他使用者可能消耗，執行前再查。
 - 已建立私有受控評測 Session，生成用量 0／6，Cookie 留在 root-only VPS config；未對生成授權，尚須合成資料同意。不將 Cookie、Key 或 Token 寫入本文件。
-- 初始快照的授權為 **pending**、生成 0；後續授權與結果見下方，不能把初始快照當成執行後用量。若只完成 6 題，Intent 分母最多 5，Document 分母最多 1；全 v2 另有 22 題未執行。現在是全 28 題未執行。
+- 初始快照的授權為 **pending**、生成 0；後續授權與結果見下方，不能把初始快照當成執行後用量。若只完成 6 題，Intent 分母最多 5，Document 分母最多 1；全 v2 另有 22 題未執行。此初始快照為全 28 題未執行；授權後的結果與 27 題 notRun 見下方。
 
 ## 記錄與評分
 
