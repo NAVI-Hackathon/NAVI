@@ -131,3 +131,9 @@ class RecoveryBoundaryTests(unittest.TestCase):
    self.assertEqual((root/'current').resolve(),old);self.assertEqual((root/'api-current').resolve(),old)
    self.assertEqual(action.call_args_list.count(unittest.mock.call(['systemctl','start',m.UNIT])),1)
    self.assertEqual(len(list((root/'config').glob('deployment-failed-*.json'))),1)
+
+class StorageCutoverTests(unittest.TestCase):
+ def test_release_validation_cannot_skip_mongo_by_reporting_product_disabled(self):
+  replies=[({'status':'ok','aiProviderConfigured':True},'live'),({'mode':'live','available':True,'syntheticOnly':True,'product':{'enabled':False}},'live'),({'status':'ready','storage':'memory'},'live')]
+  with patch.object(m,'request_json',side_effect=replies):
+   with self.assertRaisesRegex(RuntimeError,'Persistent storage'):m.healthy(pathlib.Path('/must-be-mongo'))

@@ -121,7 +121,7 @@ def healthy(expected=None, product=False):
     if body.get('status') != 'ok' or type(body.get('aiProviderConfigured')) is not bool or mode not in ('live', 'unavailable'): raise RuntimeError('Unexpected API mode/configuration')
     state, _ = request_json('/api/ai/status', 1)
     if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
-    if product or state.get('product', {}).get('enabled'):
+    if product or expected is not None or state.get('product', {}).get('enabled'):
         ready, _ = request_json('/api/ready', 1)
         if ready.get('status') != 'ready' or ready.get('storage') != 'mongodb_encrypted': raise RuntimeError('Persistent storage is not ready')
     if expected:
