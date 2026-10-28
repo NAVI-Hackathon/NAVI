@@ -59,7 +59,10 @@ class Recovery(unittest.TestCase):
    return original(target,product)
   with patch.object(m,'healthy',side_effect=check):m.activate(self.new,self.candidate)
   self.assertTrue(self.checked_old);self.assertEqual((self.root/'current').resolve(),self.new)
-  self.offset+=301;m.activate(self.root/'previous');self.assertEqual((self.root/'current').resolve(),self.old);self.await_ready(self.old);self.assertEqual(marker(),before);self.record('success-rollback',started)
+  m.activate(self.root/'previous',rollback=True);self.assertEqual((self.root/'current').resolve(),self.old);self.await_ready(self.old);self.assertEqual(marker(),before)
+  starts=self.starts
+  with self.assertRaisesRegex(RuntimeError,'300-second'):m.activate(self.root/'previous',rollback=True)
+  self.assertEqual(self.starts,starts);self.record('success-rollback',started)
  def test_failed_start_restores_old_api_and_static_pointer(self):
   self.candidate.write_text('NAVI_PRODUCT_MODE=true\nFAIL_START=true\n');started=time.perf_counter()
   with self.assertRaises(RuntimeError):m.activate(self.new,self.candidate)

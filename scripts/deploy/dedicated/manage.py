@@ -95,7 +95,7 @@ def preflight_start():
     if started and uptime - started < 300: raise RuntimeError('Wait for the current 300-second start window before deploying')
 
 @contextlib.contextmanager
-def deployment_lock():
+def deployment_lock(rollback_target=None):
     directory = ROOT / 'config'
     if directory.is_symlink(): raise RuntimeError('Unsafe deployment state')
     directory.mkdir(mode=0o700, exist_ok=True)
@@ -106,10 +106,15 @@ def deployment_lock():
         except BlockingIOError: raise RuntimeError('Another NAVI deployment is running')
         state = directory / 'deployment-window.json'
         if state.exists():
-            previous = json.loads(state.read_text())['startedAt']
-            if time.time() - previous < 300: raise RuntimeError('Wait for the 300-second deployment window; no service changed')
+            previous = json.loads(state.read_text())
+            if time.time() - previous['startedAt'] < 300:
+                service = service_state() if rollback_target else {}
+                reserved = rollback_target and previous.get('rollbackAvailable') and previous.get('rollbackTarget') == str(rollback_target) and previous.get('activePid') == service.get('MainPID') and service.get('ActiveState') == 'active' and int(service.get('NRestarts', '0')) == 0
+                if not reserved: raise RuntimeError('Wait for the 300-second deployment window; no service changed')
+                previous.update(rollbackAvailable=False, rollbackConsumed=True); save(state, previous)
+                yield; return
         preflight_start()
-        save(state, {'startedAt': time.time()})
+        save(state, {'startedAt': time.time(), 'rollbackAvailable': False, 'rollbackConsumed': False})
         yield
     finally: os.close(fd)
 
@@ -153,12 +158,12 @@ def write_environment(path, data):
     with os.fdopen(fd, 'wb') as f: f.write(data); f.flush(); os.fsync(f.fileno())
     temp.replace(path)
 
-def activate(target, environment=None):
+def activate(target, environment=None, rollback=False):
     target = release(target)
     if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True: raise RuntimeError('Legacy release is not isolated')
     if environment is None and (ROOT / 'current').exists() and target == release(ROOT / 'current'):
         healthy(target); print('Already active: ' + str(target)); return
-    with deployment_lock(): return activate_once(target, environment)
+    with deployment_lock(target if rollback else None): return activate_once(target, environment)
 
 def activate_once(target, environment=None):
     target = release(target)
@@ -203,7 +208,10 @@ def activate_once(target, environment=None):
         raise
     event['readyAt'] = time.time(); save(ROOT / 'config' / ('deployment-' + str(time.time_ns()) + '.json'), event)
     if next_env is not None: write_environment(saved, next_env)
-    if old and old != target: link('previous', old)
+    if old and old != target:
+        link('previous', old)
+        state = ROOT / 'config/deployment-window.json'; window = json.loads(state.read_text())
+        window.update(rollbackAvailable=not window.get('rollbackConsumed', False), rollbackTarget=str(old), activePid=service_state()['MainPID']); save(state, window)
     print('Active: ' + str(target))
 
 def main():
@@ -211,7 +219,7 @@ def main():
     m = load()
     if args.action == 'install': install(m, args.target, args.checksum)
     elif args.action == 'activate': activate(args.target, args.environment)
-    elif args.action == 'rollback': activate(ROOT / 'previous')
+    elif args.action == 'rollback': activate(ROOT / 'previous', rollback=True)
     else:
         owned_service()
         if args.action == 'status': run(['systemctl', 'show', UNIT, 'nginx.service', '-p', 'Id', '-p', 'ActiveState', '-p', 'MainPID', '-p', 'MemoryCurrent', '-p', 'NRestarts'])
