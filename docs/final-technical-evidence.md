@@ -33,7 +33,7 @@ AI interprets，system decides。Navigation 只由可信 Source IDs／白名單�
 
 線上 `gemini-3.1-flash-lite`，AI_MODE=live、ALLOW_PAID_AI=false；模型目錄與已核准 capability/tier 交集才可路由。實作具備 Queue／有限 fallback／circuit／持久化 budget；**目前正式配置只有既有核准模型、attempt=1，不能宣稱線上已自動切換成功**。429 專案配額不以換 Key／模型規避。Schema／Backend validation 不因換模型省略，失敗不回 Demo。
 
-本輪實測配置為每日20／Session6／併發1／10秒／1次。AI Studio 可見 Free tier 與 3.1 Flash Lite 15 RPM／250K TPM／500 RPD；Models metadata GET 200。兩者不證明生成一定成功或固定剩餘量。六題 Live 評測尚未授權，**目前新版 Live 指標為待實測，分母 0；不可寫 0% 或 100% 準確率**。計畫、GT、Dataset SHA 與原始報告 hash 見 [Live Preflight](final-live-preflight.md)。
+本輪實測配置為每日20／Session6／併發1／10秒／1次。AI Studio 可見 Free tier 與 3.1 Flash Lite 15 RPM／250K TPM／500 RPD；Models metadata GET 200。兩者不證明生成一定成功或固定剩餘量。最初 Preflight 為未授權；之後使用者核准最多6次，實際第一題遇Google503即停。**新版僅有1個API錯誤樣本；文件仍待實測**，詳見本文件末的實際結果。計畫、GT、Dataset SHA 與原始報告 hash 見 [Live Preflight](final-live-preflight.md)。
 
 歷史真實證據：Git `e2a6100ecd88cebf4a714fe93368c194bf0cd22c`，完成時間 2026-10-26T20:49:48.999394+08:00，同模型的 3 次合成 API 生成有成功事件；Intent 2215ms、診斷 PDF 3070ms、存摺 2172ms。原始報告 SHA `e661af540e6826cb950c030d71c16028502bd8cb1c825f8b5fdb6d0ee61fd267` 已重新比對。這只證明舊版本當次生成，**沒有 v2 Ground Truth 對照，不計新版正確率、欄位 F1 或泛化能力**。其他歷史成功／失敗與 provenance 缺口保留在 [Live Matrix](live-evidence-matrix.md)，不挑掉失敗樣本。
 
@@ -75,3 +75,26 @@ Knowledge `kb-1404d058190e380c66eedee1`；Legacy120、住院76、Knowledge134 �
 | `artifacts/final-recovery.log` | 2026-10-28T15:32:37.262305+00:00（mtime） | `a7feb50e46be50ad7bb35b661a3f4505a299dd1cba5c817e75a39da6acf599d4` |
 
 恢復後再次核對：`artifacts/final-restored-production.log`，SHA `49b775b7cb0e138854b378fba7e9141edd8ea1db07bee3d104abfca460c15266`；保存 UTC 2026-10-28T15:35:03.695491+00:00。API/Nginx active，Result=success，當日生成0，記憶體/OOM數字以此原始檔為準。
+
+## 已核准後的實際執行結果（首次失敗即停）
+
+使用者在本對話明確核准最多6次、禁止重試。執行程式與 Provider 取自正式 d123b2cf4be185c7d7d8966456fcb93d2de10739；凍結 Dataset SHA 未改，AI Studio 免費方案在執行前再次核對。直接呼叫部署版本的 Gemini Provider／Services，不是 Browser E2E；使用既有 MongoDB 持久化日用量與受控 Session 計數。沒有在公開站植入 Demo 測試旅程。
+
+- 時間：2026-10-28T15:39:09.994Z；實際模型 `gemini-3.1-flash-lite`。
+- I21：真實 generateContent POST **1次**，Google HTTP **503 UNAVAILABLE**，訊息為模型需求量高；NAVI `AI_PROVIDER_ERROR`。這證明收到 Google 的錯誤回應，不證明模型完成推論，也不能歸因於 Free Tier 排隊。
+- 模型 HTTP 往返 3241.93ms；完整既有 Service 呼叫 4167.24ms（包含模型目錄／規則開銷）。Token Usage 未提供，記錄 null。
+- 已立即停止：I22、I23、I25、I29、D21 均未執行；全 v2 未執行27／28。核准上限6，實際生成請求1，剩餘5不自動續用。
+- 重試0、模型切換0、Demo fallback0、付費呼叫0。獨立 metadata GET在擷取內為1，不計入生成次數；Preflight先前另有1次單模型 metadata GET。
+- 用原 Scorer：Intent完整任務集合 **0／1**（API錯誤列失敗，不是語意誤判）；API錯誤率1／1、逾時率0／1；p50/p95均4167.24ms，僅 n=1，不代表常態延遲。文件樣本0，Precision／Recall／F1 **null，待實測**。不能宣稱完整 v2、六題子集或整個產品的準確率。
+- 執行後 Pacific-day用量1／20、專用Session1／6；沒有提高、重設或規避額度。此輪授權已依失敗停止規則結束，不再發出模型生成。
+
+| 原始紀錄（忽略於Git） | SHA-256 |
+|---|---|
+| `artifacts/final-live-evaluation/authorization.json` | `a6e7647245060f4e1b11c06fc490143609de4b03a989d53dbb3b14c18f500f74` |
+| `artifacts/final-live-evaluation/I21-raw.json` | `db48703e3e8c0435c7f28a92ee2d7762207f6f7ffbe3ad9154e629c15ab7bd42` |
+| `artifacts/final-live-evaluation/observations.json` | `293ed009c050a27174f93c87a98cfdff36adf0fb72d466b5affbf0a4a9770f09` |
+| `artifacts/final-live-evaluation/transport.json` | `173af560c43e376398a497f58fa657622432ab42d3012b3f76e6da4f83680ce0` |
+| `artifacts/final-live-evaluation/report.json` | `7a2b291303abe37256a3506c14b483905721236ae1fe6e6c3c2be45db03679ce` |
+| `artifacts/holdout/score-1793201986555.json` | `cbba99de712a03bba4300a622943dd80423a85d8c1eaad908782a469fe1acefd` |
+
+未挑成功案例，也未修改 Ground Truth；錯誤樣本已保留。原始檔為合成案例與清理過的 Provider 回應，不包含 API Key、Cookie、操作員 Token 或個人文件。
