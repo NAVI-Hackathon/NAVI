@@ -44,6 +44,8 @@ for (const width of [390, 1280]) test(`two journeys: listed by hospital, switche
     await ask(page, '我上個月在臺大醫院住院三天，想申請住院理賠');
     // The chat offers the earlier journey; the shown one is marked.
     await expect(chip(page, '臺大醫院')).toHaveAttribute('aria-current', 'true');
+    // A live server is AI analysis: no demo notice (A8).
+    await expect(page.getByText('NAVI 服務目前以示範資料回答')).toHaveCount(0);
     await chip(page, '臺中榮民總醫院').click();
     await expect(page.locator('.trip-strip strong').first()).toHaveText('臺中榮民總醫院');
     await expect(page.getByRole('navigation', { name: '你的任務' })).toBeVisible();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import AppHeader, { EmbedHeader } from './components/AppHeader.jsx';
 import Landing from './components/landing/Landing.jsx';
@@ -7,16 +7,21 @@ import Toast from './components/Toast.jsx';
 import { CorrectionDialog, HandoffDialog, ProceedDialog, ReviewDialog, ServiceDialog } from './components/dialogs/JourneyDialogs.jsx';
 import { createApiAdapter, createMockAdapter, isEmbedPath, resolveMode } from './services/adapters.js';
 import { useHostBridge } from './hooks/useHostBridge.js';
+import { useOnline } from './hooks/useOnline.js';
 import { naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
+import Icon from './components/Icon.jsx';
 import GuideCard from './components/guide/GuideCard.jsx';
+import { journeyPrerequisites, serviceSteps, singleStepPlan } from './domain/guidance.js';
 import TaskBar from './components/tasks/TaskBar.jsx';
+import { PrivacyDialog, SearchDialog, SummaryDialog } from './components/dialogs/AssistDialogs.jsx';
 import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
+import { documentRecovery } from './domain/documentRecovery.js';
 
 const embedded = isEmbedPath(location.pathname);
 const mode = resolveMode(location);
@@ -25,6 +30,9 @@ const mockSiteOrigin = originOf(import.meta.env.VITE_MOCK_SITE_URL ?? '');
 
 // Where the full flow runs on synthetic data without the AI service (embedded: the insurer site's demo entry).
 const demoEntry = embedded && mockSiteOrigin ? `${mockSiteOrigin}/?navi=demo` : `${location.origin}/demo`;
+// The host looks for a place for up to 4 s after the page changes; past this NAVI stops waiting.
+const ARRIVAL_TIMEOUT_MS = 7000;
+const noSubscription = () => () => {};
 const tryDemo = `想先看完整流程，可以改用示範模式（${demoEntry}）。`;
 
 const errorCopy = {
@@ -90,6 +98,9 @@ export default function App() {
   const [explanation, setExplanation] = useState(null);
   const [guide, setGuide] = useState(null); // { plan, index } while a step-by-step guide is open
   const [guidePending, setGuidePending] = useState(false); // plan request slower than a blink
+  // The last place NAVI sent the site to: going → found / missing (host answered), silent (no answer),
+  // unverified (the release has no verified place for it) or opened (standalone, a new tab).
+  const [arrival, setArrival] = useState(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   // Requests from one message not handled yet (from POST /intelligence/tasks), and this browser's journeys
   // as the server has them (formal mode). Neither is a local copy of journey state.
@@ -98,12 +109,24 @@ export default function App() {
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
   const systemReduced = useReducedMotion();
-  const host = useHostBridge(embedded);
+  const host = useHostBridge(embedded, message => {
+    if (message.type === 'host:navigated') setArrival(current => (current?.id === message.id && current.status === 'going' ? { ...current, status: message.status } : current));
+  });
   const reduced = reduceMotion || systemReduced;
+  // Formal mode needs the NAVI service; /demo works offline (everything is local).
+  const offline = !useOnline() && !service.capabilities.manualEntry;
+  const wasOffline = useRef(false);
+  // Formal mode: what the server actually answers with. A demo server (fixed synthetic results) or an
+  // unavailable AI is said on the page; only a live server is presented as AI analysis.
+  const serverMode = useSyncExternalStore(service.subscribeAiMode ?? noSubscription, () => service.aiMode ?? null, () => null);
+  const serverDemo = mode !== 'demo' && serverMode === 'demo';
+  const aiUnavailable = mode !== 'demo' && serverMode === 'unavailable';
+  useEffect(() => { service.checkAiMode?.(); }, [service]);
 
   const analysisCtl = useRef(null);
   const snapshotRef = useRef(snapshot);
   const fileInputs = useRef({});
+  const uploads = useRef({}); // document type → AbortController of the upload in progress
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(reduced); }, [reduced]);
   useEffect(() => { document.documentElement.dataset.embedded = String(embedded); }, []);
@@ -204,7 +227,35 @@ export default function App() {
   }
 
   const busyType = Object.entries(docStates).find(([, s]) => s.status === 'processing')?.[0] ?? null;
+
+  // Another tab (a duplicated tab keeps the same journey) may have changed it: when this tab is shown
+  // again, read the journey from the server and say so if it differs. Never while something is running.
+  const quietRefresh = useRef(null);
+  quietRefresh.current = async () => {
+    const shown = snapshotRef.current;
+    if (!service.refresh || !shown || offline || busyType || analysisPhase !== null || document.visibilityState !== 'visible') return;
+    try {
+      const next = await service.refresh();
+      if (snapshotRef.current?.journey.id !== shown.journey.id) return; // switched meanwhile
+      if (JSON.stringify(next.journey) === JSON.stringify(snapshotRef.current.journey)) return;
+      setSnapshot(next);
+      notify('這件事在其他分頁有更新，已顯示最新狀態。');
+    } catch (error) {
+      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+    }
+  };
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') quietRefresh.current(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };
+  }, []);
   const notify = useCallback(message => setToast({ message, key: Date.now() }), []);
+  // Back online: say so once. Nothing is re-sent on its own.
+  useEffect(() => {
+    if (offline) wasOffline.current = true;
+    else if (wasOffline.current) { wasOffline.current = false; notify('已恢復連線，可以繼續操作。'); }
+  }, [offline, notify]);
   const dismissToast = useCallback(() => setToast(null), []);
   const closeDialog = useCallback(() => setDialog(null), []);
 
@@ -282,7 +333,8 @@ export default function App() {
       if (answered) {
         const notice = error?.code === 'INTENT_RECEIPT_REQUIRED'
           ? `${errorCopy.INTENT_RECEIPT_REQUIRED[0]}，以下先列出官網資料中的相關說明；按「重新分析」可再建立服務旅程。`
-          : 'AI 分析暫時無法使用，以下是官網資料中的相關說明。';
+          // Say the real reason (quota spent, service down, timeout…), not a generic "unavailable".
+          : `${(errorCopy[error?.code] ?? ['AI 分析暫時無法使用'])[0]}，以下是官網資料中的相關說明。`;
         reply({ ...answers(notice), retry: { text, label } });
         return false;
       }
@@ -331,70 +383,108 @@ export default function App() {
 
   async function upload(type, source) {
     if (busyType) return;
-    setDocStates(s => ({ ...s, [type]: { status: 'processing' } }));
+    if (offline) { notify('目前沒有網路連線，文件沒有送出；恢復連線後再試一次。'); return; }
+    const ctl = new AbortController();
+    uploads.current[type] = ctl;
+    // Formal mode reports real progress (bytes sent, then the server reading the file); /demo sends nothing.
+    setDocStates(s => ({ ...s, [type]: { status: 'processing', phase: service.capabilities.uploadProgress ? 'sending' : 'demo', startedAt: Date.now() } }));
+    const onProgress = progress => setDocStates(s => (s[type]?.status === 'processing' && !ctl.signal.aborted
+      ? { ...s, [type]: { ...s[type], ...progress, ...(progress.phase === 'analyzing' && s[type].phase !== 'analyzing' ? { analyzingSince: Date.now() } : {}) } }
+      : s));
     try {
-      const next = await service.uploadDocument(type, source);
+      const next = await service.uploadDocument(type, source, { signal: ctl.signal, onProgress });
       setSnapshot(next);
       setDocStates(s => ({ ...s, [type]: { status: 'idle' } }));
       const added = next.journey.documents.find(d => d.documentType === type);
       notify(added?.status === 'needs_review' ? `${documentSpecs[type].title}有欄位待人工確認：可重新上傳較清楚的文件，或轉由專員協助確認。` : `${documentSpecs[type].title}欄位檢查通過，準備度已更新（尚未驗證文件真偽）。`);
     } catch (error) {
+      if (ctl.signal.aborted) { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); notify(`已取消上傳${documentSpecs[type].title}，準備完成度未改變。`); return; }
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
       if (error?.code === 'JOURNEY_STALE') { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); await reloadStale(); return; }
       // Server messages (e.g. 文件類型與目前服務需求不同, JOURNEY_BUSY) are written for the user.
       const message = error?.code && error.message ? error.message : null;
-      setDocStates(s => ({ ...s, [type]: { status: 'failed', message } }));
+      // The file stays in memory only, so「再試一次」can send the same file again when the user asks.
+      const retrySource = documentRecovery(error?.code).actions.includes('retry') ? source : null;
+      setDocStates(s => ({ ...s, [type]: { status: 'failed', code: error?.code ?? null, message, retrySource } }));
       // The document card may be off screen (the upload started from 下一步), so say it where the user is too.
       notify(`${documentSpecs[type].title}沒有完成辨識，準備完成度未改變。${message ?? '請稍後再試，或改為先提供資訊。'}`);
     } finally {
+      if (uploads.current[type] === ctl) delete uploads.current[type];
       setFailNext(false);
     }
   }
+  /** Stop sending a file (only offered while the bytes are still going out). */
+  const cancelUpload = type => uploads.current[type]?.abort();
 
-  /** Take the user to the step's page on the insurer site (embedded: host navigates; standalone: new tab). */
+  /**
+   * Take the user to a place on the insurer site. Embedded: the host page goes there and answers
+   * host:navigated (found / missing) for this id. Standalone: a new tab, which cannot report back.
+   */
+  const navigationId = useRef(0);
   const openOnSite = host.connected
-    ? destination => host.send(naviMessage('navi:navigate', { destination }))
+    ? destination => {
+      const id = ++navigationId.current;
+      setArrival({ id, status: 'going' });
+      host.send(naviMessage('navi:navigate', { destination, id }));
+    }
     : !embedded && mockSiteOrigin
       ? destination => {
         const url = new URL(destination.path, mockSiteOrigin);
         if (destination.anchor) url.searchParams.set('focus', destination.anchor);
         window.open(url, '_blank', 'noopener');
+        setArrival({ id: ++navigationId.current, status: 'opened' });
       }
       : null;
+  // A host that never answers (older site, lost message) is treated as not confirmed, never as found.
+  useEffect(() => {
+    if (arrival?.status !== 'going') return undefined;
+    const timer = setTimeout(() => setArrival(current => (current?.id === arrival.id && current.status === 'going' ? { ...current, status: 'silent' } : current)), ARRIVAL_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [arrival]);
 
-  // Every「帶我去」whose place is a knowledge entry starts a step-by-step guide when that entry has a
-  // multi-step plan (shared/knowledge/navigationPlan.js); anything else is a single navigation as before.
+  // Every「帶我去」opens the guide card: a multi-step plan when the place is a knowledge entry that has
+  // one (shared/knowledge/navigationPlan.js), otherwise a one-step card for that place. The card says
+  // whether the site found the place and, for this journey's own places, what is still open first.
   const guideRequest = useRef(0);
   const navigate = openOnSite ? async destination => {
     // Go right away (a new tab must open inside the click); step 1 of the plan is this same place.
     openOnSite(destination);
     const request = ++guideRequest.current;
     const entry = knowledgeEntries.find(e => e.destination.path === destination.path && e.destination.anchor === destination.anchor);
-    let plan = null;
+    const prerequisites = journeyPrerequisites(snapshotRef.current?.journey, destination);
+    let plan = null, unverified = false;
     if (entry) {
       // Only a slow plan request shows「正在準備導覽…」; the local /demo plan is instant and never flashes it.
       const hint = setTimeout(() => { if (request === guideRequest.current) setGuidePending(true); }, 120);
       try { const result = await service.navigationPlan(entry.id); plan = result.status === 'answered' ? result.plan : null; }
       catch (error) {
         plan = null;
-        // The release's site has no such place: say so instead of implying NAVI took the user there.
-        if (error?.code === 'NAVIGATION_TARGET_UNAVAILABLE') notify('官網上暫時找不到這個位置。可以先看答案下方的官網原文，或開啟官網原頁。');
+        // The release's site has no verified place for this: the card offers the other ways in.
+        unverified = error?.code === 'NAVIGATION_TARGET_UNAVAILABLE';
       }
       clearTimeout(hint);
     }
     if (request !== guideRequest.current) return; // a newer request replaced this one
     setGuidePending(false);
-    setGuide(plan && plan.steps.length > 1 && plan.steps[0].sourceId === entry.id ? { plan, index: 0 } : null);
+    const own = plan && plan.steps[0].sourceId === entry.id ? serviceSteps(plan, knowledgeEntries) : null;
+    const multi = own && own.plan.steps.length > 1;
+    setGuide({
+      plan: multi ? own.plan : singleStepPlan(destination, entry),
+      index: 0, single: !multi, service: own?.service ?? entry?.title ?? null, prerequisites,
+    });
+    if (unverified) setArrival(current => ({ id: current?.id ?? ++navigationId.current, status: 'unverified' }));
   } : null;
   const guideStep = index => {
     setGuide(current => (current ? { ...current, index } : current));
     // Embedded: the host page follows each step. Standalone: 在官網開啟 opens a step on request (no tab per click).
     if (host.connected) openOnSite(guide.plan.steps[index].destination);
+    else setArrival(null);
   };
   const endGuide = completed => {
     guideRequest.current += 1;
     setGuidePending(false);
     setGuide(null);
+    setArrival(null);
     if (completed) notify('導覽完成。需要時可以再按「帶我去」重新開始。');
   };
 
@@ -402,15 +492,19 @@ export default function App() {
     // Where uploaded files go differs by mode; say so plainly next to the upload cards.
     documentNotice: service.capabilities.manualEntry
       ? '文件辨識使用示範資料；你的檔案不會被讀取或上傳。'
-      : '文件會傳送到 NAVI 服務辨識，不會保存檔案本身；這是示範原型，請勿上傳真實病歷或銀行資料。',
+      : serverDemo
+        ? '這個 NAVI 服務目前使用示範資料：合成範例會得到固定的示範結果，你自己的檔案不會被送出辨識。'
+        : '檔案會傳送到 NAVI 服務由 AI 辨識；伺服器不保存檔案本身，只保留辨識出的欄位，案件 1 小時後失效。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。',
     footerNotice: service.capabilities.manualEntry
       ? '進度只保留在這個分頁；文件不會被上傳。'
       : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
     manualVerifies: service.capabilities.manualEntry,
     upload,
+    cancelUpload,
+    analysisLimitSeconds: Math.round((service.documentTimeoutMs ?? 0) / 1000) || null,
     // /demo fills in local sample data; formal mode sends the synthetic PDF for real AI recognition.
     sample: service.capabilities.samples ? type => upload(type, { sample: true }) : null,
-    sampleByAi: service.capabilities.samples === 'ai',
+    sampleByAi: service.capabilities.samples === 'ai' && (serverDemo ? 'demo' : true),
     navigate,
     async remove(type) {
       const next = await attempt(() => service.removeDocument(type));
@@ -443,6 +537,8 @@ export default function App() {
     review() { setDialog('review'); },
     proceed() { setDialog('proceed'); },
     handoff() { setDialog('handoff'); },
+    summary() { setDialog('summary'); },
+    privacy() { setDialog('privacy'); },
     next(action) {
       switch (action.type) {
         case 'UPLOAD_DOCUMENT': {
@@ -477,6 +573,41 @@ export default function App() {
     },
   };
 
+  /** 資料與隱私: delete every document and piece of information of the shown journey (server endpoints). */
+  async function removeJourneyData() {
+    const { journey } = snapshotRef.current;
+    let next = null, removed = 0;
+    for (const document of journey.documents) {
+      next = await attempt(() => service.removeDocument(document.documentType));
+      if (!next) break;
+      removed += 1;
+    }
+    for (const information of next || !journey.documents.length ? journey.manualDocumentInformation ?? [] : []) {
+      next = await attempt(() => service.removeManual(information.documentType));
+      if (!next) break;
+      removed += 1;
+    }
+    if (next) setSnapshot(next);
+    setDocStates({});
+    notify(removed ? `已移除 ${removed} 份文件或資訊，準備完成度已更新。` : '沒有移除任何資料，請稍後再試。');
+  }
+
+  /** Forget one journey in this browser (formal: the server copy expires on its own; demo: cleared now). */
+  function forgetJourney(id) {
+    const shown = snapshotRef.current?.journey.id === id;
+    if (service.forgetJourney) service.forgetJourney(id); else service.reset();
+    setJourneys(list => list.filter(item => item.id !== id));
+    setDialog(null);
+    if (shown || !service.forgetJourney) {
+      analysisCtl.current?.abort();
+      setSnapshot(null);
+      setDocStates({});
+      setGuide(null);
+      goLanding();
+    }
+    notify(service.forgetJourney ? '已從這個瀏覽器移除這件事；NAVI 服務上的案件會在 1 小時內自動失效。' : '已移除這件事的示範資料。');
+  }
+
   function reset() {
     analysisCtl.current?.abort();
     service.reset();
@@ -503,7 +634,8 @@ export default function App() {
         </motion.p>
       )}
       {guide && (
-        <GuideCard key="guide" guide={guide} embedded={host.connected}
+        <GuideCard key="guide" guide={guide} embedded={host.connected} arrival={arrival?.status ?? null}
+          hotline={searchKnowledge('').hotline} onHandoff={snapshot ? () => { endGuide(); setDialog('handoff'); } : null}
           onStep={guideStep} onOpen={step => openOnSite(step.destination)} onEnd={endGuide} />
       )}
     </AnimatePresence>
@@ -515,18 +647,22 @@ export default function App() {
         <a className="skip-link" href="#main-content">跳至主要內容</a>
         {embedded ? (
           <EmbedHeader
-            mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset}
+            mode={serverDemo ? 'demo' : mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
             onClose={host.connected ? () => host.send(naviMessage('navi:close')) : null}
           />
         ) : (
           <AppHeader
-            mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
+            mode={mode} demoData={serverDemo} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
             onHome={goLanding} onResume={goWorkspace} onReset={reset}
+            onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
             reduceMotion={reduceMotion} onReduceMotion={setReduceMotion}
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
         )}
+        {serverDemo && <p className="demo-banner" role="note">NAVI 服務目前以示範資料回答，不是 AI 分析：需求理解與文件辨識都是固定的合成結果，只供體驗流程。</p>}
+        {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'}>示範模式</a>體驗完整流程。</p>}
+        {offline && <p className="network-banner" role="status"><Icon name="alert" size={13} />目前沒有網路連線：NAVI 暫停送出與上傳，已有的內容不會遺失。</p>}
         {mode === 'demo' && !embedded && (
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>
         )}
@@ -543,14 +679,14 @@ export default function App() {
                 key="workspace" snapshot={snapshot} explanation={explanation} docStates={docStates} busy={busyType}
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
-                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} />}
+                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} />}
               />
             ) : (
               <Landing
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot} openTasks={openTasks}
                 journeysSlot={journeyList.length > (snapshot ? 1 : 0) ? <TaskBar variant="chat" journeys={journeyList} busy={analysisPhase !== null} onSwitch={switchJourney} /> : null}
                 onSwitchJourney={service.switchJourney ? switchJourney : null}
-                dock={guideLayer} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                dock={guideLayer} offline={offline} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
@@ -559,6 +695,14 @@ export default function App() {
         )}
 
         <AnimatePresence>
+          {dialog === 'search' && (
+            <SearchDialog key="search" onClose={closeDialog} onNavigate={navigate} onAsk={text => { goLanding(); send(text); }} />
+          )}
+          {snapshot && dialog === 'summary' && <SummaryDialog key="summary" snapshot={snapshot} onClose={closeDialog} />}
+          {dialog === 'privacy' && (
+            <PrivacyDialog key="privacy" snapshot={snapshot} formal={!service.capabilities.manualEntry} onClose={closeDialog}
+              onRemoveData={removeJourneyData} onForget={() => forgetJourney(snapshot.journey.id)} />
+          )}
           {snapshot && dialog === 'review' && (
             <ReviewDialog key="review" snapshot={snapshot} onClose={closeDialog}
               onConfirm={async () => {

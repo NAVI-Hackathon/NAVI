@@ -145,7 +145,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
  * NAVI landing as a chat: the conversation scrolls above, the input stays at the bottom.
  * Replies come from the official-site search and the backend; option buttons only send text back.
  */
-export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, ref }) {
+export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, offline = false, ref }) {
   const [text, setText] = useState('');
   const textarea = useRef(null);
   const dockRef = useRef(null);
@@ -200,7 +200,7 @@ export default function Landing({ messages, analysisPhase, snapshot, openTasks =
   function submit(event) {
     event?.preventDefault();
     const value = text.trim();
-    if (!value || busy) return;
+    if (!value || busy || offline) return; // offline: the text stays in the box until the connection is back
     setText('');
     onSend(value);
   }
@@ -248,13 +248,13 @@ export default function Landing({ messages, analysisPhase, snapshot, openTasks =
             // Enter sends; Shift+Enter is a new line. Never send while an IME is composing Chinese.
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) submit(e); }}
           />
-          <button type="submit" className="chat-send" disabled={busy || !text.trim()} aria-label="送出">
+          <button type="submit" className="chat-send" disabled={busy || offline || !text.trim()} aria-label="送出">
             <Icon name="send" size={18} />
           </button>
         </div>
         <p id="story-help" className="chat-help">
-          <Icon name="lock" size={12} />
-          {mode === 'demo' ? '示範模式：內容只在這個分頁中比對，不會送出。' : '請勿輸入身分證字號、病歷或帳戶資料。'}
+          <Icon name={offline ? 'alert' : 'lock'} size={12} />
+          {offline ? '目前沒有網路連線，恢復後再送出；你輸入的內容會保留。' : mode === 'demo' ? '示範模式：內容只在這個分頁中比對，不會送出。' : '請勿輸入身分證字號、病歷或帳戶資料。'}
         </p>
       </form>
       </div>

@@ -16,7 +16,9 @@ const FIND_TIMEOUT_MS = 4000;
 // The page dims briefly to draw the eye, then only the ring stays, so the page remains usable.
 const DIM_MS = 1600;
 
-type Pending = { anchor: string; label: string; id: number };
+export type Arrival = "found" | "missing";
+// report: tells NAVI whether this place was found (only for navigation NAVI asked for, not ?focus=).
+type Pending = { anchor: string; label: string; id: number; report?: (status: Arrival) => void };
 type Spot = { element: HTMLElement; label: string; id: number };
 
 function waitForElement(selector: string, timeout: number): Promise<HTMLElement | null> {
@@ -96,6 +98,7 @@ function TourController({ pending }: { pending: Pending | null }) {
       if (cancelled) return;
       if (!target) {
         done.current = pending.id;
+        pending.report?.("missing");
         setMissing(pending.label);
         setAnnouncement(`這一頁找不到「${pending.label}」`);
         return;
@@ -106,6 +109,7 @@ function TourController({ pending }: { pending: Pending | null }) {
       await new Promise(resolve => setTimeout(resolve, 60));
       target.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
       setSpot({ element: target, label: pending.label, id: pending.id });
+      pending.report?.("found");
       setAnnouncement(`已帶你到「${pending.label}」`);
     })();
     return () => { cancelled = true; };
@@ -140,11 +144,13 @@ export function NaviHost() {
   const [pending, setPending] = useState<Pending | null>(null);
   const counter = useRef(0);
 
-  const onNavigate = useCallback((destination: NaviDestination) => {
+  // Resolves once the place is marked (or not found); a page without an anchor counts as found on arrival.
+  const onNavigate = useCallback((destination: NaviDestination) => new Promise<Arrival>(resolve => {
     const id = ++counter.current;
-    if (destination.anchor) setPending({ anchor: destination.anchor, label: destination.label, id });
+    if (destination.anchor) setPending({ anchor: destination.anchor, label: destination.label, id, report: resolve });
     if (destination.path !== pathname) router.push(destination.path, { scroll: !destination.anchor });
-  }, [pathname, router]);
+    if (!destination.anchor) resolve("found");
+  }), [pathname, router]);
 
   const onFocus = useCallback((anchor: string) => {
     setPending({ anchor, label: "NAVI 建議的位置", id: ++counter.current });

@@ -7,14 +7,18 @@ import { NavigationTargetSchema } from './journey.js';
 
 export const EMBED_PROTOCOL_VERSION = 1;
 
+const NavigationId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+
 export const HostMessageSchema = z.discriminatedUnion('type', [
   z.object({ source: z.literal('navi-host'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('host:hello') }).strict(),
+  // The host's answer to navi:navigate with the same id: whether the place was found and marked on the page.
+  z.object({ source: z.literal('navi-host'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('host:navigated'), id: NavigationId, status: z.enum(['found', 'missing']) }).strict(),
 ]);
 
 export const NaviMessageSchema = z.discriminatedUnion('type', [
   z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:ready') }).strict(),
   z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:close') }).strict(),
-  z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:navigate'), destination: NavigationTargetSchema }).strict(),
+  z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:navigate'), destination: NavigationTargetSchema, id: NavigationId.optional() }).strict(),
 ]);
 
 /** "https://a.example, http://127.0.0.1:3000" → normalised origins; invalid entries are dropped. */
@@ -45,4 +49,4 @@ export function readMessage(event, { allowedOrigins, expectedSource, schema }) {
 }
 
 export const naviMessage = (type, extra = {}) => ({ source: 'navi', version: EMBED_PROTOCOL_VERSION, type, ...extra });
-export const hostMessage = type => ({ source: 'navi-host', version: EMBED_PROTOCOL_VERSION, type });
+export const hostMessage = (type, extra = {}) => ({ source: 'navi-host', version: EMBED_PROTOCOL_VERSION, type, ...extra });

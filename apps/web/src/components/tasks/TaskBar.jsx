@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Icon from '../Icon.jsx';
 import { stageLabel } from '../../domain/workspace.js';
 
@@ -22,9 +23,12 @@ function journeyStatus(item) {
  * one message not handled yet (from POST /intelligence/tasks). Nothing here is a local copy of a journey.
  *   variant 'workspace': every journey, the shown one marked, plus the open requests.
  *   variant 'chat': the journeys to go back to (the open requests are offered as chat options instead).
+ * onRemove (workspace): forget one journey in this browser, after a second press to confirm.
  */
-export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOpen, busy = false, variant = 'workspace' }) {
+export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOpen, onRemove = null, busy = false, variant = 'workspace' }) {
   const open = variant === 'workspace' ? openTasks?.tasks ?? [] : [];
+  const [asking, setAsking] = useState(null);
+  const removable = variant === 'workspace' && onRemove;
   // The workspace bar appears once there is something to switch to; the chat list once there is a journey.
   if (variant === 'workspace' ? journeys.length < 2 && !open.length : !journeys.length) return null;
   return (
@@ -39,6 +43,16 @@ export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOp
               <span className="task-chip-title">{journeyTitle(item)}</span>
               <span className="task-chip-state">{item.current ? `目前・${journeyStatus(item)}` : journeyStatus(item)}</span>
             </button>
+            {removable && (asking === item.id ? (
+              <span className="task-remove-confirm" role="group" aria-label={`確認移除「${journeyTitle(item)}」`}>
+                <button type="button" className="button button-ghost button-small" onClick={() => setAsking(null)}>取消</button>
+                <button type="button" className="button button-danger button-small" disabled={busy} onClick={() => { setAsking(null); onRemove(item.id); }}>從瀏覽器移除</button>
+              </span>
+            ) : (
+              <button type="button" className="icon-button task-chip-remove" disabled={busy} aria-label={`從這個瀏覽器移除「${journeyTitle(item)}」`} onClick={() => setAsking(item.id)}>
+                <Icon name="close" size={14} />
+              </button>
+            ))}
           </li>
         ))}
         {open.map(task => (

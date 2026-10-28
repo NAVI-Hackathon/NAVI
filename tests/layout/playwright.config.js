@@ -1,4 +1,8 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
+// PW_BROWSER=webkit runs the Safari engine; PW_DEVICE='Pixel 7' adds that phone's user agent (Android Chrome).
+const engine = process.env.PW_BROWSER ?? 'chromium';
+const device = process.env.PW_DEVICE ? (({ userAgent, deviceScaleFactor }) => ({ userAgent, deviceScaleFactor }))(devices[process.env.PW_DEVICE]) : {};
 
 // Layout regression tests: real Chromium layout, measured by element coordinates.
 // Runs the NAVI front end in /demo mode (local mock, no backend) on its own port, so a dev server
@@ -10,7 +14,7 @@ export default defineConfig({
   timeout: 60_000,
   fullyParallel: true,
   reporter: [['list']],
-  use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: 'chromium', hasTouch: true, isMobile: true },
+  use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: engine, ...device, hasTouch: true, isMobile: true },
   webServer: {
     command: `npm run dev --workspace @navi/web -- --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}/demo`,

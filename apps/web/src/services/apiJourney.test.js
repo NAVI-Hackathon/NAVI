@@ -136,6 +136,31 @@ test('one expired journey leaves the list; the others stay', async t => {
   assert.equal(storage.getItem('navi.journey'), null);
 });
 
+test('the user removes one journey from this browser; the others stay and the shown one closes', async t => {
+  const storage = memoryStorage();
+  const service = client(await backend(t), storage);
+  const first = (await service.analyze(DEMO_STORY)).snapshot.journey;
+  const second = (await service.analyze('我上個月在臺大醫院住院三天，想申請住院理賠')).snapshot.journey;
+  assert.equal(service.forgetJourney(first.id), 1, 'a journey not shown is forgotten');
+  assert.deepEqual((await service.listJourneys()).map(item => item.id), [second.id]);
+  assert.equal(service.forgetJourney(second.id), 0, 'the shown journey is forgotten too');
+  assert.equal(storage.getItem('navi.journey'), null);
+  assert.deepEqual(await service.listJourneys(), []);
+});
+
+test('the page learns what answers on the server: a demo server is never presented as AI', async t => {
+  const service = client(await backend(t));
+  assert.equal(service.aiMode, null, 'unknown until the server answers');
+  let changes = 0;
+  const stop = service.subscribeAiMode(() => { changes += 1; });
+  assert.equal(await service.checkAiMode(), 'demo');
+  assert.equal(service.aiMode, 'demo');
+  assert.equal(changes, 1);
+  await service.analyze(DEMO_STORY);
+  assert.equal(changes, 1, 'the same mode is not announced again');
+  stop();
+});
+
 test('the earlier single-journey format is kept as a one-item list', () => {
   const storage = memoryStorage();
   const journeyId = '00000000-0000-4000-8000-000000000001';
@@ -205,7 +230,7 @@ test('fixture fields returned for the user\'s own file are withdrawn when the mo
 
 test('formal-mode manual information is stored as 待確認: no readiness, no document, no review; a verified upload replaces it', async t => {
   const service = client(await backend(t));
-  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true });
+  assert.deepEqual(service.capabilities, { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true, uploadProgress: true });
   await service.analyze(DEMO_STORY);
   const typed = await service.submitManual('diagnosis_certificate', { hospitalName: '臺中榮民總醫院', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', reportedInpatientDays: 5 });
   assert.equal(typed.journey.readiness, 35, 'manual information adds no readiness');

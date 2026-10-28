@@ -1,4 +1,8 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
+// PW_BROWSER=webkit runs the Safari engine; PW_DEVICE='Pixel 7' adds that phone's user agent (Android Chrome).
+const engine = process.env.PW_BROWSER ?? 'chromium';
+const device = process.env.PW_DEVICE ? (({ userAgent, deviceScaleFactor }) => ({ userAgent, deviceScaleFactor }))(devices[process.env.PW_DEVICE]) : {};
 
 // End-to-end: the mock insurer site with NAVI embedded, in demo mode inside the site (?navi=demo): local
 // official-data snapshot and rules, no backend and no Gemini calls.
@@ -12,7 +16,7 @@ export default defineConfig({
   timeout: 90_000,
   workers: 1,
   reporter: [['list']],
-  use: { baseURL: deployed ?? `http://127.0.0.1:${SITE}`, browserName: 'chromium' },
+  use: { baseURL: deployed ?? `http://127.0.0.1:${SITE}`, browserName: engine, ...device },
   webServer: deployed ? undefined : [
     {
       command: `npm run dev --workspace @navi/web -- --port ${NAVI} --strictPort`,
