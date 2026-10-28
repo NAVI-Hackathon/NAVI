@@ -23,9 +23,10 @@ function journeyStatus(item) {
  * one message not handled yet (from POST /intelligence/tasks). Nothing here is a local copy of a journey.
  *   variant 'workspace': every journey, the shown one marked, plus the open requests.
  *   variant 'chat': the journeys to go back to (the open requests are offered as chat options instead).
- * onRemove (workspace): forget one journey in this browser, after a second press to confirm.
+ * onRemove (workspace): remove one journey after a second press to confirm — deleted on the server when
+ * `deletes` (persistent service), otherwise forgotten by this browser.
  */
-export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOpen, onRemove = null, busy = false, variant = 'workspace' }) {
+export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOpen, onRemove = null, deletes = false, busy = false, variant = 'workspace' }) {
   const open = variant === 'workspace' ? openTasks?.tasks ?? [] : [];
   const [asking, setAsking] = useState(null);
   const removable = variant === 'workspace' && onRemove;
@@ -44,12 +45,12 @@ export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOp
               <span className="task-chip-state">{item.current ? `目前・${journeyStatus(item)}` : journeyStatus(item)}</span>
             </button>
             {removable && (asking === item.id ? (
-              <span className="task-remove-confirm" role="group" aria-label={`確認移除「${journeyTitle(item)}」`}>
+              <span className="task-remove-confirm" role="group" aria-label={`確認${deletes ? '刪除' : '移除'}「${journeyTitle(item)}」`}>
                 <button type="button" className="button button-ghost button-small" onClick={() => setAsking(null)}>取消</button>
-                <button type="button" className="button button-danger button-small" disabled={busy} onClick={() => { setAsking(null); onRemove(item.id); }}>從瀏覽器移除</button>
+                <button type="button" className="button button-danger button-small" disabled={busy} onClick={() => { setAsking(null); onRemove(item.id); }}>{deletes ? '刪除這件事' : '從瀏覽器移除'}</button>
               </span>
             ) : (
-              <button type="button" className="icon-button task-chip-remove" disabled={busy} aria-label={`從這個瀏覽器移除「${journeyTitle(item)}」`} onClick={() => setAsking(item.id)}>
+              <button type="button" className="icon-button task-chip-remove" disabled={busy} aria-label={deletes ? `刪除「${journeyTitle(item)}」` : `從這個瀏覽器移除「${journeyTitle(item)}」`} onClick={() => setAsking(item.id)}>
                 <Icon name="close" size={14} />
               </button>
             ))}

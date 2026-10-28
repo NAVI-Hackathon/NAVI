@@ -356,3 +356,28 @@ test('an AI status failure, invalid mode or conflicting response clears an earli
  let response=()=>Response.json({mode:'live',available:true},{headers:{'X-NAVI-AI-Mode':'live'}});const service=createApiJourneyService({storage:memoryStorage(),fetchImpl:async()=>response()});assert.equal(await service.checkAiMode(),'live');
  for(const next of [()=>Response.json({error:{code:'AI_UNAVAILABLE'}},{status:503,headers:{'X-NAVI-AI-Mode':'live'}}),()=>Response.json({mode:'demo'},{headers:{'X-NAVI-AI-Mode':'live'}}),()=>Response.json({mode:'not-a-provider'}),()=>{throw new TypeError('offline');}]){response=next;assert.equal(await service.checkAiMode(),null);assert.equal(service.aiMode,null);}
 });
+
+test('deleting a whole journey (A3): the id goes only after the server commits; 404 counts as gone', async () => {
+  const ids = ['00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b', '00000000-0000-4000-8000-00000000000c'];
+  const storage = memoryStorage();
+  storage.setItem('navi.journey', JSON.stringify({ v: 3, current: ids[0], journeys: ids.map(journeyId => ({ journeyId, source: 'gemini', handoffRequested: false })) }));
+  const calls = [];
+  const replies = { [ids[0]]: [200, { deleted: true, id: ids[0], deletedAt: '2026-10-28T00:00:00.000Z' }], [ids[1]]: [404, { success: false, error: { code: 'JOURNEY_NOT_FOUND', message: '找不到', retryable: false } }], [ids[2]]: [503, { success: false, error: { code: 'STORAGE_UNAVAILABLE', message: '暫時無法存取', retryable: true } }] };
+  const service = createApiJourneyService({
+    baseUrl: 'http://navi.invalid', storage, understand: async () => { throw new Error('no AI'); },
+    fetchImpl: async (url, options) => {
+      const id = url.split('/').pop(); calls.push(`${options.method} ${id}`);
+      const [status, body] = replies[id];
+      return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+  service.restore();
+  const stored = () => JSON.parse(storage.getItem('navi.journey')).journeys.map(ref => ref.journeyId);
+
+  await assert.rejects(service.deleteJourney(ids[2]), error => error.code === 'STORAGE_UNAVAILABLE');
+  assert.deepEqual(stored(), ids, 'a failed delete keeps the journey');
+  assert.equal(await service.deleteJourney(ids[0]), 2);
+  assert.equal(await service.deleteJourney(ids[1]), 1, 'already gone on the server');
+  assert.deepEqual(stored(), [ids[2]]);
+  assert.deepEqual(calls, [`DELETE ${ids[2]}`, `DELETE ${ids[0]}`, `DELETE ${ids[1]}`]);
+});

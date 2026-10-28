@@ -289,8 +289,22 @@ export function createApiJourneyService({
       return refs.length;
     },
     /**
+     * Persistent service (A3): delete one whole journey on the server (DELETE /journeys/:id: documents,
+     * drafts, events and task links in one transaction). The id is dropped here only after the server
+     * commits; a failure throws and leaves everything as it was. Already gone (404) counts as deleted.
+     * Returns how many journeys remain in this browser.
+     */
+    async deleteJourney(id) {
+      try {
+        await request(`/journeys/${id}`, { method: 'DELETE', schema: null });
+      } catch (error) {
+        if (error?.code !== 'JOURNEY_NOT_FOUND') throw error;
+      }
+      return this.forgetJourney(id);
+    },
+    /**
      * The user removes one journey from this browser (資料與隱私 / 任務列). Only the id is forgotten here;
-     * the server copy expires on its own (no journey DELETE endpoint yet). Returns how many remain.
+     * the server copy expires on its own (older releases without persistence). Returns how many remain.
      */
     forgetJourney(id) {
       selection++;

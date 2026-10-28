@@ -56,6 +56,15 @@ function RetryOptions({ retry, busy, mode, onSend }) {
   );
 }
 
+/** After a conflict (another tab or request already acted): read the saved state again; nothing is re-sent. */
+function ReloadOption() {
+  return (
+    <div className="chat-option-list">
+      <button type="button" className="chat-option" onClick={() => location.reload()}>重新載入</button>
+    </div>
+  );
+}
+
 /** The journey NAVI opened: a compact card in the chat, entered with 開啟工作區. */
 function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   const current = snapshot?.journey.id === message.journeyId ? snapshot.journey : null;
@@ -100,6 +109,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
       <>
         {message.notice && <p className="chat-notice" role="note">{message.notice}</p>}
         {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
+        {latest && message.reload && <ReloadOption />}
         {message.followUp.showAnswers
           ? <><p className="chat-text">在官網資料中找到：</p><AnswerCard entry={first} onNavigate={onNavigate} compact expandable highlights={message.result.highlights[first.id]} headingLevel={3} /></>
           : null}
@@ -121,6 +131,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
         <p className={`chat-title tone-${message.tone}`}>{message.tone === 'error' && <Icon name="alert" size={15} />}{message.title}</p>
         <p className="chat-text">{message.body}</p>
         {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
+        {latest && message.reload && <ReloadOption />}
       </>
     );
   }
