@@ -56,7 +56,7 @@ test('two tabs on one journey: the other tab shows the server state when it is s
     await other.addInitScript(value => { if (!sessionStorage.getItem('navi.journey')) sessionStorage.setItem('navi.journey', value); }, stored);
     await other.setViewportSize({ width: 1280, height: 900 }); await other.goto('/#workspace');
     await expect(ring(other)).toHaveAttribute('aria-valuenow', '35');
-    await other.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await other.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(ring(other)).toHaveAttribute('aria-valuenow', '70');
 
     await page.bringToFront();

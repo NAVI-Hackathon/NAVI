@@ -90,6 +90,12 @@ export function createApiJourneyService({
   // X-NAVI-AI-Mode of the server. A 'demo' server answers every upload with fixed sample fields
   // whatever the file holds, so formal mode never sends the user's own file there.
   let aiMode = null;
+  const modeListeners = new Set();
+  const setAiMode = value => {
+    if (!value || value === aiMode) return;
+    aiMode = value;
+    for (const listener of modeListeners) listener();
+  };
   const api = path => `${baseUrl.replace(/\/$/, '')}/api${path}`;
 
   const drop = id => { refs = refs.filter(ref => ref.journeyId !== id); seen.delete(id); };
@@ -130,7 +136,7 @@ export function createApiJourneyService({
       if (signal?.aborted) throw signal.reason;
       throw new JourneyApiError(deadline.aborted ? 'AI_TIMEOUT' : 'NETWORK_ERROR', deadline.aborted ? '處理時間較長，請再試一次。' : '目前無法連線到服務，請確認網路後再試一次。');
     }
-    aiMode = response.headers?.get?.('X-NAVI-AI-Mode') ?? aiMode;
+    setAiMode(response.headers?.get?.('X-NAVI-AI-Mode'));
     let result = null;
     try { result = await response.json(); } catch { /* handled below */ }
     if (!response.ok) {
@@ -151,6 +157,21 @@ export function createApiJourneyService({
     // AI like any upload (Live accepts only approved synthetic files). /demo samples never leave the browser.
     capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true, uploadProgress: true },
     documentTimeoutMs,
+    /**
+     * What answers on the server: 'live' (Gemini), 'demo' (fixed synthetic results) or 'unavailable'.
+     * Learned from every response (X-NAVI-AI-Mode) and from GET /ai/status; null until the first answer.
+     * The page labels results by it, so a demo server is never presented as AI analysis.
+     */
+    get aiMode() { return aiMode; },
+    subscribeAiMode(listener) { modeListeners.add(listener); return () => modeListeners.delete(listener); },
+    async checkAiMode({ signal } = {}) {
+      try {
+        const response = await fetchImpl(api('/ai/status'), { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs) });
+        const body = await response.json().catch(() => null);
+        setAiMode(response.headers?.get?.('X-NAVI-AI-Mode') ?? (['live', 'demo', 'unavailable'].includes(body?.mode) ? body.mode : null));
+      } catch { /* unknown until the next answer; nothing is claimed meanwhile */ }
+      return aiMode;
+    },
     /** Nothing to show synchronously: the journeys themselves are only on the server (see resume). */
     restore() {
       state = null;

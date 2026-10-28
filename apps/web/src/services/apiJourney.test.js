@@ -148,6 +148,19 @@ test('the user removes one journey from this browser; the others stay and the sh
   assert.deepEqual(await service.listJourneys(), []);
 });
 
+test('the page learns what answers on the server: a demo server is never presented as AI', async t => {
+  const service = client(await backend(t));
+  assert.equal(service.aiMode, null, 'unknown until the server answers');
+  let changes = 0;
+  const stop = service.subscribeAiMode(() => { changes += 1; });
+  assert.equal(await service.checkAiMode(), 'demo');
+  assert.equal(service.aiMode, 'demo');
+  assert.equal(changes, 1);
+  await service.analyze(DEMO_STORY);
+  assert.equal(changes, 1, 'the same mode is not announced again');
+  stop();
+});
+
 test('the earlier single-journey format is kept as a one-item list', () => {
   const storage = memoryStorage();
   const journeyId = '00000000-0000-4000-8000-000000000001';

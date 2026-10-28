@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Icon, { Mark } from './Icon.jsx';
 
-export default function AppHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, reduceMotion, onReduceMotion, failNext, onFailNext }) {
+export default function AppHeader({ mode, demoData = false, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, reduceMotion, onReduceMotion, failNext, onFailNext }) {
   const menu = useRef(null);
   useEffect(() => {
     function dismiss(e) {
@@ -23,6 +23,7 @@ export default function AppHeader({ mode, view, hasJourney, busy, onHome, onResu
           <span className="wordmark">NAVI<small>AI Service Journey Navigator</small></span>
         </button>
         {mode === 'demo' && <span className="mode-badge" title="使用示範資料，不連線 AI">示範模式</span>}
+        {mode !== 'demo' && demoData && <span className="mode-badge" title="NAVI 服務目前以示範資料回答，不是 AI 分析">示範資料</span>}
 
         <div className="app-header-actions">
           {hasJourney && view === 'landing' && (
@@ -49,7 +50,7 @@ export default function AppHeader({ mode, view, hasJourney, busy, onHome, onResu
 }
 
 /** Compact header for NAVI inside a host website's side panel. */
-export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onClose }) {
+export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onClose }) {
   return (
     <header className="embed-header">
       <button type="button" className="brand" onClick={onHome} disabled={busy} aria-label="回到 NAVI 首頁">
@@ -62,6 +63,7 @@ export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, on
           <button type="button" className="icon-button" disabled={busy} onClick={onResume} aria-label="回到我的旅程"><Icon name="route" size={17} /></button>
         )}
         <button type="button" className="icon-button" onClick={onSearch} aria-label="找服務"><Icon name="search" size={17} /></button>
+        <button type="button" className="icon-button" onClick={onPrivacy} aria-label="資料與隱私"><Icon name="lock" size={17} /></button>
         <button type="button" className="icon-button" onClick={onReset} aria-label="重新開始"><Icon name="reset" size={17} /></button>
         {onClose && <button type="button" className="icon-button" onClick={onClose} aria-label="關閉 NAVI"><Icon name="close" size={18} /></button>}
       </div>

@@ -127,7 +127,8 @@ function useElapsedSeconds(since) {
  * Real states only: bytes actually sent (uploading), then the server reading the file (analyzing, no
  * percentage — its duration is unknown), or /demo where nothing is sent.
  */
-function Analyzing({ state, title, limitSeconds, onCancel }) {
+// recognizer: who reads the file on the server — 'AI' (Gemini) or '示範資料' (a demo server's fixed results).
+function Analyzing({ state, title, limitSeconds, onCancel, recognizer = 'AI' }) {
   const phase = state?.phase ?? 'sending';
   const elapsed = useElapsedSeconds(phase === 'analyzing' ? state.analyzingSince : phase === 'sending' ? state.startedAt : null);
   const waited = `已等待 ${elapsed} 秒${limitSeconds ? `，最長約 ${limitSeconds} 秒` : ''}`;
@@ -139,7 +140,7 @@ function Analyzing({ state, title, limitSeconds, onCancel }) {
           <div className="doc-upload-bar" role="progressbar" aria-label={`${title}上傳進度`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent ?? undefined}>
             <span style={{ width: `${percent ?? 0}%` }} />
           </div>
-          <p><strong>正在上傳{percent !== null ? ` ${percent}%` : '…'}</strong>檔案傳送完成後由 AI 辨識</p>
+          <p><strong>正在上傳{percent !== null ? ` ${percent}%` : '…'}</strong>檔案傳送完成後由 {recognizer} 辨識</p>
           <button type="button" className="link-button" onClick={onCancel}>取消上傳</button>
         </div>
       ) : (
@@ -147,7 +148,7 @@ function Analyzing({ state, title, limitSeconds, onCancel }) {
           <div className="doc-skeleton" aria-hidden="true">
             <span className="shimmer w-40" /><span className="shimmer w-70" /><span className="shimmer w-55" /><span className="shimmer w-65" />
           </div>
-          {phase === 'analyzing' && <p><strong>AI 正在辨識文件…</strong>{waited}；整理欄位並比對文件要求</p>}
+          {phase === 'analyzing' && <p><strong>{recognizer === 'AI' ? 'AI 正在辨識文件…' : '正在以示範資料辨識…'}</strong>{waited}；整理欄位並比對文件要求</p>}
           {/* No byte count from this browser: one honest state for sending and reading. */}
           {phase === 'sending' && <p><strong>正在上傳並辨識文件…</strong>{waited}</p>}
           {phase === 'demo' && <p><strong>正在套用示範資料…</strong>示範模式使用合成資料，不會上傳或讀取你的檔案</p>}
@@ -213,7 +214,8 @@ export default function DocumentCard({ type, document, requirement, issues = [],
   // Formal mode offers manual entry up front, clearly as unverified information.
   const manualLabel = manualVerifies ? '手動輸入' : '先提供資訊（尚未驗證）';
   // Formal mode: the synthetic sample is read by the AI, not filled in locally.
-  const sampleLabel = sampleByAi ? '使用合成範例（由 AI 辨識）' : `使用範例${spec.title}`;
+  // sampleByAi: true (the server's AI reads the synthetic file), 'demo' (a demo server answers), false (/demo, local).
+  const sampleLabel = sampleByAi === 'demo' ? '使用合成範例（示範資料辨識）' : sampleByAi ? '使用合成範例（由 AI 辨識）' : `使用範例${spec.title}`;
 
   // A dropped file replaces a document already there (the server keeps one per type).
   return (
@@ -249,7 +251,7 @@ export default function DocumentCard({ type, document, requirement, issues = [],
       )}
 
       <AnimatePresence mode="wait" initial={false}>
-        {state === 'analyzing' && <Analyzing key="analyzing" state={uiState} title={title} limitSeconds={analysisLimitSeconds} onCancel={() => onCancel?.(type)} />}
+        {state === 'analyzing' && <Analyzing key="analyzing" state={uiState} title={title} limitSeconds={analysisLimitSeconds} onCancel={() => onCancel?.(type)} recognizer={sampleByAi === 'demo' ? '示範資料' : 'AI'} />}
 
         {state === 'result' && (
           <motion.div key="result" initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1, transition: spring }} exit={{ opacity: 0, transition: transition.exit }}>
