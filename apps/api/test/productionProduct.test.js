@@ -156,3 +156,29 @@ test('saved Demo tasks reuse server facts after login without invoking the provi
  const b=await api(t,f,{}, {...createDemoProvider(),understandIntent:async()=>{calls++;throw Error('Saved facts must not regenerate');}});
  const r=await b.call('/journeys',{taskId:split.tasks[0].persistedTaskId,idempotencyKey:randomUUID()},'POST',a.cookie);assert.equal(r.status,201);assert.equal(calls,0);
 });
+
+test('one-attempt Google 503 is a sanitized provider error, circuit blocks resends and later recovers',async t=>{
+ const {errorHandler}=await import('../src/middleware/errorHandler.js');
+ const f=fixture(t),s=await store(f);t.after(()=>s.close());let clock=Date.now(),posts=0,fail=true;
+ const c=config(f,{store:s,routeAttempts:1,maxConcurrent:1,modelPolicies:[policy('gemini-test')]});
+ const router=createModelRouter(c,async(url,init)=>{
+  if(!init.method)return Response.json({models:[{name:'models/gemini-test',supportedGenerationMethods:['generateContent']}]});
+  posts++;return fail?Response.json({error:{code:503,status:'UNAVAILABLE',message:'private provider diagnostic'}},{status:503}):generated({interpreted:true});
+ },{now:()=>clock});
+ const input={operation:'intent',payload:{contents:[{parts:[{text:'SYNTHETIC'}]}],generationConfig:{}},validate:x=>x};
+ let error;try{await router.generateWithFallback(input);}catch(e){error=e;}
+ assert.equal(error.code,'AI_PROVIDER_ERROR');assert.equal(error.status,503);assert.equal(error.retryable,true);assert.equal(posts,1);
+ let status,body;errorHandler(error,{}, {headersSent:false,status(value){status=value;return this;},json(value){body=value;}},()=>{});
+ assert.equal(status,503);assert.equal(body.success,false);assert.equal(body.error.code,'AI_PROVIDER_ERROR');assert.doesNotMatch(JSON.stringify(body),/private provider diagnostic|INTERNAL_ERROR/);
+ assert.ok(router.getModelHealth()['gemini-test'].until>clock);
+ await assert.rejects(router.generateWithFallback(input),{code:'AI_UNAVAILABLE'});assert.equal(posts,1);
+ fail=false;clock+=16000;assert.deepEqual(await router.generateWithFallback(input),{interpreted:true});assert.equal(posts,2);
+ assert.deepEqual(router.getModelHealth(),{});assert.equal(router.getDebugMetadata().intent.fallbackUsed,false);
+ const events=await s.list('audit');assert.ok(events.some(r=>r.value.code==='AI_PROVIDER_ERROR'));assert.ok(events.some(r=>r.value.status==='ok'));
+});
+
+test('draining API fails health and readiness before any database request',async t=>{
+ const f=fixture(t),a=await api(t,f);a.app.locals.draining=true;let probes=0;a.c.store.health=async()=>{probes++;return true;};
+ for(const path of ['/health','/ready']){const r=await a.call(path);assert.equal(r.status,503);assert.equal(r.data.error.code,'SERVICE_DRAINING');}
+ assert.equal(probes,0);a.app.locals.draining=false;assert.equal((await a.call('/health')).status,200);
+});
