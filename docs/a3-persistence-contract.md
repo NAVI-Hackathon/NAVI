@@ -133,3 +133,11 @@ Conversation responses may include optional `correctionRequired:true`. A vague c
 
 
 Every request-scoped mutation transaction writes a session fence before its data changes. This serializes logout/account erasure with already-running document, task, conversation and handoff writes, preventing erased data from being reintroduced by a late completion. Exports include owned Journeys, neutral conversations, pending/completed tasks, unsent handoff drafts and confirmed summaries; authentication secrets and raw uploaded files are excluded.
+
+## A3 integration handoff (separate from PR #27/#29/#30 release)
+
+Machine-readable request/response JSON Schemas are generated in `docs/a3-product-schemas.json` from the runtime Zod definitions. Run `node scripts/export-product-contract.js --check` to detect drift. Custom checks (one account identity, authorization and cross-record revision checks) are enforced by the API, not replaced by JSON Schema validation. The endpoint and error tables above are the integration contract.
+
+The current in-memory release supports only browser-held Journey references and the existing short-lived server cases. “Forget this case” removes its browser reference; it is not a whole-Journey server DELETE. No account, permanent history or Atlas restoration is promised before the coordinated A3 activation. Individual document/manual-information DELETE endpoints remain real server operations.
+
+A3 default live-record retention is 30 days and session validity is 30 days; the deployed configuration, explicit expiry query and TTL cleanup control actual lifetime. Account identity retention differs from Journey retention. Account/Journey erasure takes effect in the online database after the transaction commits; retained encrypted backups expire on their own seven-day rotation. Raw upload files are not retained as Journey attachments. A must show the actual `/session` retention policy, never promise immediate deletion from every backup or an unimplemented fixed 24-hour limit.
