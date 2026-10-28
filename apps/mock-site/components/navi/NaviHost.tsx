@@ -93,9 +93,11 @@ function TourController({ pending }: { pending: Pending | null }) {
     if (!pending.anchor) { done.current = pending.id; pending.report?.("found"); return; }
     let cancelled = false;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setSpot(null); // the previous step's mark goes away as soon as the next one starts
-    setMissing(null);
     void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setSpot(null); // Clear the previous navigation mark before waiting for this target.
+      setMissing(null);
       const target = await waitForElement(`[data-tour-id="${pending.anchor}"]`, FIND_TIMEOUT_MS);
       if (cancelled) return;
       if (!target) {

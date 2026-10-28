@@ -4,7 +4,7 @@ import { DocumentAnalysisSchema, DocumentSchema, DOCUMENT_MIME_TYPES, MAX_DOCUME
 import { ApiError } from '../middleware/errorHandler.js';
 import { requestValidatedAI } from './providerRequest.js';
 import { calculateDelayMinutes, documentVerified } from './documentValidationService.js';
-import { calculateStay, describeHospitalStay } from '../../../../shared/hospitalization.js';
+import { calculateStay } from '../../../../shared/hospitalization.js';
 export { calculateDelayMinutes, documentVerified } from './documentValidationService.js';
 
 function matchesSignature(bytes, mime) {
@@ -71,5 +71,5 @@ export async function analyzeDocument(upload, { provider, config, signal }) {
   }
   const verified = documentVerified({ ...analysis, fields }, config.journeyConfidenceThreshold);
   const medical = ['diagnosis_certificate', 'bank_passbook'].includes(analysis.documentType);
-  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, ...(analysis.documentType === 'diagnosis_certificate' ? { stay: describeHospitalStay(fields) } : {}), verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
+  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
 }

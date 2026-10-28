@@ -23,7 +23,8 @@ test('Document API preserves date evidence without inventing printed hospital da
   const provider = { mode: 'live', analyzeDocument: async () => ({ documentType: 'diagnosis_certificate', confidence: 0.97, fields: { patientName: 'NAVI SYNTHETIC PATIENT', hospitalName: 'NAVI SYNTHETIC HOSPITAL', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', diagnosis: null, certificateKind: 'hospitalization_proof', reportedInpatientDays: null } }) };
   const document = await analyzeDocument({ buffer, size: buffer.length, mimeType: 'application/pdf', filename: 'synthetic.pdf' }, { provider, config: loadConfig({ AI_MODE: 'demo' }) });
   assert.equal(document.fields.inpatientDays, 5); // Legacy calendar span remains compatible.
-  assert.deepEqual(document.stay, { calendarDays: 5, nights: 4, reportedDays: null, requiresConfirmation: true });
+  assert.equal(document.stay, undefined); // No new wire fields for older strict-schema clients.
+  assert.deepEqual(describeHospitalStay(document.fields), { calendarDays: 5, nights: 4, reportedDays: null, requiresConfirmation: true });
   assert.equal(document.isMock, false);
   assert.equal(document.verification.authenticity, 'not_assessed');
 });

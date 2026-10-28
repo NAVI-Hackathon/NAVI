@@ -17,9 +17,9 @@ const FIELD_NAMES = {
 };
 const Unrecognized = () => <span className="doc-unrecognized">未辨識</span>;
 
-function fieldRows(type, fields, stay) {
+function fieldRows(type, fields) {
   if (type === 'diagnosis_certificate') {
-    const span = stay ?? describeHospitalStay(fields);
+    const span = describeHospitalStay(fields);
     return [
       ['文件類型', '診斷證明書'],
       ['病患姓名', fields.patientName],
@@ -53,7 +53,7 @@ function Result({ type, document, requirement, issues, disabled, onReplace, onMa
         <span className="doc-confidence">{manual ? '手動輸入' : `辨識信心 ${Math.round(document.confidence * 100)}%`}</span>
       </motion.div>
       <dl className="doc-fields">
-        {fieldRows(type, document.fields, document.stay).map(([label, value, emphasis]) => (
+        {fieldRows(type, document.fields).map(([label, value, emphasis]) => (
           <motion.div key={label} className={emphasis ? 'is-emphasis' : ''} variants={fadeUp}>
             <dt>{label}</dt><dd>{value || <Unrecognized />}</dd>
           </motion.div>
