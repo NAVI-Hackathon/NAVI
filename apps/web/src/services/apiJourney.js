@@ -58,20 +58,22 @@ export function journeySummary(journey) {
  */
 export function xhrUpload(url, { method = 'POST', body, signal, onProgress }) {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason ?? new DOMException('Aborted', 'AbortError')); return; }
     const xhr = new XMLHttpRequest();
+    const abort = () => xhr.abort();
+    const finish = (handler, value) => { signal?.removeEventListener('abort', abort); handler(value); };
     xhr.open(method, url);
     xhr.upload.onprogress = event => onProgress?.({ phase: 'uploading', loaded: event.loaded, total: event.lengthComputable ? event.total : null });
     xhr.upload.onload = () => onProgress?.({ phase: 'analyzing' });
-    xhr.onload = () => resolve({
+    xhr.onload = () => finish(resolve, {
       ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status,
       headers: { get: name => xhr.getResponseHeader(name) },
       json: async () => JSON.parse(xhr.responseText),
     });
-    xhr.onerror = () => reject(new TypeError('Network request failed'));
-    xhr.onabort = () => reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'));
-    if (signal?.aborted) { xhr.abort(); return; }
-    signal?.addEventListener('abort', () => xhr.abort(), { once: true });
-    xhr.send(body);
+    xhr.onerror = () => finish(reject, new TypeError('Network request failed'));
+    xhr.onabort = () => finish(reject, signal?.reason ?? new DOMException('Aborted', 'AbortError'));
+    signal?.addEventListener('abort', abort, { once: true });
+    try { xhr.send(body); } catch (error) { finish(reject, error); }
   });
 }
 
@@ -93,8 +95,9 @@ export function createApiJourneyService({
   let aiMode = null;
   const modeListeners = new Set();
   const setAiMode = value => {
-    if (!value || value === aiMode) return;
-    aiMode = value;
+    const next = ['live', 'demo', 'unavailable'].includes(value) ? value : null;
+    if (next === aiMode) return;
+    aiMode = next;
     for (const listener of modeListeners) listener();
   };
   const api = path => `${baseUrl.replace(/\/$/, '')}/api${path}`;
@@ -175,8 +178,11 @@ export function createApiJourneyService({
       try {
         const response = await fetchImpl(api('/ai/status'), { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs) });
         const body = await response.json().catch(() => null);
-        setAiMode(response.headers?.get?.('X-NAVI-AI-Mode') ?? (['live', 'demo', 'unavailable'].includes(body?.mode) ? body.mode : null));
-      } catch { /* unknown until the next answer; nothing is claimed meanwhile */ }
+        const header = response.headers?.get?.('X-NAVI-AI-Mode');
+        const consistent = response.ok && ['live', 'demo', 'unavailable'].includes(body?.mode)
+          && (!header || header === body.mode) && (body?.available === undefined || body.available === (body.mode === 'live'));
+        setAiMode(consistent ? body.mode : null);
+      } catch { setAiMode(null); }
       return aiMode;
     },
     /** Nothing to show synchronously: the journeys themselves are only on the server (see resume). */
@@ -261,6 +267,7 @@ export function createApiJourneyService({
      * the server copy expires on its own (no journey DELETE endpoint yet). Returns how many remain.
      */
     forgetJourney(id) {
+      selection++;
       if (state?.journey.id === id || pending?.journeyId === id) return this.forgetCurrent();
       drop(id);
       save();

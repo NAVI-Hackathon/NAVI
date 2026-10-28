@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { createApp } from '../../apps/api/src/app.js';
 import { createDemoProvider } from '../../apps/api/src/ai/demoProvider.js';
 import { createGeminiProvider } from '../../apps/api/src/services/gemini.service.js';
+import { samplePdfFile } from '../../apps/web/src/mocks/sampleDocuments.js';
 import { loadConfig } from '../../apps/api/src/config/env.js';
 
 // Formal NAVI (the real A client, not /demo) embedded in the mock insurer site, against the real Express
@@ -19,20 +20,29 @@ async function formalBackend(context) {
   const config = { ...loadConfig({ AI_MODE: 'live', AI_SYNTHETIC_TEST_ONLY: 'true', AI_PUBLIC_SYNTHETIC: 'true', GEMINI_API_KEY: 'synthetic-mock-key', GEMINI_FREE_TIER_CONFIRMED: 'true', WEB_ORIGINS: origin }), rateLimit: 1000 };
   const provider = createGeminiProvider(config, async (_url, options) => {
     const body = JSON.parse(options.body), message = body.contents[0].parts[0].text;
-    const operation = body.generationConfig.responseJsonSchema.properties.tasks ? 'tasks' : 'intent';
+    const operation = body.generationConfig.responseJsonSchema.properties.tasks ? 'tasks' : body.generationConfig.responseJsonSchema.properties.documentType ? 'document' : 'intent';
     state.calls.push(operation);
     if (state.fail) return new Response(JSON.stringify({ error: { code: state.fail, message: 'synthetic failure' } }), { status: state.fail });
-    const raw = operation === 'tasks' ? await demo.understandTasks(message) : await demo.understandIntent(message);
+    let raw;
+    if (operation === 'document') {
+      const media = body.contents[0].parts.find(part => part.inlineData)?.inlineData;
+      expect(media?.mimeType).toBe('application/pdf');
+      const bytes = Buffer.from(media.data, 'base64');
+      const type = bytes.includes(Buffer.from('HOSPITALIZATION PROOF')) ? 'diagnosis_certificate' : 'bank_passbook';
+      expect(bytes).toEqual(Buffer.from(await samplePdfFile(type).arrayBuffer()));
+      const empty = { passengerName: null, flightNumber: null, origin: null, destination: null, departureDate: null, actualDepartureDate: null, scheduledDeparture: null, actualDeparture: null };
+      raw = { documentType: type, confidence: 0.97, fields: { ...empty, ...(type === 'diagnosis_certificate' ? { patientName: 'NAVI SYNTHETIC PATIENT', hospitalName: 'NAVI SYNTHETIC HOSPITAL', admissionDate: '2026-10-01', dischargeDate: '2026-10-05', certificateKind: 'hospitalization_proof', reportedInpatientDays: null } : { accountHolder: 'NAVI SYNTHETIC PATIENT', bankName: 'NAVI SYNTHETIC BANK', accountLast4: '1234' }) } };
+    } else raw = operation === 'tasks' ? await demo.understandTasks(message) : await demo.understandIntent(message);
     return new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(raw) }] } }] }));
   });
-  // Document reading stands in for Gemini with the scripted fields of the synthetic file (no Google call).
-  const server = createApp(config, { ...provider, analyzeDocument: (upload, signal) => demo.analyzeDocument(upload, signal) }).listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
+  // Only the HTTP transport is mocked; inline PDF bytes and schema validation use the actual provider.
+  const server = createApp(config, provider).listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   await context.route('**/api/**', async route => {
     const request = route.request();
     const response = await fetch(base + new URL(request.url()).pathname + new URL(request.url()).search, { method: request.method(), headers: { Origin: origin, ...(state.cookie ? { Cookie: state.cookie } : {}), ...(request.headers()['content-type'] ? { 'Content-Type': request.headers()['content-type'] } : {}) }, ...(request.postDataBuffer() ? { body: request.postDataBuffer() } : {}) });
     state.cookie = response.headers.get('set-cookie')?.split(';')[0] ?? state.cookie;
-    await route.fulfill({ status: response.status, headers: { 'Content-Type': 'application/json', 'X-NAVI-AI-Mode': response.headers.get('X-NAVI-AI-Mode') ?? 'live' }, body: await response.text() }).catch(() => {});
+    await route.fulfill({ status: response.status, headers: { 'Content-Type': 'application/json', ...(response.headers.has('X-NAVI-AI-Mode') ? { 'X-NAVI-AI-Mode': response.headers.get('X-NAVI-AI-Mode') } : {}) }, body: await response.text() }).catch(() => {});
   });
   state.close = async () => { await context.unroute('**/api/**'); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); };
   state.journey = id => fetch(`${base}/api/journeys/${id}`, { headers: { Origin: origin, Cookie: state.cookie } }).then(r => r.json());
@@ -64,7 +74,7 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
       const backend = await formalBackend(context);
       try {
         await openNavi(page);
-        // Live AI answers here: no demo notice.
+        // Live provider boundary with Mock Transport, not evidence of Google model quality.
         await expect(navi(page).getByText('NAVI 服務目前以示範資料回答')).toHaveCount(0);
         await ask(page, '我想改地址，也想知道要怎麼申請住院理賠。');
         await expect(navi(page).getByText('我聽到你有 2 件事')).toBeVisible();
@@ -85,6 +95,8 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
         const certificate = navi(page).locator('[data-document="diagnosis_certificate"]');
         await certificate.getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
         await expect(certificate.getByRole('button', { name: /替換文件/ })).toBeVisible({ timeout: 30_000 });
+        await expect(certificate.getByText('5 日（4 夜）')).toBeVisible();
+        await expect(certificate.getByText('待確認（文件未明載）')).toBeVisible();
         await expect(navi(page).getByRole('tab', { name: /文件/ })).toContainText('1/2');
         const id = (await storedJourney(page)).current;
         expect((await backend.journey(id)).documents).toHaveLength(1);

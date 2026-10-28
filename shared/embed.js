@@ -50,3 +50,15 @@ export function readMessage(event, { allowedOrigins, expectedSource, schema }) {
 
 export const naviMessage = (type, extra = {}) => ({ source: 'navi', version: EMBED_PROTOCOL_VERSION, type, ...extra });
 export const hostMessage = (type, extra = {}) => ({ source: 'navi-host', version: EMBED_PROTOCOL_VERSION, type, ...extra });
+
+
+/** Numeric v1 ids stay compatible, but are not reused when an iframe reloads. */
+export function newNavigationId() {
+  const [high, low] = globalThis.crypto.getRandomValues(new Uint32Array(2));
+  return (high & 0x1fffff) * 0x100000000 + low || 1;
+}
+export function applyNavigationReply(current, message) {
+  return current?.status === 'going' && message?.type === 'host:navigated'
+    && current.id === message.id && ['found', 'missing'].includes(message.status)
+    ? { ...current, status: message.status } : current;
+}

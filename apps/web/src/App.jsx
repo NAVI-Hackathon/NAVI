@@ -8,7 +8,7 @@ import { CorrectionDialog, HandoffDialog, ProceedDialog, ReviewDialog, ServiceDi
 import { createApiAdapter, createMockAdapter, isEmbedPath, resolveMode } from './services/adapters.js';
 import { useHostBridge } from './hooks/useHostBridge.js';
 import { useOnline } from './hooks/useOnline.js';
-import { naviMessage, originOf } from '../../../shared/embed.js';
+import { applyNavigationReply, newNavigationId, naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
@@ -110,7 +110,7 @@ export default function App() {
   const [failNext, setFailNext] = useState(false);
   const systemReduced = useReducedMotion();
   const host = useHostBridge(embedded, message => {
-    if (message.type === 'host:navigated') setArrival(current => (current?.id === message.id && current.status === 'going' ? { ...current, status: message.status } : current));
+    if (message.type === 'host:navigated') setArrival(current => applyNavigationReply(current, message));
   });
   const reduced = reduceMotion || systemReduced;
   // Formal mode needs the NAVI service; /demo works offline (everything is local).
@@ -420,10 +420,9 @@ export default function App() {
    * Take the user to a place on the insurer site. Embedded: the host page goes there and answers
    * host:navigated (found / missing) for this id. Standalone: a new tab, which cannot report back.
    */
-  const navigationId = useRef(0);
   const openOnSite = host.connected
     ? destination => {
-      const id = ++navigationId.current;
+      const id = newNavigationId();
       setArrival({ id, status: 'going' });
       host.send(naviMessage('navi:navigate', { destination, id }));
     }
@@ -432,7 +431,7 @@ export default function App() {
         const url = new URL(destination.path, mockSiteOrigin);
         if (destination.anchor) url.searchParams.set('focus', destination.anchor);
         window.open(url, '_blank', 'noopener');
-        setArrival({ id: ++navigationId.current, status: 'opened' });
+        setArrival({ id: newNavigationId(), status: 'opened' });
       }
       : null;
   // A host that never answers (older site, lost message) is treated as not confirmed, never as found.
@@ -472,7 +471,7 @@ export default function App() {
       plan: multi ? own.plan : singleStepPlan(destination, entry),
       index: 0, single: !multi, service: own?.service ?? entry?.title ?? null, prerequisites,
     });
-    if (unverified) setArrival(current => ({ id: current?.id ?? ++navigationId.current, status: 'unverified' }));
+    if (unverified) setArrival(current => ({ id: current?.id ?? newNavigationId(), status: 'unverified' }));
   } : null;
   const guideStep = index => {
     setGuide(current => (current ? { ...current, index } : current));

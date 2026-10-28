@@ -18,7 +18,7 @@ const DIM_MS = 1600;
 
 export type Arrival = "found" | "missing";
 // report: tells NAVI whether this place was found (only for navigation NAVI asked for, not ?focus=).
-type Pending = { anchor: string; label: string; id: number; report?: (status: Arrival) => void };
+type Pending = { path?: string; anchor: string | null; label: string; id: number; report?: (status: Arrival) => void };
 type Spot = { element: HTMLElement; label: string; id: number };
 
 function waitForElement(selector: string, timeout: number): Promise<HTMLElement | null> {
@@ -89,6 +89,8 @@ function TourController({ pending }: { pending: Pending | null }) {
 
   useEffect(() => {
     if (!pending || done.current === pending.id) return;
+    if (pending.path && pathname !== pending.path) return;
+    if (!pending.anchor) { done.current = pending.id; pending.report?.("found"); return; }
     let cancelled = false;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setSpot(null); // the previous step's mark goes away as soon as the next one starts
@@ -147,9 +149,8 @@ export function NaviHost() {
   // Resolves once the place is marked (or not found); a page without an anchor counts as found on arrival.
   const onNavigate = useCallback((destination: NaviDestination) => new Promise<Arrival>(resolve => {
     const id = ++counter.current;
-    if (destination.anchor) setPending({ anchor: destination.anchor, label: destination.label, id, report: resolve });
+    setPending({ path: destination.path, anchor: destination.anchor, label: destination.label, id, report: resolve });
     if (destination.path !== pathname) router.push(destination.path, { scroll: !destination.anchor });
-    if (!destination.anchor) resolve("found");
   }), [pathname, router]);
 
   const onFocus = useCallback((anchor: string) => {
