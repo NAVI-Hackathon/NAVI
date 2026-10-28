@@ -80,7 +80,7 @@ test('資料與隱私: files are really deleted on the server; the journey is fo
     await openJourney(page);
     await page.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '70');
-    const id = JSON.parse(await page.evaluate(() => sessionStorage.getItem('navi.journey'))).current;
+    const id = JSON.parse(await page.evaluate(() => localStorage.getItem('navi.journey'))).current;
     expect((await backend.server(`/api/journeys/${id}`)).documents).toHaveLength(1);
 
     await page.getByRole('button', { name: '資料與隱私' }).click();
@@ -97,7 +97,7 @@ test('資料與隱私: files are really deleted on the server; the journey is fo
     await expect(dialog).toContainText('1 小時內自動失效');
     await dialog.getByRole('button', { name: '確定移除' }).click();
     await expect(page.locator('#story-input')).toBeVisible();
-    expect(await page.evaluate(() => sessionStorage.getItem('navi.journey'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('navi.journey'))).toBeNull();
     await page.reload();
     await expect(page.getByRole('button', { name: '開啟工作區' })).toHaveCount(0);
   } finally { await backend.close(); }

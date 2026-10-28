@@ -64,7 +64,7 @@ async function expectOutlined(page, anchor) {
   await expect(page.locator('.navi-spot')).toBeVisible({ timeout: 15_000 });
 }
 const backToNavi = async (page, phone) => { if (phone) await page.getByRole('button', { name: /回到 NAVI/ }).click(); };
-const storedJourney = page => page.frames().find(f => f.url().includes('/embed'))?.evaluate(() => JSON.parse(sessionStorage.getItem('navi.journey') ?? 'null'));
+const storedJourney = page => page.frames().find(f => f.url().includes('/embed'))?.evaluate(() => JSON.parse(localStorage.getItem('navi.journey') ?? 'null'));
 
 for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 }, phone: false }, { name: 'phone', viewport: { width: 390, height: 844 }, phone: true }]) {
   test.describe(`formal ${device.name}`, () => {

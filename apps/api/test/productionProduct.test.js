@@ -138,3 +138,13 @@ test('without SMTP production blocks public signup but permits authorized synthe
   assert.equal((await a.call('/auth/login',credentials)).status,200);
   assert.equal((await a.call('/journeys')).status,200);
 });
+
+test('signing into an existing account retains owned anonymous work without merging another account', async t => {
+ const f=fixture(t),a=await api(t,f);await a.start();await a.call('/auth/register',credentials);await a.call('/auth/logout',{});await a.start();
+ const anonymous=await a.call('/journeys',{message:'我住院五天'});assert.equal(anonymous.status,201);
+ assert.equal((await a.call('/auth/login',credentials)).status,200);
+ assert.equal((await a.call('/journeys/'+anonymous.data.id)).status,200);
+ const b=await api(t,f);await b.start();const other={username:'synthetic_independent',password:credentials.password};await b.call('/auth/register',other);
+ assert.equal((await a.call('/auth/login',other)).status,200);
+ assert.equal((await a.call('/journeys/'+anonymous.data.id)).status,404);
+});
