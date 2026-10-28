@@ -98,6 +98,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
         <div className="workspace-meta">
           <span className={`state-pill stage-${journey.currentStage.toLowerCase()}`}><span className="pulse-dot" aria-hidden="true" />{stageLabel(journey)}</span>
           {actions.correct && <button type="button" className="link-button correct-link" onClick={actions.correct}><Icon name="edit" size={14} />需求不對？修正</button>}
+          <button type="button" className="link-button correct-link" onClick={actions.summary}><Icon name="document" size={14} />辦理摘要</button>
           {breakpoint === 'tablet' && (
             <button type="button" className="button button-secondary button-small" aria-expanded={assistantOpen} aria-controls="assistant-drawer" onClick={() => onAssistantOpen(!assistantOpen)}>
               <Icon name="spark" size={15} />{assistantOpen ? '收合 AI 助手' : 'AI 助手'}
@@ -181,7 +182,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
       )}
 
       <footer className="workspace-footer">
-        <span><Icon name="lock" size={13} />{actions.footerNotice}</span>
+        <span><Icon name="lock" size={13} />{actions.footerNotice}<button type="button" className="link-button privacy-link" onClick={actions.privacy}>資料與隱私</button></span>
         <span>NAVI · 智慧服務導航</span>
       </footer>
     </motion.main>

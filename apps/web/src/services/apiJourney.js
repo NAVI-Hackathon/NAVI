@@ -223,6 +223,16 @@ export function createApiJourneyService({
       return refs.length;
     },
     /**
+     * The user removes one journey from this browser (資料與隱私 / 任務列). Only the id is forgotten here;
+     * the server copy expires on its own (no journey DELETE endpoint yet). Returns how many remain.
+     */
+    forgetJourney(id) {
+      if (state?.journey.id === id || pending?.journeyId === id) return this.forgetCurrent();
+      drop(id);
+      save();
+      return refs.length;
+    },
+    /**
      * Several independent requests in one message (POST /intelligence/tasks: one AI call, at most four tasks).
      * Null when the server has no such endpoint (older release): the caller then understands it as one request.
      */

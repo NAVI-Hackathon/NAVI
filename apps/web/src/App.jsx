@@ -15,6 +15,7 @@ import { followUpForAnswers, followUpForClarification, followUpForRefusal } from
 import GuideCard from './components/guide/GuideCard.jsx';
 import { journeyPrerequisites, serviceSteps, singleStepPlan } from './domain/guidance.js';
 import TaskBar from './components/tasks/TaskBar.jsx';
+import { PrivacyDialog, SearchDialog, SummaryDialog } from './components/dialogs/AssistDialogs.jsx';
 import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
@@ -488,6 +489,8 @@ export default function App() {
     review() { setDialog('review'); },
     proceed() { setDialog('proceed'); },
     handoff() { setDialog('handoff'); },
+    summary() { setDialog('summary'); },
+    privacy() { setDialog('privacy'); },
     next(action) {
       switch (action.type) {
         case 'UPLOAD_DOCUMENT': {
@@ -521,6 +524,41 @@ export default function App() {
       }
     },
   };
+
+  /** 資料與隱私: delete every document and piece of information of the shown journey (server endpoints). */
+  async function removeJourneyData() {
+    const { journey } = snapshotRef.current;
+    let next = null, removed = 0;
+    for (const document of journey.documents) {
+      next = await attempt(() => service.removeDocument(document.documentType));
+      if (!next) break;
+      removed += 1;
+    }
+    for (const information of next || !journey.documents.length ? journey.manualDocumentInformation ?? [] : []) {
+      next = await attempt(() => service.removeManual(information.documentType));
+      if (!next) break;
+      removed += 1;
+    }
+    if (next) setSnapshot(next);
+    setDocStates({});
+    notify(removed ? `已移除 ${removed} 份文件或資訊，準備完成度已更新。` : '沒有移除任何資料，請稍後再試。');
+  }
+
+  /** Forget one journey in this browser (formal: the server copy expires on its own; demo: cleared now). */
+  function forgetJourney(id) {
+    const shown = snapshotRef.current?.journey.id === id;
+    if (service.forgetJourney) service.forgetJourney(id); else service.reset();
+    setJourneys(list => list.filter(item => item.id !== id));
+    setDialog(null);
+    if (shown || !service.forgetJourney) {
+      analysisCtl.current?.abort();
+      setSnapshot(null);
+      setDocStates({});
+      setGuide(null);
+      goLanding();
+    }
+    notify(service.forgetJourney ? '已從這個瀏覽器移除這件事；NAVI 服務上的案件會在 1 小時內自動失效。' : '已移除這件事的示範資料。');
+  }
 
   function reset() {
     analysisCtl.current?.abort();
@@ -562,13 +600,14 @@ export default function App() {
         {embedded ? (
           <EmbedHeader
             mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')}
             onClose={host.connected ? () => host.send(naviMessage('navi:close')) : null}
           />
         ) : (
           <AppHeader
             mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
             onHome={goLanding} onResume={goWorkspace} onReset={reset}
+            onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
             reduceMotion={reduceMotion} onReduceMotion={setReduceMotion}
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
@@ -589,7 +628,7 @@ export default function App() {
                 key="workspace" snapshot={snapshot} explanation={explanation} docStates={docStates} busy={busyType}
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
-                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} />}
+                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} />}
               />
             ) : (
               <Landing
@@ -605,6 +644,14 @@ export default function App() {
         )}
 
         <AnimatePresence>
+          {dialog === 'search' && (
+            <SearchDialog key="search" onClose={closeDialog} onNavigate={navigate} onAsk={text => { goLanding(); send(text); }} />
+          )}
+          {snapshot && dialog === 'summary' && <SummaryDialog key="summary" snapshot={snapshot} onClose={closeDialog} />}
+          {dialog === 'privacy' && (
+            <PrivacyDialog key="privacy" snapshot={snapshot} formal={!service.capabilities.manualEntry} onClose={closeDialog}
+              onRemoveData={removeJourneyData} onForget={() => forgetJourney(snapshot.journey.id)} />
+          )}
           {snapshot && dialog === 'review' && (
             <ReviewDialog key="review" snapshot={snapshot} onClose={closeDialog}
               onConfirm={async () => {

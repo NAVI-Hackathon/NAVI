@@ -136,6 +136,18 @@ test('one expired journey leaves the list; the others stay', async t => {
   assert.equal(storage.getItem('navi.journey'), null);
 });
 
+test('the user removes one journey from this browser; the others stay and the shown one closes', async t => {
+  const storage = memoryStorage();
+  const service = client(await backend(t), storage);
+  const first = (await service.analyze(DEMO_STORY)).snapshot.journey;
+  const second = (await service.analyze('我上個月在臺大醫院住院三天，想申請住院理賠')).snapshot.journey;
+  assert.equal(service.forgetJourney(first.id), 1, 'a journey not shown is forgotten');
+  assert.deepEqual((await service.listJourneys()).map(item => item.id), [second.id]);
+  assert.equal(service.forgetJourney(second.id), 0, 'the shown journey is forgotten too');
+  assert.equal(storage.getItem('navi.journey'), null);
+  assert.deepEqual(await service.listJourneys(), []);
+});
+
 test('the earlier single-journey format is kept as a one-item list', () => {
   const storage = memoryStorage();
   const journeyId = '00000000-0000-4000-8000-000000000001';
