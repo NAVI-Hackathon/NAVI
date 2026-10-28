@@ -39,6 +39,8 @@ export function inspectPublicText(text, fingerprints = []) {
   const byLength = new Map();
   for(const item of fingerprints) { if(!byLength.has(item.length)) byLength.set(item.length,new Set()); byLength.get(item.length).add(item.sha256); }
   for(const view of decodedViews(text)) {
+    if(/mongodb(?:\+srv)?:\/\/[^:/\s]+:[^@/\s]+@|aiza[a-z0-9_-]{35}|-----begin(?:rsa|ec|openssh)?privatekey-----/.test(view))findings.add('server_credential');
+    for(const name of ['mongodb_uri','smtp_password','navi_data_encryption_key','navi_admin_token'])if(view.includes(name))findings.add('server_configuration:'+name);
     for(const name of privateFieldNames) if(view.includes(name)) findings.add(`private_field:${name}`);
     if(byLength.size) {
       const chars = Array.from(view);

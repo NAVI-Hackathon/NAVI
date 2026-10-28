@@ -1,4 +1,5 @@
 import { redactIdentifiers } from '../utils/privacy.js';
+import { createHash } from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import { DocumentAnalysisSchema, DocumentSchema, DOCUMENT_MIME_TYPES, MAX_DOCUMENT_BYTES } from '../../../../shared/journey.js';
 import { ApiError } from '../middleware/errorHandler.js';
@@ -13,7 +14,7 @@ function matchesSignature(bytes, mime) {
   if (mime === 'image/jpeg') return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
   return mime === 'image/webp' && bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';
 }
-// shortcut: basic container/truncation checks only; add full decoding and malware scanning before production uploads.
+// Fast header checks precede the isolated production PDF/image decoder.
 function completeContainer(bytes, mime) {
   if (mime === 'application/pdf') return /^%PDF-[12]\.\d/.test(bytes.subarray(0, 8).toString()) && bytes.subarray(-1024).includes(Buffer.from('%%EOF'));
   if (mime === 'image/jpeg') return bytes.length > 4 && bytes.at(-2) === 255 && bytes.at(-1) === 217;
@@ -51,7 +52,7 @@ export async function parseUpload(req) {
     if (documentType !== null && typeof documentType !== 'string') throw new ApiError('INVALID_INPUT', '請提供有效的 documentType。', 400);
     if (documentType !== null && !DocumentAnalysisSchema.options.some(schema => schema.shape.documentType.value === documentType)) throw new ApiError('DOCUMENT_UNRECOGNIZED', '暫時無法辨識這份文件，請選擇符合服務需求的文件。', 422, true);
     const filename = file.name.replace(/\\/g, '/').split('/').at(-1).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 180) || 'document';
-    return { documentType, bytes, filename, mimeType: file.type, size: file.size };
+    return { documentType, bytes, sha256: createHash('sha256').update(bytes).digest('hex'), filename, mimeType: file.type, size: file.size };
   } catch (error) { bytes.fill(0); throw error; }
 }
 export async function analyzeDocument(upload, { provider, config, signal }) {
@@ -69,7 +70,7 @@ export async function analyzeDocument(upload, { provider, config, signal }) {
     fields.inpatientDays = stay.days; fields.inpatientDaysSource = stay.source;
     fields.diagnosis = null; // Clinical details are unnecessary for service navigation.
   }
-  const verified = documentVerified({ ...analysis, fields }, config.journeyConfidenceThreshold);
+  const verified = documentVerified({ ...analysis, fields }, config.journeyConfidenceThreshold,config.documentServiceType);
   const medical = ['diagnosis_certificate', 'bank_passbook'].includes(analysis.documentType);
-  return DocumentSchema.parse({ id: randomUUID(), ...analysis, fields, verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
+  return DocumentSchema.parse({ ...(config.productMode ? { contentSha256: upload.sha256 ?? createHash('sha256').update(upload.bytes).digest('hex') } : {}), id: randomUUID(), ...analysis, fields, ...(config.productMode ? {missingFields:(analysis.documentType==='diagnosis_certificate'?['patientName','hospitalName','certificateKind',...(config.documentServiceType==='outpatient_claim'?['visitDate']:fields.inpatientDays===null?['admissionDate','dischargeDate']:[])]:analysis.documentType==='bank_passbook'?['accountHolder','bankName','accountLast4']:Object.keys(fields)).filter(key=>fields[key]==null),confidenceBasis:'uncalibrated_model_estimate'} : {}), verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [analysis.documentType] : [], filename: medical ? `${analysis.documentType}.${upload.mimeType === 'application/pdf' ? 'pdf' : 'image'}` : upload.filename, mimeType: upload.mimeType, size: upload.size, source: provider.mode === 'demo' ? 'demo' : 'live', isMock: provider.mode === 'demo' });
 }

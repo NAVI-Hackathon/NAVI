@@ -1,5 +1,7 @@
 # Pending genuine AI evaluation — no requests executed
 
+> Historical 5-request proposal below. The current evaluation-only v2 dataset and 6-request dry run are defined in `ai-evaluation-protocol.md` and `apps/api/eval/holdout/v2/manifest.json`. Neither plan authorizes generation; no historical result is relabelled as current validation.
+
 Offline dataset: `apps/api/eval/reliability/cases.jsonl` (27 fixed cases). `npm run eval:reliability:local` injects authored responses through the Gemini REST transport and validates JSON, guards and service disposition. Its pass rate is **not model intent accuracy**. Every row retains ground truth, actual normalized output, mock latency, request count and fallback status.
 
 ## Minimum proposed Live budget (requires separate approval)

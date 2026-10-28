@@ -5,10 +5,10 @@ import { ServiceJourneySchema } from './journey.js';
 // Additive contracts: old understanding and journey responses remain unchanged.
 export const TaskUnderstandingSchema = z.object({
   tasks: z.array(z.object({
-    id: z.string().regex(/^task-[1-4]$/), input: z.string().min(1).max(MAX_MESSAGE_LENGTH), data: IntentDataSchema,
+    persistedTaskId:z.string().uuid().optional(), id: z.string().regex(/^task-[1-4]$/), input: z.string().min(1).max(MAX_MESSAGE_LENGTH), data: IntentDataSchema,
     outcome: z.enum(['supported', 'preview', 'clarification', 'human_review']),
   }).strict()).min(1).max(4),
-  nextStep: z.literal('confirm_one_task'), provider: z.enum(['live', 'demo']), isMock: z.boolean(),
+  batchId:z.string().uuid().optional(), nextStep: z.literal('confirm_one_task'), provider: z.enum(['live', 'demo']), isMock: z.boolean(),
   disclaimer: z.string(),
 }).strict();
 export const CorrectJourneyIntentRequestSchema = z.object({ message: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH) }).strict();

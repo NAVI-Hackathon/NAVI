@@ -51,7 +51,7 @@ test('R03 colloquial move and uncertain hospitalization remain service discovery
 });
 
 test('R04 outpatient correction invalidates hospital credit and old evidence without deleting independent tasks', async () => {
-  const s = service(); const j = await complete(s); s.review(j.id);
+  const s = service(); const j = await complete(s); await s.review(j.id);
   const other = await s.create({ message: '我要改地址' });
   const corrected = CorrectJourneyIntentResponseSchema.parse(await s.correctIntent(j.id, '我其實不是住院，是門診。'));
   assert.equal(corrected.previousServiceType, 'hospitalization_claim'); assert.equal(corrected.journey.serviceType, 'unknown');
@@ -59,8 +59,8 @@ test('R04 outpatient correction invalidates hospital credit and old evidence wit
   assert.equal(corrected.journey.claimContext, undefined); assert.equal(corrected.journey.officialSources, undefined);
   assert.equal(corrected.journey.sources.length, 0); assert.equal(corrected.journey.documents.length, 2);
   assert.ok(corrected.journey.documents.every(d => d.status === 'needs_review' && !d.matchedRequirements.length));
-  assert.deepEqual(s.get(other.id), other);
-  assert.throws(() => s.review(j.id), { code: 'SERVICE_NOT_SUPPORTED' });
+  assert.deepEqual((await s.get(other.id)), other);
+  await assert.rejects(async () => await s.review(j.id), { code: 'SERVICE_NOT_SUPPORTED' });
 });
 
 test('R05 late AI result cannot restore hospital credit after correction', async () => {
@@ -70,41 +70,41 @@ test('R05 late AI result cannot restore hospital credit after correction', async
   const work = s.addDocument(j.id, upload('diagnosis_certificate'));
   await s.correctIntent(j.id, '我其實不是住院，是門診。'); release();
   await assert.rejects(work, { code: 'JOURNEY_STALE' });
-  assert.equal(s.get(j.id).readiness, 0); assert.equal(s.get(j.id).documents.length, 0);
+  assert.equal((await s.get(j.id)).readiness, 0); assert.equal((await s.get(j.id)).documents.length, 0);
 });
 
 test('R06 bank deletion at 90% revokes exactly 20 points and invalidates handoff; repeated review is idempotent', async () => {
   const s = service(); const j = await complete(s); assert.equal(j.readiness, 90);
-  const handoff = createHandoffConfirmationService({ getJourney: s.get }); const preview = handoff.preview(j.id);
-  const removed = s.removeDocument(j.id, j.documents.find(d => d.documentType === 'bank_passbook').id);
+  const handoff = createHandoffConfirmationService({ getJourney: s.get }); const preview = await handoff.preview(j.id);
+  const removed = await s.removeDocument(j.id, j.documents.find(d => d.documentType === 'bank_passbook').id);
   assert.equal(removed.readiness, 70); assert.equal(removed.nextAction.target, 'bank_passbook');
-  assert.throws(() => handoff.confirm(j.id, { previewId: preview.previewId, confirmed: true }), { code: 'HANDOFF_PREVIEW_STALE' });
-  await s.addDocument(j.id, upload('bank_passbook')); const confirmed = s.review(j.id);
-  assert.equal(confirmed.readiness, 100); assert.deepEqual(s.review(j.id), confirmed);
+  await assert.rejects(() => handoff.confirm(j.id, { previewId: preview.previewId, confirmed: true }), { code: 'HANDOFF_PREVIEW_STALE' });
+  await s.addDocument(j.id, upload('bank_passbook')); const confirmed = await s.review(j.id);
+  assert.equal(confirmed.readiness, 100); assert.deepEqual(await s.review(j.id), confirmed);
 });
 
 test('R07 independent parallel documents survive; duplicate analysis cannot overwrite the same slot', async () => {
   const s = service(); const j = await s.create({ message: HOSPITAL_STORY });
   const results = await Promise.all([s.addDocument(j.id, upload('diagnosis_certificate')), s.addDocument(j.id, upload('bank_passbook'))]);
-  assert.equal(s.get(j.id).readiness, 90); assert.equal(s.get(j.id).documents.length, 2); assert.equal(results.length, 2);
+  assert.equal((await s.get(j.id)).readiness, 90); assert.equal((await s.get(j.id)).documents.length, 2); assert.equal(results.length, 2);
   const demo = createDemoProvider(); let release;
   const slow = service({ ...demo, analyzeDocument: async (...args) => { await new Promise(r => { release = r; }); return demo.analyzeDocument(...args); } });
   const first = await slow.create({ message: HOSPITAL_STORY }); const pending = slow.addDocument(first.id, upload('diagnosis_certificate'));
   await assert.rejects(slow.addDocument(first.id, upload('diagnosis_certificate')), { code: 'JOURNEY_BUSY' }); release(); await pending;
-  assert.equal(slow.get(first.id).documents.length, 1);
+  assert.equal((await slow.get(first.id)).documents.length, 1);
 });
 
 test('R08 late replacement cannot undo a document deletion made in another tab', async () => {
   const demo = createDemoProvider(); let pause = false; let release;
   const s = service({ ...demo, analyzeDocument: async (...args) => { if (pause) await new Promise(r => { release = r; }); return demo.analyzeDocument(...args); } });
   const j = await complete(s); const doc = j.documents.find(d => d.documentType === 'bank_passbook'); pause = true;
-  const pending = s.addDocument(j.id, upload('bank_passbook')); s.removeDocument(j.id, doc.id); release();
-  await assert.rejects(pending, { code: 'JOURNEY_STALE' }); assert.equal(s.get(j.id).readiness, 70);
+  const pending = s.addDocument(j.id, upload('bank_passbook')); await s.removeDocument(j.id, doc.id); release();
+  await assert.rejects(pending, { code: 'JOURNEY_STALE' }); assert.equal((await s.get(j.id)).readiness, 70);
 });
 
 test('R09 new repository after service restart expires cases instead of recreating credit', async () => {
   const j = await complete(service()); const restarted = service();
-  assert.throws(() => restarted.get(j.id), { code: 'JOURNEY_NOT_FOUND' });
+  await assert.rejects(() => restarted.get(j.id), { code: 'JOURNEY_NOT_FOUND' });
 });
 
 test('R10 disconnect aborts pending AI work and cannot commit a document', async () => {
@@ -112,7 +112,7 @@ test('R10 disconnect aborts pending AI work and cannot commit a document', async
   const s = service({ ...demo, analyzeDocument: (_upload, signal) => new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true })) });
   const j = await s.create({ message: HOSPITAL_STORY }); const abort = new AbortController();
   const pending = s.addDocument(j.id, upload('diagnosis_certificate'), abort.signal); abort.abort();
-  await assert.rejects(pending, { code: 'REQUEST_CANCELLED' }); assert.equal(s.get(j.id).readiness, 35);
+  await assert.rejects(pending, { code: 'REQUEST_CANCELLED' }); assert.equal((await s.get(j.id)).readiness, 35);
 });
 
 test('R11 correction uses the real provider boundary and ignores browser supplied business decisions', async () => {
@@ -179,7 +179,7 @@ test('Unclassified and declared uploads cannot race to overwrite the same actual
   const j = await s.create({ message: HOSPITAL_STORY }); const unclassified = upload('diagnosis_certificate'); delete unclassified.documentType;
   const pending = s.addDocument(j.id, unclassified);
   const saved = await s.addDocument(j.id, upload('diagnosis_certificate')); release();
-  await assert.rejects(pending, { code: 'JOURNEY_STALE' }); assert.equal(s.get(j.id).documents[0].id, saved.document.id);
+  await assert.rejects(pending, { code: 'JOURNEY_STALE' }); assert.equal((await s.get(j.id)).documents[0].id, saved.document.id);
 });
 
 

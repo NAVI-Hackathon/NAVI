@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { JourneyExplanationSchema, HandoffPreviewSchema, HandoffConfirmationSchema, HandoffSummarySchema, HandoffConfirmRequestSchema } from '../../../../shared/competition.js';
+import { serviceWorkflow } from './serviceWorkflows.js';
 import { getJourneyDefinition, getSources } from './knowledgeService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
@@ -32,15 +33,16 @@ const concernLabels = {
 };
 export function redactedHandoff(journey) {
   const definition = getJourneyDefinition(journey.serviceType);
-  const names = new Map((definition?.requirements ?? []).map(r => [r.id, r.name]));
+  const flow = journey.workflowId ? serviceWorkflow(journey.workflowId) : null;
+  const names = new Map((flow ? journey.requirements : definition?.requirements ?? []).map(r => [r.id, r.name]));
   // Allowlisted labels only: no free-text narrative, names, clinical dates, file names or bank digits.
   return HandoffSummarySchema.parse({
-    issue: definition?.title ?? '待確認的服務需求',
+    issue: flow?.title ?? definition?.title ?? '待確認的服務需求',
     collected: journey.requirements.filter(r => r.status === 'verified' && names.has(r.id)).map(r => names.get(r.id)),
     missing: journey.requirements.filter(r => r.required && r.status !== 'verified' && names.has(r.id)).map(r => names.get(r.id)),
     concerns: [...new Set((journey.consistencyIssues ?? []).map(issue => concernLabels[issue.type]).filter(Boolean))],
     reason: journey.nextAction.type === 'CONTACT_SPECIALIST' ? '目前資料或文件需要專員進一步確認。' : '服務條件與最終結果仍須依實際條款及專員確認。',
-    provider: journey.provider, sources: getSources(definition?.sourceIds ?? []), redacted: true,
+    provider: journey.provider, sources: flow ? journey.sources : getSources(definition?.sourceIds ?? []), redacted: true,
     disclaimer: '此摘要已省略個人、醫療與銀行欄位；確認只取得摘要，不會送交專員、申請理賠或改變服務準備度。',
   });
 }
@@ -52,7 +54,7 @@ export function createHandoffConfirmationService({ getJourney, now = Date.now, m
   const prune = () => { for (const [id, entry] of previews) if (entry.expiresAt <= now()) previews.delete(id); };
   return {
     preview(id) {
-      const journey = getJourney(id);
+      const apply = journey => {
       prune();
       for (const [key, entry] of previews) if (entry.preview.journeyId === id) previews.delete(key);
       if (previews.size >= maxEntries) throw new ApiError('HANDOFF_CAPACITY_REACHED', '預覽數量較多，請稍後再試。', 503, true);
@@ -60,12 +62,13 @@ export function createHandoffConfirmationService({ getJourney, now = Date.now, m
       const preview = HandoffPreviewSchema.parse({ previewId: randomUUID(), journeyId: id, expiresAt: new Date(expiresAt).toISOString(), status: 'awaiting_confirmation', summary: redactedHandoff(journey) });
       previews.set(preview.previewId, { preview, expiresAt, revision: revision(journey) });
       return structuredClone(preview);
+      };const value=getJourney(id);return value?.then?value.then(apply):apply(value);
     },
     confirm(id, input) {
       const parsed = HandoffConfirmRequestSchema.safeParse(input);
       if (!parsed.success) throw new ApiError('INVALID_INPUT', '請先查看摘要並明確確認。', 400, false);
       const { previewId } = parsed.data;
-      const journey = getJourney(id);
+      const apply = journey => {
       prune();
       const entry = previews.get(previewId);
       if (!entry || entry.preview.journeyId !== id) throw new ApiError('HANDOFF_PREVIEW_INVALID', '預覽已失效，請重新查看摘要後確認。', 409, false);
@@ -75,6 +78,7 @@ export function createHandoffConfirmationService({ getJourney, now = Date.now, m
       }
       previews.delete(previewId);
       return HandoffConfirmationSchema.parse({ previewId, journeyId: id, confirmedAt: new Date(now()).toISOString(), status: 'confirmed', delivery: 'not_sent', summary: entry.preview.summary });
+      };const value=getJourney(id);return value?.then?value.then(apply):apply(value);
     },
   };
 }

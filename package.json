@@ -16,7 +16,7 @@
     "dev:web": "npm run dev --workspace @navi/web",
     "dev:api": "npm run dev --workspace @navi/api",
     "test:web": "node --import ./apps/api/test/networkGuard.js --test apps/web/src/domain/*.test.js apps/web/src/hooks/motion.test.js apps/web/src/services/*.test.js",
-    "test:api": "npm run test --workspace @navi/api",
+    "test:api": "node scripts/test-mongodb.js -- npm run test --workspace @navi/api",
     "test:integration": "npm run test:integration --workspace @navi/api",
     "dev:navi": "node scripts/dev.js",
     "dev:mock": "npm run dev --workspace @navi/mock-site",
@@ -59,7 +59,16 @@
     "test:navigation": "node --import ./apps/api/test/networkGuard.js scripts/evidence/navigation-audit.js",
     "eval:reliability:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js",
     "test:reliability:load": "node --import ./apps/api/test/networkGuard.js scripts/evidence/reliability-load.js",
-    "eval:judge2:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js apps/api/eval/reliability/judge2-cases.jsonl"
+    "eval:judge2:local": "node --import ./apps/api/test/networkGuard.js apps/api/eval/reliability/run.js apps/api/eval/reliability/judge2-cases.jsonl",
+    "eval:holdout:dry": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --dry-run",
+    "eval:holdout:mock": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --mock",
+    "usability:summary": "node scripts/usability/summarize.js docs/usability/record-sheet.csv",
+    "eval:holdout:v2:dry": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --suite v2 --dry-run",
+    "eval:holdout:v2:mock": "node --import ./apps/api/test/networkGuard.js apps/api/eval/holdout/run.js --suite v2 --mock",
+    "knowledge:verify-release": "node --import ./apps/api/test/networkGuard.js scripts/knowledge/verify-release.js",
+    "usability:json": "node scripts/usability/summarize.js docs/usability/record-sheet.csv --json",
+    "test:product": "node scripts/test-mongodb.js -- playwright test -c tests/product/playwright.config.js",
+    "test:persistence": "node scripts/test-mongodb.js -- node --import ./apps/api/test/networkGuard.js --test apps/api/test/productionProduct.test.js"
   },
   "engines": {
     "node": ">=22.12"

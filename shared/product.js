@@ -1,0 +1,14 @@
+import { z } from 'zod';
+import { TaskUnderstandingSchema } from './serviceTasks.js';
+import { KnowledgeEvidenceResponseSchema } from './competition.js';
+export const CredentialsSchema=z.object({username:z.string().trim().regex(/^[A-Za-z0-9_-]{3,40}$/).optional(),email:z.email().max(254).optional(),password:z.string().min(12).max(128)}).strict().refine(v=>Boolean(v.username)!==Boolean(v.email),'Provide one account identity');
+export const ConversationRequestSchema=z.object({message:z.string().trim().min(1).max(2000),conversationId:z.string().uuid().optional(),requestId:z.string().uuid()}).strict();
+export const SavedMessageSchema=z.object({role:z.enum(['user','assistant']),text:z.string().max(6000),at:z.iso.datetime()}).strict();
+export const ConversationReplySchema=z.object({correctionRequired:z.boolean().optional(),conversationId:z.string().uuid(),messages:z.array(SavedMessageSchema).max(60),understanding:TaskUnderstandingSchema.nullable(),answer:z.string().max(6000),evidence:KnowledgeEvidenceResponseSchema,mode:z.enum(['live','retrieval']),errorCode:z.string().nullable(),knowledgeVersion:z.string()}).strict();
+export const WorkflowProgressSchema=z.object({checked:z.array(z.string().min(1).max(120)).max(20),revision:z.number().int().positive()}).strict();
+export const TaskJourneyRequestSchema=z.object({taskId:z.string().uuid(),idempotencyKey:z.string().uuid()}).strict();
+export const HandoffDraftRequestSchema=z.object({journeyVersion:z.number().int().positive(),text:z.string().max(2000),version:z.number().int().nonnegative()}).strict();
+export const EmailRequestSchema=z.object({email:z.email().max(254)}).strict();
+export const ResetPasswordRequestSchema=z.object({token:z.string().regex(/^[a-f0-9]{64}$/),password:z.string().min(12).max(128)}).strict();
+export const VerifyEmailRequestSchema=z.object({token:z.string().regex(/^[a-f0-9]{64}$/)}).strict();
+export const HandoffDraftResponseSchema=z.object({draft:z.object({journeyId:z.string().uuid(),text:z.string().max(2000),version:z.number().int().positive(),journeyVersion:z.number().int().positive(),updatedAt:z.iso.datetime(),delivery:z.literal('not_sent'),stale:z.boolean()}).strict().nullable()}).strict();

@@ -1,3 +1,4 @@
+import { createProductSessions } from './productSession.js';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ApiError } from './errorHandler.js';
@@ -8,6 +9,7 @@ const cookieName = '__Host-navi-test';
 
 // Sessions authorize synthetic testing, never real patient or bank-data intake.
 export function createTestSessions(config, repository, { providerMode = config.aiMode, now = Date.now } = {}) {
+  if (config.productMode) return createProductSessions(config, repository, { providerMode, now });
   const sessions = new Map(); const owners = new Map();
   const requestSessions = new WeakMap();
   const requestScope = new AsyncLocalStorage();

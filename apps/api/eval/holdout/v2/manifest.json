@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "frozenAt": "2026-10-27T11:44:43.368519+00:00",
+  "datasetSha256": "b4e8215133a3c7b9d3157af152c41eabee3c206d5cef249d95b56740b6d09920",
+  "caseCount": 28,
+  "provenance": "Evaluation-only prospective set with newly generated synthetic media. Never used to change prompts or workflow. Developer-authored, not an externally independent blind test.",
+  "independentHeldOut": false,
+  "originalDevelopmentFixturesReused": false,
+  "externalEvaluatorCasesReceived": 0,
+  "syntheticOnly": true,
+  "proposedLiveCaseIds": [
+    "I21",
+    "I22",
+    "I23",
+    "I25",
+    "I29",
+    "D21"
+  ],
+  "maxAttemptsPerCase": 1,
+  "liveExecuted": false,
+  "previousDatasetSha256": "c2c66e2dfa945121dcbe210d41c9913c6b39a32e71736ae2a0ce2c41880cda19"
+}

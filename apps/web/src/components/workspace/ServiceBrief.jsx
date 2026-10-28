@@ -11,7 +11,7 @@ const serviceIcons = { hospital: 'medical', payment_method_change: 'card', unkno
  * what NAVI understood, what is still open and the official sources (the stage is in the workspace head) —
  * all read from the journey; no stages or percentage invented for services that have none.
  */
-export default function ServiceBrief({ snapshot, onNavigate }) {
+export default function ServiceBrief({ snapshot, onNavigate, children }) {
   const { journey, context } = snapshot;
   const conditions = openConditions(journey);
   const sources = officialSourcesOf(journey);
@@ -55,6 +55,7 @@ export default function ServiceBrief({ snapshot, onNavigate }) {
             <p className="brief-text is-muted">這項需求在官網資料中沒有對應的說明，請洽客服專線由專人協助。</p>
           )}
         </motion.section>
+        {children}
       </motion.div>
 
       <p className="safe-note"><Icon name="shield" size={15} />{journey.disclaimer}</p>

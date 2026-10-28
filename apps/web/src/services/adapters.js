@@ -20,7 +20,7 @@ export function createMockAdapter({ storage = safeSessionStorage(), analysisDela
 }
 
 /** Real API Adapter: intent, journey, documents and readiness all come from apps/api. */
-export function createApiAdapter({ storage = safeSessionStorage(), ...options } = {}) {
+export function createApiAdapter({ storage = (()=>{try{return globalThis.localStorage??safeSessionStorage();}catch{return safeSessionStorage();}})(), ...options } = {}) {
   return createApiJourneyService({
     storage, ...options,
     understand: (message, { signal } = {}) => understandIntent(message, { signal }),

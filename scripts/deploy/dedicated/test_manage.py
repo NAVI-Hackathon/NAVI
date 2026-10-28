@@ -49,3 +49,36 @@ class Tests(unittest.TestCase):
     with self.assertRaises(RuntimeError):m.activate(p)
     run.assert_not_called()
 if __name__=='__main__':unittest.main()
+
+class EnvironmentTests(unittest.TestCase):
+ def test_failed_activation_restores_environment_before_restart(self):
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   root=m.ROOT;config=root/'config';config.mkdir();env=config/'api.env';env.write_bytes(b'OLD=private\n');env.chmod(0o600)
+   candidate=config/'candidate.env';candidate.write_bytes(b'NEW=private\n');candidate.chmod(0o600)
+   old=root/'releases'/('c'*12+'-1');new=root/'releases'/('d'*12+'-2')
+   for p in [old,new]:p.mkdir(parents=True);(p/'ready.json').write_text('{"providerIsolation":true}')
+   (root/'current').symlink_to(old)
+   observed=[]
+   def run(args,**kw):
+    if args==['systemctl','restart',m.UNIT]:observed.append(env.read_bytes())
+   with patch.object(m,'owned_service'),patch.object(m,'run',side_effect=run),patch.object(m,'healthy',side_effect=RuntimeError('synthetic')),patch.object(m.time,'sleep'):
+    with self.assertRaises(RuntimeError):m.activate(new,candidate)
+   self.assertEqual(observed,[b'NEW=private\n',b'OLD=private\n']);self.assertEqual((root/'current').resolve(),old)
+ def test_environment_rejects_external_paths_and_symlinks(self):
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   (m.ROOT/'config').mkdir();outside=m.ROOT/'outside';outside.write_text('private');outside.chmod(0o600)
+   with self.assertRaises(RuntimeError):m.private_environment(outside)
+   path=m.ROOT/'config/candidate.env';path.symlink_to(outside)
+   with self.assertRaises(RuntimeError):m.private_environment(path)
+
+
+class ProductReadinessTests(unittest.TestCase):
+ def test_product_activation_requires_database_readiness(self):
+  from io import StringIO
+  class Reply(StringIO):
+   def __init__(self,body):super().__init__(body);self.headers={'X-NAVI-AI-Mode':'live'}
+  replies=['{"status":"ok","aiProviderConfigured":true}','{"mode":"live","available":true,"syntheticOnly":true,"product":{"enabled":true}}']
+  with patch.object(m.urllib.request,'urlopen',side_effect=[Reply(v) for v in replies+['{"status":"ready","storage":"mongodb_encrypted"}']]) as call:
+   m.healthy();self.assertEqual(call.call_count,3)
+  with patch.object(m.urllib.request,'urlopen',side_effect=[Reply(v) for v in replies+['{"status":"ready","storage":"memory"}']]):
+   with self.assertRaises(RuntimeError):m.healthy()
