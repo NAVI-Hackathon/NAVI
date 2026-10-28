@@ -5,14 +5,10 @@ import ManualEntryForm, { unverifiedForms } from './ManualEntryForm.jsx';
 import { validateFile } from '../../domain/files.js';
 import { documentRecovery, unrecognizedFields } from '../../domain/documentRecovery.js';
 import { documentSpecs } from '../../mocks/hospitalClaim.js';
-import { maskAccount, stayDays, stayText } from '../../content/format.js';
-import { CheckDraw, useCountUp } from '../../motion/primitives.jsx';
+import { maskAccount, stayText } from '../../content/format.js';
+import { CheckDraw } from '../../motion/primitives.jsx';
+import { describeHospitalStay } from '../../../../../shared/hospitalization.js';
 import { fadeUp, spring, staggerChildren, transition } from '../../motion/tokens.js';
-
-function DaysValue({ days }) {
-  const shown = useCountUp(days ?? 0, { from: 0 });
-  return <>{days === null ? '待確認' : `${Math.round(shown)} 天`}</>;
-}
 
 // Fields the recognition is asked for, per document type; a missing one is shown as 未辨識.
 const FIELD_NAMES = {
@@ -21,8 +17,9 @@ const FIELD_NAMES = {
 };
 const Unrecognized = () => <span className="doc-unrecognized">未辨識</span>;
 
-function fieldRows(type, fields) {
+function fieldRows(type, fields, stay) {
   if (type === 'diagnosis_certificate') {
+    const span = stay ?? describeHospitalStay(fields);
     return [
       ['文件類型', '診斷證明書'],
       ['病患姓名', fields.patientName],
@@ -30,7 +27,8 @@ function fieldRows(type, fields) {
       // The server never extracts clinical details (diagnosis is null); only show it when present.
       ...(fields.diagnosis ? [['診斷', fields.diagnosis]] : []),
       ['住院期間', stayText(fields.admissionDate, fields.dischargeDate)],
-      ['住院天數', <DaysValue key="days" days={stayDays(fields.admissionDate, fields.dischargeDate)} />, true],
+      ['日期區間（日曆日）', span.calendarDays === null ? '待確認' : `${span.calendarDays} 日（${span.nights} 夜）`],
+      ['文件明載住院天數', span.reportedDays === null ? '待確認（文件未明載）' : `${span.reportedDays} 天${span.requiresConfirmation ? '（需確認）' : ''}`, true],
     ];
   }
   return [
@@ -55,7 +53,7 @@ function Result({ type, document, requirement, issues, disabled, onReplace, onMa
         <span className="doc-confidence">{manual ? '手動輸入' : `辨識信心 ${Math.round(document.confidence * 100)}%`}</span>
       </motion.div>
       <dl className="doc-fields">
-        {fieldRows(type, document.fields).map(([label, value, emphasis]) => (
+        {fieldRows(type, document.fields, document.stay).map(([label, value, emphasis]) => (
           <motion.div key={label} className={emphasis ? 'is-emphasis' : ''} variants={fadeUp}>
             <dt>{label}</dt><dd>{value || <Unrecognized />}</dd>
           </motion.div>

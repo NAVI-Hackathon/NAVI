@@ -96,9 +96,9 @@ export default function JourneyTimeline({ snapshot, documentsSlot, onReview, onP
           {hospital && <small className={hospital.partner ? 'strip-note is-ok' : 'strip-note'}>{hospital.partner ? '醫起通合作醫院' : '未對應合作院所'}</small>}
         </div>
         <div>
-          <span>{certificate ? '診斷書上的住院期間' : '住院期間'}</span>
+          <span>{certificate ? '文件日期區間（日曆日）' : '住院期間'}</span>
           <motion.strong key={days ?? 'pending'} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0, transition: transition.enter }}>
-            {days ? `${days} 天` : '待確認'}
+            {days ? `${days} 日（${days - 1} 夜）` : '待確認'}
           </motion.strong>
           {certificate && <small className="strip-note">{stayText(certificate.admissionDate, certificate.dischargeDate)}</small>}
         </div>
