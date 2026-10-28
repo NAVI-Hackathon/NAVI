@@ -32,20 +32,26 @@ function readinessCaption(journey) {
 }
 
 export function DocumentList({ snapshot, docStates, busy, actions, registerInput }) {
+  const { journey } = snapshot;
   return (
     <div className="doc-list">
-      {documentTypesOf(snapshot.journey).map(type => (
-        <DocumentCard
-          key={type} type={type}
-          document={snapshot.journey.documents.find(d => d.documentType === type)}
-          manualInformation={snapshot.journey.manualDocumentInformation?.find(m => m.documentType === type)}
-          manualVerifies={actions.manualVerifies}
-          uiState={docStates[type]} busy={busy}
-          onUpload={actions.upload} onSample={actions.sample} sampleByAi={actions.sampleByAi} onRemove={actions.remove} onManual={actions.manual} onRemoveManual={actions.removeManual} onRetry={actions.resetDocument}
-          registerInput={registerInput}
-        />
-      ))}
+      {/* Where files go and how far the check goes, before anything is chosen. */}
       <p className="doc-privacy"><Icon name="lock" size={13} />{actions.documentNotice}</p>
+      {documentTypesOf(journey).map(type => {
+        const document = journey.documents.find(d => d.documentType === type);
+        return (
+          <DocumentCard
+            key={type} type={type} document={document}
+            requirement={journey.requirements.find(r => r.id === type)}
+            issues={document ? (journey.consistencyIssues ?? []).filter(issue => issue.documentIds.includes(document.id)) : []}
+            manualInformation={journey.manualDocumentInformation?.find(m => m.documentType === type)}
+            manualVerifies={actions.manualVerifies}
+            uiState={docStates[type]} busy={busy} analysisLimitSeconds={actions.analysisLimitSeconds}
+            onUpload={actions.upload} onCancel={actions.cancelUpload} onSample={actions.sample} sampleByAi={actions.sampleByAi} onRemove={actions.remove} onManual={actions.manual} onRemoveManual={actions.removeManual} onRetry={actions.resetDocument} onHandoff={actions.handoff}
+            registerInput={registerInput}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -92,6 +98,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
         <div className="workspace-meta">
           <span className={`state-pill stage-${journey.currentStage.toLowerCase()}`}><span className="pulse-dot" aria-hidden="true" />{stageLabel(journey)}</span>
           {actions.correct && <button type="button" className="link-button correct-link" onClick={actions.correct}><Icon name="edit" size={14} />需求不對？修正</button>}
+          <button type="button" className="link-button correct-link" onClick={actions.summary}><Icon name="document" size={14} />辦理摘要</button>
           {breakpoint === 'tablet' && (
             <button type="button" className="button button-secondary button-small" aria-expanded={assistantOpen} aria-controls="assistant-drawer" onClick={() => onAssistantOpen(!assistantOpen)}>
               <Icon name="spark" size={15} />{assistantOpen ? '收合 AI 助手' : 'AI 助手'}
@@ -175,7 +182,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
       )}
 
       <footer className="workspace-footer">
-        <span><Icon name="lock" size={13} />{actions.footerNotice}</span>
+        <span><Icon name="lock" size={13} />{actions.footerNotice}<button type="button" className="link-button privacy-link" onClick={actions.privacy}>資料與隱私</button></span>
         <span>NAVI · 智慧服務導航</span>
       </footer>
     </motion.main>

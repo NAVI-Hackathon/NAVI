@@ -8,6 +8,7 @@ import { maskAccount, stayDays, stayText } from '../../content/format.js';
 import { CheckDraw } from '../../motion/primitives.jsx';
 import { channelStatus } from '../../domain/channels.js';
 import { transition } from '../../motion/tokens.js';
+import { copyText, downloadText } from '../../services/textExport.js';
 
 const fieldsOf = (journey, type) => journey.documents.find(d => d.documentType === type)?.fields ?? {};
 const formName = claimApplicationForm?.name ?? '保險金申請書';
@@ -228,14 +229,9 @@ export function HandoffDialog({ snapshot, service, onConfirmed, onClose }) {
 
   const summary = preview?.summary;
   const text = summary ? summaryText(summary) : '';
-  function download() {
-    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = 'NAVI-交接摘要.txt'; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = () => downloadText('NAVI-交接摘要.txt', text);
   async function copy() {
-    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { download(); }
+    if (await copyText(text)) { setCopied(true); setTimeout(() => setCopied(false), 1800); } else download();
   }
 
   const confirmed = phase === 'confirmed';

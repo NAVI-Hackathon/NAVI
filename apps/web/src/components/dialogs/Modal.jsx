@@ -12,7 +12,8 @@ export default function Modal({ title, onClose, children, size = 'md', labelledB
   useEffect(() => { closeRef.current = onClose; });
   useEffect(() => {
     const previous = document.activeElement;
-    const first = panel.current?.querySelector(FOCUSABLE);
+    // A field marked data-autofocus (e.g. the search box) takes the focus; otherwise the first control.
+    const first = panel.current?.querySelector('[data-autofocus]') ?? panel.current?.querySelector(FOCUSABLE);
     (first ?? panel.current)?.focus();
     const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); closeRef.current(); } };
     document.addEventListener('keydown', onKey);

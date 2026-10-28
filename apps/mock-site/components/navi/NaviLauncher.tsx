@@ -32,7 +32,7 @@ const noSubscription = () => () => {};
 
 export type NaviDestination = { kind: string; path: string; anchor: string | null; label: string };
 
-export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDestination) => void }) {
+export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDestination) => Promise<"found" | "missing"> }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -60,7 +60,11 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
       if (message.type === "navi:ready") { setConnected(true); sayHello(); }
       if (message.type === "navi:close") { setOpen(false); launcher.current?.focus(); }
       if (message.type === "navi:navigate") {
-        onNavigate?.(message.destination);
+        const { id } = message;
+        // Tell NAVI whether the place was really found, so it never says "已帶到" for a missing target.
+        void onNavigate?.(message.destination).then(status => {
+          if (id) frame.current?.contentWindow?.postMessage(hostMessage("host:navigated", { id, status }), NAVI_ORIGIN);
+        });
         // On phones the panel covers the page; close it so the highlighted target is visible.
         if (window.matchMedia("(max-width: 639.98px)").matches) { setOpen(false); setResume(true); }
       }

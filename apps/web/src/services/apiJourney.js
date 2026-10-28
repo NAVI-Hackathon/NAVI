@@ -51,9 +51,34 @@ export function journeySummary(journey) {
   };
 }
 
+/**
+ * fetch-like POST that reports how much of the body was actually sent (XMLHttpRequest upload events).
+ * onProgress({ phase: 'uploading', loaded, total }) while sending, then { phase: 'analyzing' } once the
+ * server has the whole file and is reading it. Browser only; elsewhere uploads go through fetch.
+ */
+export function xhrUpload(url, { method = 'POST', body, signal, onProgress }) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    xhr.upload.onprogress = event => onProgress?.({ phase: 'uploading', loaded: event.loaded, total: event.lengthComputable ? event.total : null });
+    xhr.upload.onload = () => onProgress?.({ phase: 'analyzing' });
+    xhr.onload = () => resolve({
+      ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status,
+      headers: { get: name => xhr.getResponseHeader(name) },
+      json: async () => JSON.parse(xhr.responseText),
+    });
+    xhr.onerror = () => reject(new TypeError('Network request failed'));
+    xhr.onabort = () => reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'));
+    if (signal?.aborted) { xhr.abort(); return; }
+    signal?.addEventListener('abort', () => xhr.abort(), { once: true });
+    xhr.send(body);
+  });
+}
+
 export function createApiJourneyService({
   understand, storage, storageKey = 'navi.journey', fetchImpl = (...args) => fetch(...args),
   baseUrl = import.meta.env?.VITE_API_BASE_URL || '', timeoutMs = 15000, documentTimeoutMs = 45000,
+  uploadImpl = typeof XMLHttpRequest === 'undefined' ? null : xhrUpload,
 }) {
   let state = null;
   let pending = null; // stored journey reference waiting to be read back from the server
@@ -87,15 +112,20 @@ export function createApiJourneyService({
   function commit(journey) { state = { ...state, journey: remember(journey) }; save(); return snapshot(); }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
-  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema } = {}) {
+  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress } = {}) {
     const deadline = AbortSignal.timeout(timeout);
     const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
     let response;
     try {
-      response = await fetchImpl(api(path), {
-        method, signal: combined,
-        ...(json ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) } : body ? { body } : {}),
-      });
+      // A file upload with a progress listener goes through XHR (real bytes sent); everything else through fetch.
+      if (onProgress && body && uploadImpl) response = await uploadImpl(api(path), { method, body, signal: combined, onProgress });
+      else {
+        onProgress?.({ phase: 'sending' }); // no byte count available: the UI says 上傳並辨識中 without a percentage
+        response = await fetchImpl(api(path), {
+          method, signal: combined,
+          ...(json ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) } : body ? { body } : {}),
+        });
+      }
     } catch (error) {
       if (signal?.aborted) throw signal.reason;
       throw new JourneyApiError(deadline.aborted ? 'AI_TIMEOUT' : 'NETWORK_ERROR', deadline.aborted ? '處理時間較長，請再試一次。' : '目前無法連線到服務，請確認網路後再試一次。');
@@ -119,7 +149,8 @@ export function createApiJourneyService({
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
     // Formal mode is real use: its sample is the synthetic PDF, sent to the server and read by the
     // AI like any upload (Live accepts only approved synthetic files). /demo samples never leave the browser.
-    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true },
+    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true, uploadProgress: true },
+    documentTimeoutMs,
     /** Nothing to show synchronously: the journeys themselves are only on the server (see resume). */
     restore() {
       state = null;
@@ -192,6 +223,16 @@ export function createApiJourneyService({
       return refs.length;
     },
     /**
+     * The user removes one journey from this browser (資料與隱私 / 任務列). Only the id is forgotten here;
+     * the server copy expires on its own (no journey DELETE endpoint yet). Returns how many remain.
+     */
+    forgetJourney(id) {
+      if (state?.journey.id === id || pending?.journeyId === id) return this.forgetCurrent();
+      drop(id);
+      save();
+      return refs.length;
+    },
+    /**
      * Several independent requests in one message (POST /intelligence/tasks: one AI call, at most four tasks).
      * Null when the server has no such endpoint (older release): the caller then understands it as one request.
      */
@@ -218,14 +259,14 @@ export function createApiJourneyService({
       save();
       return { understanding, kind, snapshot: snapshot() };
     },
-    async uploadDocument(type, { file = null, sample = false } = {}, { signal } = {}) {
+    async uploadDocument(type, { file = null, sample = false } = {}, { signal, onProgress } = {}) {
       const { journey } = requireState();
       const own = Boolean(file) && !sample;
       if (own && aiMode === 'demo') throw new JourneyApiError('DOCUMENT_RECOGNITION_UNAVAILABLE', RECOGNITION_UNAVAILABLE_MESSAGE);
       const form = new FormData();
       form.append('file', own ? file : samplePdfFile(type));
       form.append('documentType', type);
-      const result = await request(`/journeys/${journey.id}/documents`, { method: 'POST', body: form, signal, timeout: documentTimeoutMs, schema: UploadResponse });
+      const result = await request(`/journeys/${journey.id}/documents`, { method: 'POST', body: form, signal, timeout: documentTimeoutMs, schema: UploadResponse, onProgress });
       const added = result.journey.documents.find(d => d.documentType === type);
       // Fixture fields are never shown as the user's document (e.g. a proxy that drops the mode header).
       if (own && added?.isMock) {
