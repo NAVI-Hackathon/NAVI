@@ -46,7 +46,9 @@ async function serve(t, settings, provider) {
 const restricted = () => ({ ...config, restrictedLive: true, sessionToken: token, origins: [origin] });
 
 test('Production demo flags fail closed; local demo never loads Gemini', async () => {
-  const provider = createAIProvider(loadConfig({ NODE_ENV: 'production', AI_MODE: 'demo' }));
+  for (const AI_MODE of [undefined, '', 'demo']) assert.throws(() => loadConfig({ NODE_ENV: 'production', AI_MODE }), /Production requires explicit/);
+  assert.equal(loadConfig({ NODE_ENV: 'production', AI_MODE: 'unavailable' }).aiMode, 'unavailable');
+  const provider = createAIProvider({ ...loadConfig({}), production: true });
   assert.equal(provider.mode, 'unavailable');
   await assert.rejects(provider.analyzeDocument({}), { code: 'AI_UNAVAILABLE' });
   assert.equal(createAIProvider(loadConfig({})).mode, 'demo');
@@ -54,7 +56,7 @@ test('Production demo flags fail closed; local demo never loads Gemini', async (
 });
 test('Missing Free Tier or durable budget/session settings cannot enable public live', () => {
   for (const extra of [{}, { GEMINI_FREE_TIER_CONFIRMED: 'true' }, { GEMINI_FREE_TIER_CONFIRMED: 'true', NAVI_TEST_SESSION_TOKEN: token }]) {
-    assert.equal(createAIProvider(loadConfig({ NODE_ENV: 'production', AI_MODE: 'live', GEMINI_API_KEY: 'synthetic', ...extra })).mode, 'unavailable');
+    assert.throws(() => loadConfig({ NODE_ENV: 'production', AI_MODE: 'live', GEMINI_API_KEY: 'synthetic', ...extra }), /Production Live configuration/);
   }
   for (const key of ['AI_DAILY_REQUEST_LIMIT', 'AI_MAX_CONCURRENT', 'AI_MAX_ATTEMPTS']) assert.throws(() => loadConfig({ [key]: '1.5' }));
 });

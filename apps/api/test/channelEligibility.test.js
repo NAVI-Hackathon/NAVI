@@ -56,7 +56,7 @@ test('100% means preparation only; complete synthetic evidence cannot establish 
 
 test('Default caps are 12, production override 20 is explicit; no guard or retry change is necessary', () => {
   const defaults = loadConfig({}); assert.equal(defaults.dailyLimit, 12); assert.equal(defaults.liveRequestLimit, 12);
-  const configured = loadConfig({ NODE_ENV: 'production', AI_MODE: 'live', ALLOW_PAID_AI: 'false', AI_DAILY_REQUEST_LIMIT: '20', LIVE_AI_REQUEST_LIMIT: '20' });
+  const configured = loadConfig({ NODE_ENV: 'production', AI_MODE: 'live', GEMINI_API_KEY: 'synthetic', GEMINI_FREE_TIER_CONFIRMED: 'true', AI_PUBLIC_SYNTHETIC: 'true', AI_USAGE_FILE: '/private/synthetic-usage.json', ALLOW_PAID_AI: 'false', AI_DAILY_REQUEST_LIMIT: '20', LIVE_AI_REQUEST_LIMIT: '20' });
   assert.equal(configured.dailyLimit, 20); assert.equal(configured.liveRequestLimit, 20); assert.equal(configured.aiMaxAttempts, 1); assert.equal(configured.allowPaidAI, false);
 });
 

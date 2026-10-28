@@ -120,7 +120,7 @@ test('A failed generation consumes the session operation; client re-submission c
 });
 
 test('Restricted Live rejects automatic retries and invalid session limits; local evaluation remains compatible', () => {
-  for (const mode of [{ NODE_ENV: 'production' }, { AI_SYNTHETIC_TEST_ONLY: 'true' }]) assert.throws(() => loadConfig({ ...mode, AI_MAX_ATTEMPTS: '2' }));
+  for (const mode of [{ NODE_ENV: 'production', AI_MODE: 'unavailable' }, { AI_SYNTHETIC_TEST_ONLY: 'true' }]) assert.throws(() => loadConfig({ ...mode, AI_MAX_ATTEMPTS: '2' }));
   for (const limit of ['0', '-1', '1.5', '21', 'NaN']) assert.throws(() => loadConfig({ AI_SESSION_REQUEST_LIMIT: limit }));
   assert.equal(loadConfig({}).sessionRequestLimit, 6); assert.equal(loadConfig({ AI_MAX_ATTEMPTS: '2' }).aiMaxAttempts, 2);
   assert.equal(offlineNetworkStats().externalRequests, 0);
