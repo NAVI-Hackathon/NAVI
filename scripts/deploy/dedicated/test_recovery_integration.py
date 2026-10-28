@@ -24,7 +24,7 @@ class Recovery(unittest.TestCase):
   if self.process:
    self.process.stdout.close();self.process=None
  def start(self):
-  self.starts+=1;self.process=subprocess.Popen(['node',str(REPO/'tests/deployment/worker.mjs')],cwd=(self.root/'api-current').resolve(),env=self.childenv,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+  self.starts+=1;self.process=subprocess.Popen(['node','--import',str(REPO/'apps/api/test/networkGuard.js'),str(REPO/'tests/deployment/worker.mjs')],cwd=(self.root/'api-current').resolve(),env=self.childenv,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
  def state(self):
   running=self.process and self.process.poll() is None
   return {'ActiveState':'active' if running else 'failed','SubState':'running' if running else 'dead','MainPID':str(self.process.pid if self.process else 0),'ExecMainStartTimestampMonotonic':'1','StartLimitIntervalUSec':'5min','StartLimitBurst':'3','WorkingDirectory':str(self.root/'api-current'),'ExecStart':str(self.root/'api-current/apps/api/src/server.js')}
