@@ -2,9 +2,9 @@
 
 ## Integration status
 
-Developer B implements the contract; Developer A owns the visual design and final A3 flow. The user authorized additive Backend/shared functionality and minimal history/recovery controls. This supersedes the earlier SQLite proposal. **No MongoDB server runs on the VPS.** The new product path uses the official `mongodb` driver, real asynchronous repositories and MongoDB transactions; InMemory is retained only for legacy/Demo tests and the current, unswitched release. Setting `NAVI_PRODUCT_MODE=true` without a connected Mongo store fails startup, rather than silently falling back to memory.
+Developer B implements the contract; Developer A owns the visual design and final A3 flow. The user authorized additive Backend/shared functionality and minimal history/recovery controls. This supersedes the earlier SQLite proposal. **No MongoDB server runs on the VPS.** The new product path uses the official `mongodb` driver, real asynchronous repositories and MongoDB transactions; InMemory is retained for legacy/Demo tests; the Atlas cutover uses MongoJourneyRepository for every regular-mode Journey. Setting `NAVI_PRODUCT_MODE=true` without a connected Mongo store fails startup, rather than silently falling back to memory.
 
-Atlas credentials and production email delivery are external prerequisites. Local integration tests use an isolated actual MongoDB replica set, never Atlas or a fake database. They do not establish Atlas production connectivity or real email delivery. Do not switch all public APIs to required authentication before A's login/history integration is verified.
+Atlas SRV/TLS connectivity has been verified from the dedicated VPS. Automated regression tests use an isolated local MongoDB replica set; the separate controlled acceptance used actual Atlas, synthetic accounts and a private browser tunnel. SMTP remains unconfigured, so public signup stays closed while operator-provisioned synthetic accounts and anonymous sessions remain usable. No real email delivery or new Gemini generation is claimed.
 
 ## Configuration and provisioning
 
@@ -123,7 +123,7 @@ Use an official local MongoDB community binary with a replica set. `MONGOD_BINAR
 
 A can now: initialize `/session`; show login/verification/consent; load paginated `/journeys` and `/tasks`; select saved tasks with the task-based POST; restore a selected Journey; keep draft and Journey versions; handle 409 by reloading rather than overwriting; and clear all tabs' local display state when identity changes. The necessary minimal controls are integrated without replacing A's chat/Guided Action layout. API/private secrets stay out of Vite/Next public variables.
 
-Before production: provide Atlas SRV/database/least-privilege credentials and network allowlist; provide authorized SMTP/from address; verify email delivery and A3 Browser E2E; check the Atlas free/paid plan without enabling billing; migrate/backup existing persistent data if any; build a fixed SHA off-VPS; switch with an environment snapshot and rollback. No Atlas credentials or SMTP were configured by the implementation, so local success must not be reported as production persistence.
+Before production: provide Atlas SRV/database/least-privilege credentials and network allowlist; provide authorized SMTP/from address; verify email delivery and A3 Browser E2E; check the Atlas free/paid plan without enabling billing; migrate/backup existing persistent data if any; build a fixed SHA off-VPS; switch with an environment snapshot and rollback. Atlas credentials are privately configured by the user and verified separately; SMTP is not configured. Public account signup must stay unavailable until authorized delivery is configured and tested.
 
 References: [MongoDB Node transactions](https://www.mongodb.com/docs/drivers/node/current/crud/transactions/), [Atlas database users](https://www.mongodb.com/docs/atlas/security-add-mongodb-users/), [Nodemailer SMTP/TLS](https://nodemailer.com/smtp).
 
@@ -153,3 +153,11 @@ Atlas DNS egress uses `scripts/deploy/dedicated/atlas-egress.mjs` and its NAVI-o
 Record retention is sliding from the last mutation, not an unconditional deletion timestamp. Backup rotation runs during the scheduled backup operation; it is an approximate seven-day rotation, not immediate deletion from every backup. A public disaster restore must reconcile later deletions before reopening access.
 
 The browser now persists only Journey/conversation identifiers in localStorage; document fields and Cookie credentials remain server-only. Tabs retain independent in-memory views and use server revision checks. Signing into an existing account migrates the current anonymous owner's retained work in one transaction; switching between two authenticated accounts never merges the former account's data. History/task selection is fenced against late responses and logout.
+
+## Actual Atlas cutover acceptance — 2026-10-28
+
+The private VPS acceptance completed 16/16 checks against Atlas using API candidate f4bfc12b35562f3a456a5a2c3891accb0c2bf1c1. Five real-browser checks covered controlled login, history restore, refresh, pending-task recovery and checklist persistence. Authentication, encrypted repositories and driver transport were real; AI extraction was explicitly Demo on a loopback-only worker and consumed zero Gemini generations. These checks are not model-quality evidence.
+
+The checks include an actual Express process restart; account read/delete isolation; anonymous work transfer on login; idempotent saved-task creation; document deletion withdrawing readiness and staling drafts; an actual NAVI-only egress failure returning STORAGE_UNAVAILABLE; and an encrypted signed snapshot restored into a separate empty Atlas database. The temporary restore database and synthetic account data were removed after verification. Original source data was never dropped. Private raw reports are outside Git under artifacts/ and root-only VPS config.
+
+The deployment preserves the existing daily 20/session 6/concurrency 1/10-second/one-attempt policy; no model calls or billing changes are part of this cutover. Release activation must still verify the exact merged main SHA, Mongo /ready, HTTPS, current environment and external browser checks. The deployment manager snapshots both environment and release for rollback. Product-mode database failure cannot silently fall back to InMemory or Demo.
