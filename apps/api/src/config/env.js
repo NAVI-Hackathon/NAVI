@@ -12,8 +12,10 @@ export function loadConfig(env = process.env) {
   if (env.ALLOW_PAID_AI && env.ALLOW_PAID_AI !== 'false') throw new Error('Paid AI is prohibited in NAVI');
   const aiMode = env.AI_MODE?.trim() || 'demo';
   if (!['demo', 'live', 'unavailable'].includes(aiMode)) throw new Error('Invalid AI_MODE configuration');
+  if (env.NODE_ENV === 'production' && (!env.AI_MODE?.trim() || aiMode === 'demo')) throw new Error('Production requires explicit AI_MODE=live or unavailable');
   const model = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid GEMINI_MODEL configuration');
+  if (env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || env.GEMINI_FREE_TIER_CONFIRMED !== 'true' || model !== FREE_TIER_MODEL || !env.AI_USAGE_FILE?.startsWith('/') || (env.AI_PUBLIC_SYNTHETIC !== 'true' && (env.NAVI_TEST_SESSION_TOKEN?.trim().length ?? 0) < 32))) throw new Error('Production Live configuration is incomplete or unapproved');
   const requestLimit = numeric(env, 'LIVE_AI_REQUEST_LIMIT', env.MAX_LIVE_EVAL_REQUESTS_PER_RUN ? Number(env.MAX_LIVE_EVAL_REQUESTS_PER_RUN) : DEFAULT_LIVE_REQUEST_LIMIT, 1, 1000);
   const publicSynthetic = env.AI_PUBLIC_SYNTHETIC === 'true';
   const restrictedLive = env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true';

@@ -69,6 +69,7 @@ test('a task whose analysis expired says so, offers re-analysis and keeps the ot
     await ask(page, '我想改地址，也想知道要怎麼申請住院理賠。');
     await page.getByRole('button', { name: '我也想知道要怎麼申請住院理賠', exact: true }).click();
     await expect(page.getByText('這件事的需求分析已失效')).toBeVisible();
+    await expect(page.getByRole('button', { name: '我也想知道要怎麼申請住院理賠', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /重新分析/ })).toBeVisible();
     await expect(page.getByRole('button', { name: '我想改地址', exact: true })).toBeVisible();
   } finally { await close(); }

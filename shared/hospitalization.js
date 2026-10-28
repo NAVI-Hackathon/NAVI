@@ -69,6 +69,12 @@ export function calculateStay(fields) {
   }
   return Number.isInteger(reportedInpatientDays) && reportedInpatientDays > 0 && reportedInpatientDays <= 3660 ? { days: reportedInpatientDays, source: 'printed_days' } : { days: null, source: null };
 }
+// Calendar span and nights are date arithmetic, never confirmed medical or benefit days.
+export function describeHospitalStay(fields) {
+  const span = calculateStay({ ...fields, reportedInpatientDays: null });
+  const printed = Number.isInteger(fields.reportedInpatientDays) && fields.reportedInpatientDays > 0 && fields.reportedInpatientDays <= 3660 ? fields.reportedInpatientDays : null;
+  return { calendarDays: span.days, nights: span.days === null ? null : span.days - 1, reportedDays: printed, requiresConfirmation: printed === null || (span.days !== null && printed !== span.days) };
+}
 const channelSourceIds = { hospital_upload: 'service:claim_hospital_upload', union_chain: 'service:claim_union_chain', mail: 'service:claim_by_mail' };
 function channelInformation(id, service, legacyAvailable, target) {
   // No policy/member APIs or insurer attestation: snapshot matches can never establish eligibility.

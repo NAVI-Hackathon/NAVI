@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  HostMessageSchema, NaviMessageSchema, hostMessage, isAllowedOrigin, naviMessage, originOf, parseAllowedOrigins, readMessage,
+  newNavigationId, applyNavigationReply, HostMessageSchema, NaviMessageSchema, hostMessage, isAllowedOrigin, naviMessage, originOf, parseAllowedOrigins, readMessage,
 } from '../../../../shared/embed.js';
 import { claimDestinations } from './journeyEngine.js';
 
@@ -66,4 +66,13 @@ test('the host answers a navigation with its id and found / missing only', () =>
   }
   const navigate = readMessage(event('http://127.0.0.1:3000', naviMessage('navi:navigate', { destination: claimDestinations.form, id: 3 })), { allowedOrigins, expectedSource: parent, schema: NaviMessageSchema });
   assert.equal(navigate.id, 3);
+});
+
+
+test('navigation acknowledgements cannot complete a stale, duplicate or expired request', () => {
+ const id=newNavigationId(),current={id,status:'going'};const done=applyNavigationReply(current,hostMessage('host:navigated',{id,status:'found'}));assert.equal(done.status,'found');
+ assert.equal(applyNavigationReply(current,hostMessage('host:navigated',{id:id===1?2:id-1,status:'found'})),current);
+ assert.equal(applyNavigationReply(done,hostMessage('host:navigated',{id,status:'missing'})),done);
+ const expired={id,status:'silent'};assert.equal(applyNavigationReply(expired,hostMessage('host:navigated',{id,status:'found'})),expired);
+ const ids=Array.from({length:1000},newNavigationId);assert.equal(new Set(ids).size,1000);for(const x of ids)assert.equal(HostMessageSchema.safeParse(hostMessage('host:navigated',{id:x,status:'found'})).success,true);
 });

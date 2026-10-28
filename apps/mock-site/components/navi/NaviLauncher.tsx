@@ -62,9 +62,12 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
       if (message.type === "navi:navigate") {
         const { id } = message;
         // Tell NAVI whether the place was really found, so it never says "已帶到" for a missing target.
-        void onNavigate?.(message.destination).then(status => {
-          if (id) frame.current?.contentWindow?.postMessage(hostMessage("host:navigated", { id, status }), NAVI_ORIGIN);
-        });
+        const requestedFrame = frame.current?.contentWindow;
+        const report = (status: "found" | "missing") => {
+          if (id && requestedFrame && requestedFrame === frame.current?.contentWindow)
+            requestedFrame.postMessage(hostMessage("host:navigated", { id, status }), NAVI_ORIGIN);
+        };
+        void onNavigate?.(message.destination).then(report).catch(() => report("missing"));
         // On phones the panel covers the page; close it so the highlighted target is visible.
         if (window.matchMedia("(max-width: 639.98px)").matches) { setOpen(false); setResume(true); }
       }

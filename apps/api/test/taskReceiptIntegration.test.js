@@ -157,7 +157,7 @@ test('An older /tasks 404 client performs one understanding, then uses its recei
 
 test('Timed-out tasks analysis issues no receipt and a forged selection cannot trigger a hidden retry', async t => {
   let attempts = 0;
-  const config = { ...loadConfig({ NODE_ENV: 'production', AI_MODE: 'live', AI_PUBLIC_SYNTHETIC: 'true', WEB_ORIGINS: origin }), timeoutMs: 20 };
+  const config = { ...loadConfig({ NODE_ENV: 'production', AI_MODE: 'unavailable', AI_PUBLIC_SYNTHETIC: 'true', WEB_ORIGINS: origin }), timeoutMs: 20 };
   const provider = { mode: 'live', understandTasks: () => { attempts++; return new Promise(() => {}); }, understandIntent: () => { throw Error('must not retry'); } };
   const server = createApp(config, provider).listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
   t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));

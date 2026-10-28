@@ -1,3 +1,4 @@
+import { describeHospitalStay } from '../../../../shared/hospitalization.js';
 // Display formatting for zh-TW. Pure functions only.
 
 export function dateText(isoDate) {
@@ -5,10 +6,9 @@ export function dateText(isoDate) {
   return match ? `${match[1]} / ${match[2]} / ${match[3]}` : '待確認';
 }
 
-/** Inclusive day count of a hospital stay: 09-28 → 10-02 is 5 days. */
+/** Calendar span only; not confirmed medical or benefit days. */
 export function stayDays(admissionDate, dischargeDate) {
-  const days = (Date.parse(dischargeDate) - Date.parse(admissionDate)) / 86_400_000;
-  return Number.isFinite(days) && days >= 0 ? Math.round(days) + 1 : null;
+  return describeHospitalStay({ admissionDate, dischargeDate }).calendarDays;
 }
 
 export function stayText(admissionDate, dischargeDate) {

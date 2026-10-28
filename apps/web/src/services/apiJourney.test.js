@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createApiJourneyService, understandingOfTask } from './apiJourney.js';
+import { createApiJourneyService, understandingOfTask, xhrUpload } from './apiJourney.js';
 import { understandIntent } from './intelligence.js';
 import { DEMO_STORY } from '../mocks/hospitalClaim.js';
 // Formal mode talks to the real backend; run it in-process with the scripted demo provider (no AI calls).
@@ -317,4 +317,42 @@ test('correcting the need re-reads it on the server: kept documents earn nothing
   assert.ok(snapshot.journey.documents.every(d => d.status === 'needs_review'), 'kept documents need confirming');
   assert.equal(snapshot.context.kind, snapshot.journey.serviceType, 'the client follows the corrected service');
   assert.equal((await service.refresh()).journey.id, snapshot.journey.id);
+});
+
+
+test('a delayed journey selection cannot overwrite the latest selected journey', async t => {
+ const baseUrl=await backend(t),storage=memoryStorage();let delayedId,arrived,release;const waiting=new Promise(r=>arrived=r),hold=new Promise(r=>release=r);
+ const service=createApiJourneyService({baseUrl,storage,understand:(message,options)=>understandIntent(message,{...options,baseUrl}),fetchImpl:async(url,init)=>{const response=await fetch(url,init);if(new URL(url).pathname==='/api/journeys/'+delayedId&&(!init.method||init.method==='GET')){arrived();await hold;}return response;}});
+ const first=(await service.analyze(DEMO_STORY)).snapshot.journey,second=(await service.analyze('我在臺大醫院住院三天')).snapshot.journey;delayedId=first.id;
+ const older=service.switchJourney(first.id);await waiting;await service.switchJourney(second.id);const rejected=assert.rejects(older,{name:'AbortError'});release();await rejected;
+ assert.equal(JSON.parse(storage.getItem('navi.journey')).current,second.id);assert.equal((await service.listJourneys()).find(j=>j.current).id,second.id);
+});
+
+test('a late upload response stays with its original journey after a selection changes', async t => {
+ const baseUrl=await backend(t),storage=memoryStorage();let arrived,release;const waiting=new Promise(r=>arrived=r),hold=new Promise(r=>release=r);
+ const service=createApiJourneyService({baseUrl,storage,understand:(message,options)=>understandIntent(message,{...options,baseUrl}),fetchImpl:async(url,init)=>{const response=await fetch(url,init);if(String(url).endsWith('/documents')&&init.method==='POST'){arrived();await hold;}return response;}});
+ const first=(await service.analyze(DEMO_STORY)).snapshot.journey,second=(await service.analyze('我在臺大醫院住院三天')).snapshot.journey;await service.switchJourney(first.id);
+ const uploading=service.uploadDocument('diagnosis_certificate',{sample:true});await waiting;await service.switchJourney(second.id);const rejected=assert.rejects(uploading,{code:'JOURNEY_STALE'});release();await rejected;
+ const list=await service.listJourneys();assert.equal(list.find(j=>j.current).id,second.id);assert.equal(list.find(j=>j.id===second.id).readiness,35);assert.equal(list.find(j=>j.id===first.id).readiness,70);
+});
+
+
+test('late handoff confirmation cannot mark a different selected journey as confirmed', async t => {
+ const baseUrl=await backend(t),storage=memoryStorage();let arrived,release;const waiting=new Promise(r=>arrived=r),hold=new Promise(r=>release=r);
+ const service=createApiJourneyService({baseUrl,storage,understand:(message,options)=>understandIntent(message,{...options,baseUrl}),fetchImpl:async(url,init)=>{const response=await fetch(url,init);if(String(url).endsWith('/handoff/confirm')){arrived();await hold;}return response;}});
+ const first=(await service.analyze(DEMO_STORY)).snapshot.journey,second=(await service.analyze('我在臺大醫院住院三天')).snapshot.journey;await service.switchJourney(first.id);const p=await service.handoffPreview(),confirming=service.confirmHandoff(p.previewId);await waiting;await service.switchJourney(second.id);const rejected=assert.rejects(confirming,{code:'JOURNEY_STALE'});release();await rejected;const stored=JSON.parse(storage.getItem('navi.journey'));assert.equal(stored.current,second.id);assert.equal(stored.journeys.find(j=>j.journeyId===second.id).handoffRequested,false);
+});
+
+
+test('XHR progress uses actual bytes and a pre-cancelled upload does not start a request', async t => {
+ const previous=globalThis.XMLHttpRequest;let active,created=0;
+ globalThis.XMLHttpRequest=class {constructor(){created++;active=this;this.upload={};}open(){}send(){}abort(){this.onabort?.();}getResponseHeader(){return 'live';}};t.after(()=>{globalThis.XMLHttpRequest=previous;});
+ const cancelled=new AbortController();cancelled.abort();await assert.rejects(xhrUpload('/api/upload',{signal:cancelled.signal}),{name:'AbortError'});assert.equal(created,0);
+ const progress=[],ctl=new AbortController(),request=xhrUpload('/api/upload',{signal:ctl.signal,body:new FormData(),onProgress:p=>progress.push(p)});
+ active.upload.onprogress({loaded:250,total:1000,lengthComputable:true});active.upload.onload();assert.deepEqual(progress,[{phase:'uploading',loaded:250,total:1000},{phase:'analyzing'}]);ctl.abort();await assert.rejects(request,{name:'AbortError'});
+});
+
+test('an AI status failure, invalid mode or conflicting response clears an earlier live claim', async () => {
+ let response=()=>Response.json({mode:'live',available:true},{headers:{'X-NAVI-AI-Mode':'live'}});const service=createApiJourneyService({storage:memoryStorage(),fetchImpl:async()=>response()});assert.equal(await service.checkAiMode(),'live');
+ for(const next of [()=>Response.json({error:{code:'AI_UNAVAILABLE'}},{status:503,headers:{'X-NAVI-AI-Mode':'live'}}),()=>Response.json({mode:'demo'},{headers:{'X-NAVI-AI-Mode':'live'}}),()=>Response.json({mode:'not-a-provider'}),()=>{throw new TypeError('offline');}]){response=next;assert.equal(await service.checkAiMode(),null);assert.equal(service.aiMode,null);}
 });

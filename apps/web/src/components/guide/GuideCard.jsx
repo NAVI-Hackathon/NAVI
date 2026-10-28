@@ -7,9 +7,9 @@ import { transition } from '../../motion/tokens.js';
  * Where the step is, in words that match what the site reported. "已帶到" only after the host said it
  * found and marked the place; a missing or unconfirmed place says so and offers the other ways in.
  */
-function Where({ embedded, single, arrival }) {
+function Where({ embedded, single, arrival, highlighted }) {
   if (embedded) {
-    if (arrival === 'found') return <p className="guide-where"><Icon name="route" size={13} />官網已帶到這裡並標示出來</p>;
+    if (arrival === 'found') return <p className="guide-where"><Icon name="route" size={13} />{highlighted ? '官網已帶到這裡並標示出來' : '官網已到達這個頁面'}</p>;
     if (arrival === 'going') return <p className="guide-where is-going"><span className="dots" aria-hidden="true"><i /><i /><i /></span>正在官網上尋找這個位置…</p>;
   }
   if (arrival === 'opened' || (!embedded && single)) return <p className="guide-where"><Icon name="external" size={13} />已在新分頁開啟模擬官網的這個位置</p>;
@@ -88,7 +88,7 @@ export default function GuideCard({ guide, embedded, arrival = null, hotline = n
           exit={{ opacity: 0, x: -10 * direction.current, transition: transition.exit }}>
           <p className="guide-instruction">{step.instruction}</p>
           <h2 ref={heading} tabIndex={-1} className="guide-title">{step.destination.label}</h2>
-          <Where embedded={embedded} single={single} arrival={arrival} />
+          <Where embedded={embedded} single={single} arrival={arrival} highlighted={Boolean(step.destination.anchor)} />
           {lost && <Fallback arrival={arrival} step={step} hotline={hotline} onHandoff={onHandoff} />}
           {index === 0 && prerequisites.length > 0 && (
             <div className="guide-prereq">
