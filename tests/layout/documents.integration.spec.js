@@ -40,16 +40,20 @@ test('real waiting state, server-named requirements, removal needs a confirmatio
   try {
     await openJourney(page, 1280);
     const certificate = card(page, 'diagnosis_certificate');
+    // A demo server is said to be one: never presented as AI analysis (A8).
+    await expect(page.getByRole('note').filter({ hasText: 'NAVI 服務目前以示範資料回答，不是 AI 分析' })).toBeVisible();
+    await expect(page.locator('.mode-badge', { hasText: '示範資料' })).toBeVisible();
+    await expect(page.getByText('由 AI 辨識')).toHaveCount(0);
     // Header text comes from the journey requirement, not a fixed percentage.
     await expect(certificate.getByRole('heading', { name: '診斷書或住院證明' })).toBeVisible();
     await expect(certificate).toContainText('必要');
     await expect(certificate).not.toContainText('+35%');
 
-    await certificate.getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await certificate.getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     // While the server reads the file there is no invented percentage, only the time actually waited.
     // (Real browsers first show 正在上傳 n% from XHR upload events; request interception here suppresses them.)
     const waiting = certificate.locator('.doc-analyzing');
-    await expect(waiting).toContainText(/正在上傳並辨識文件…|AI 正在辨識文件…/);
+    await expect(waiting).toContainText(/正在上傳並辨識文件…|正在以示範資料辨識…/);
     await expect(waiting).toContainText(/已等待 \d+ 秒，最長約 45 秒/);
     await expect(waiting).not.toContainText('%');
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '70');
@@ -70,7 +74,7 @@ test('phone: the documents tab shows the result and its actions without sideways
   try {
     await openJourney(page, 390);
     const certificate = card(page, 'diagnosis_certificate');
-    await certificate.getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await certificate.getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(certificate.getByRole('button', { name: /替換文件/ })).toBeVisible();
     await expect(certificate.getByRole('button', { name: '移除診斷書或住院證明' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -93,7 +97,7 @@ test('a conflict the server reports is shown on the document, with ways to fix i
   try {
     await openJourney(page, 1280);
     const certificate = card(page, 'diagnosis_certificate');
-    await certificate.getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await certificate.getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(certificate.getByText(message)).toBeVisible();
     await expect(certificate.getByRole('button', { name: /替換文件/ })).toBeVisible();
     await expect(certificate.getByRole('button', { name: '先提供資訊（尚未驗證）' })).toBeVisible();
@@ -106,7 +110,7 @@ test('a replacement that cannot be read keeps the earlier document and says what
   try {
     await openJourney(page, 1280);
     const certificate = card(page, 'diagnosis_certificate');
-    await certificate.getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await certificate.getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '70');
     // This server only has demo recognition: the user's own file is never sent to it.
     const chooser = page.waitForEvent('filechooser');
@@ -132,7 +136,7 @@ test('a timeout offers the same file again only when asked, and the retry works'
     });
     await openJourney(page, 1280);
     const certificate = card(page, 'diagnosis_certificate');
-    await certificate.getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await certificate.getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(certificate.getByText('這次沒有完成辨識')).toBeVisible();
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '35');
     await certificate.getByRole('button', { name: '用同一份文件再試一次' }).click();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import AppHeader, { EmbedHeader } from './components/AppHeader.jsx';
 import Landing from './components/landing/Landing.jsx';
@@ -32,6 +32,7 @@ const mockSiteOrigin = originOf(import.meta.env.VITE_MOCK_SITE_URL ?? '');
 const demoEntry = embedded && mockSiteOrigin ? `${mockSiteOrigin}/?navi=demo` : `${location.origin}/demo`;
 // The host looks for a place for up to 4 s after the page changes; past this NAVI stops waiting.
 const ARRIVAL_TIMEOUT_MS = 7000;
+const noSubscription = () => () => {};
 const tryDemo = `想先看完整流程，可以改用示範模式（${demoEntry}）。`;
 
 const errorCopy = {
@@ -115,6 +116,12 @@ export default function App() {
   // Formal mode needs the NAVI service; /demo works offline (everything is local).
   const offline = !useOnline() && !service.capabilities.manualEntry;
   const wasOffline = useRef(false);
+  // Formal mode: what the server actually answers with. A demo server (fixed synthetic results) or an
+  // unavailable AI is said on the page; only a live server is presented as AI analysis.
+  const serverMode = useSyncExternalStore(service.subscribeAiMode ?? noSubscription, () => service.aiMode ?? null, () => null);
+  const serverDemo = mode !== 'demo' && serverMode === 'demo';
+  const aiUnavailable = mode !== 'demo' && serverMode === 'unavailable';
+  useEffect(() => { service.checkAiMode?.(); }, [service]);
 
   const analysisCtl = useRef(null);
   const snapshotRef = useRef(snapshot);
@@ -325,7 +332,8 @@ export default function App() {
       if (answered) {
         const notice = error?.code === 'INTENT_RECEIPT_REQUIRED'
           ? `${errorCopy.INTENT_RECEIPT_REQUIRED[0]}，以下先列出官網資料中的相關說明；按「重新分析」可再建立服務旅程。`
-          : 'AI 分析暫時無法使用，以下是官網資料中的相關說明。';
+          // Say the real reason (quota spent, service down, timeout…), not a generic "unavailable".
+          : `${(errorCopy[error?.code] ?? ['AI 分析暫時無法使用'])[0]}，以下是官網資料中的相關說明。`;
         reply({ ...answers(notice), retry: { text, label } });
         return;
       }
@@ -480,7 +488,9 @@ export default function App() {
     // Where uploaded files go differs by mode; say so plainly next to the upload cards.
     documentNotice: service.capabilities.manualEntry
       ? '文件辨識使用示範資料；你的檔案不會被讀取或上傳。'
-      : '檔案會傳送到 NAVI 服務由 AI 辨識；伺服器不保存檔案本身，只保留辨識出的欄位，案件 1 小時後失效。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。',
+      : serverDemo
+        ? '這個 NAVI 服務目前使用示範資料：合成範例會得到固定的示範結果，你自己的檔案不會被送出辨識。'
+        : '檔案會傳送到 NAVI 服務由 AI 辨識；伺服器不保存檔案本身，只保留辨識出的欄位，案件 1 小時後失效。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。',
     footerNotice: service.capabilities.manualEntry
       ? '進度只保留在這個分頁；文件不會被上傳。'
       : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
@@ -490,7 +500,7 @@ export default function App() {
     analysisLimitSeconds: Math.round((service.documentTimeoutMs ?? 0) / 1000) || null,
     // /demo fills in local sample data; formal mode sends the synthetic PDF for real AI recognition.
     sample: service.capabilities.samples ? type => upload(type, { sample: true }) : null,
-    sampleByAi: service.capabilities.samples === 'ai',
+    sampleByAi: service.capabilities.samples === 'ai' && (serverDemo ? 'demo' : true),
     navigate,
     async remove(type) {
       const next = await attempt(() => service.removeDocument(type));
@@ -633,19 +643,21 @@ export default function App() {
         <a className="skip-link" href="#main-content">跳至主要內容</a>
         {embedded ? (
           <EmbedHeader
-            mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')}
+            mode={serverDemo ? 'demo' : mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
             onClose={host.connected ? () => host.send(naviMessage('navi:close')) : null}
           />
         ) : (
           <AppHeader
-            mode={mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
+            mode={mode} demoData={serverDemo} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
             onHome={goLanding} onResume={goWorkspace} onReset={reset}
             onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
             reduceMotion={reduceMotion} onReduceMotion={setReduceMotion}
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
         )}
+        {serverDemo && <p className="demo-banner" role="note">NAVI 服務目前以示範資料回答，不是 AI 分析：需求理解與文件辨識都是固定的合成結果，只供體驗流程。</p>}
+        {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'}>示範模式</a>體驗完整流程。</p>}
         {offline && <p className="network-banner" role="status"><Icon name="alert" size={13} />目前沒有網路連線：NAVI 暫停送出與上傳，已有的內容不會遺失。</p>}
         {mode === 'demo' && !embedded && (
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>

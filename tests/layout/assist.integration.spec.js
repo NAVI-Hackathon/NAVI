@@ -56,7 +56,7 @@ test('辦理摘要: the journey state to copy or save, without document values',
   try {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await openJourney(page);
-    await page.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await page.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '70');
     await page.getByRole('button', { name: '辦理摘要' }).click();
     const dialog = page.getByRole('dialog', { name: '辦理摘要' });
@@ -78,7 +78,7 @@ test('資料與隱私: files are really deleted on the server; the journey is fo
   const backend = await formalBackend(page);
   try {
     await openJourney(page);
-    await page.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（由 AI 辨識）' }).click();
+    await page.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '70');
     const id = JSON.parse(await page.evaluate(() => sessionStorage.getItem('navi.journey'))).current;
     expect((await backend.server(`/api/journeys/${id}`)).documents).toHaveLength(1);
