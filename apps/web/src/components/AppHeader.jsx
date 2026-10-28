@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Icon, { Mark } from './Icon.jsx';
 
-export default function AppHeader({ mode, demoData = false, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onData, reduceMotion, onReduceMotion, failNext, onFailNext }) {
+export default function AppHeader({ mode, demoData = false, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, reduceMotion, onReduceMotion, failNext, onFailNext }) {
   const menu = useRef(null);
   useEffect(() => {
     function dismiss(e) {
@@ -34,7 +34,6 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
             <summary className="icon-button" aria-label="更多選項"><Icon name="more" size={20} /></summary>
             <div className="menu-popover" role="group" aria-label="更多選項">
               <button type="button" onClick={close(onPrivacy)}><Icon name="lock" size={16} />資料與隱私</button>
-              {onData&&<button type='button' onClick={close(onData)}><Icon name='document' size={16}/>我的資料與歷程</button>}
               <button type="button" onClick={close(onReset)}><Icon name="reset" size={16} />重新開始</button>
               <label className="menu-toggle"><input type="checkbox" checked={reduceMotion} onChange={e => onReduceMotion(e.target.checked)} />減少動畫</label>
               {mode === 'demo' && (
@@ -51,7 +50,7 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
 }
 
 /** Compact header for NAVI inside a host website's side panel. */
-export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onData, onClose }) {
+export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onClose }) {
   return (
     <header className="embed-header">
       <button type="button" className="brand" onClick={onHome} disabled={busy} aria-label="回到 NAVI 首頁">
@@ -65,7 +64,6 @@ export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, on
         )}
         <button type="button" className="icon-button" onClick={onSearch} aria-label="找服務"><Icon name="search" size={17} /></button>
         <button type="button" className="icon-button" onClick={onPrivacy} aria-label="資料與隱私"><Icon name="lock" size={17} /></button>
-        {onData&&<button type='button' className='icon-button' onClick={onData} aria-label='我的資料與歷程'><Icon name='document' size={17}/></button>}
         <button type="button" className="icon-button" onClick={onReset} aria-label="重新開始"><Icon name="reset" size={17} /></button>
         {onClose && <button type="button" className="icon-button" onClick={onClose} aria-label="關閉 NAVI"><Icon name="close" size={18} /></button>}
       </div>
