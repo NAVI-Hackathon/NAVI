@@ -127,7 +127,7 @@ test('saved tasks and private history remain available when generation is unavai
 
 test('without SMTP production blocks public signup but permits authorized synthetic test accounts', async t => {
   const f=fixture(t),token='NAVI-synthetic-operator-token-at-least-32',a=await api(t,f,{production:true,authRequireVerifiedEmail:true,sessionToken:token});
-  await a.start();const info=await a.call('/session');assert.equal(info.data.registrationAvailable,false);
+  await a.start();const info=await a.call('/session');assert.equal(info.data.registrationAvailable,false);assert.match(info.data.disclosure,/約 7 天例行輪替/);assert.doesNotMatch(info.data.disclosure,/備份最長/);
   const denied=await a.call('/auth/register',{email:'synthetic@example.invalid',password:credentials.password});
   assert.equal(denied.status,503);assert.equal(denied.data.error.code,'ACCOUNT_REGISTRATION_UNAVAILABLE');
   assert.equal((await a.call('/test-sessions',{token,syntheticOnly:true})).status,201);
