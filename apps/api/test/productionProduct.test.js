@@ -148,3 +148,11 @@ test('signing into an existing account retains owned anonymous work without merg
  assert.equal((await a.call('/auth/login',other)).status,200);
  assert.equal((await a.call('/journeys/'+anonymous.data.id)).status,404);
 });
+
+test('saved Demo tasks reuse server facts after login without invoking the provider again', async t => {
+ const f=fixture(t),a=await api(t,f);await a.start();await a.call('/auth/register',credentials);await a.call('/session/consent',{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'});
+ const split=(await a.call('/intelligence/tasks',{message:'我想改地址，也想知道要怎麼申請住院理賠。'})).data;
+ await a.call('/auth/logout',{});await a.call('/auth/login',credentials);let calls=0;
+ const b=await api(t,f,{}, {...createDemoProvider(),understandIntent:async()=>{calls++;throw Error('Saved facts must not regenerate');}});
+ const r=await b.call('/journeys',{taskId:split.tasks[0].persistedTaskId,idempotencyKey:randomUUID()},'POST',a.cookie);assert.equal(r.status,201);assert.equal(calls,0);
+});

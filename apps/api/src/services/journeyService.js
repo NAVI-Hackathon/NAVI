@@ -47,7 +47,7 @@ export function createJourneyService({ repository, provider, config }) {
     async create({ message, intentResult }, signal, trustedIntentResult, plannedId) {
       if (plannedId && await repository.get(plannedId)) return repository.get(plannedId);
       // Only a server receipt may reuse a live intent; browser-supplied facts never bypass Gemini.
-      const supplied = provider.mode === 'live' || provider.mode === 'unavailable' ? trustedIntentResult : intentResult;
+      const supplied = trustedIntentResult ?? (provider.mode === 'demo' ? intentResult : undefined);
       const data = supplied ? normalizeIntent(supplied, message) : (await understandIntent(message, { provider, config, signal })).data;
       if (data.serviceType === 'hospitalization_claim' && data.intent === 'knowledge_query') throw new ApiError('SERVICE_NOT_SUPPORTED', '請先查詢相關服務資訊，確認要申辦時再開始服務旅程。', 409, false);
       const definition = definitionFor(data.serviceType);
