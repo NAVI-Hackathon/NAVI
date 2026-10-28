@@ -2,14 +2,16 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 export const FREE_TIER_MODEL = 'gemini-3.1-flash-lite';
 export const DEFAULT_LIVE_REQUEST_LIMIT = 12;
-export function assertFreeProvider(provider) {
-  if (provider.requiresPaidTier) throw new ApiError('PAID_AI_DISABLED', 'NAVI 不允許載入付費 AI 服務。', 503, false);
+export function assertFreeProvider(provider, config = {}) {
+  if (provider.requiresPaidTier && !(config.productMode && config.allowPaidAI && config.billingConfirmed && config.paidAuthorization && config.paidBudgetCents > 0)) throw new ApiError('PAID_AI_DISABLED', 'NAVI 不允許載入付費 AI 服務。', 503, false);
   return provider;
 }
 export function assertLiveAllowed(config) {
-  if (config.allowPaidAI || config.model !== FREE_TIER_MODEL) throw new ApiError('PAID_AI_DISABLED', '目前模型不在 NAVI 免費服務允許清單內。', 503, false);
+  if (!config.productMode && (config.allowPaidAI || config.model !== FREE_TIER_MODEL)) throw new ApiError('PAID_AI_DISABLED', '目前模型不在 NAVI 免費服務允許清單內。', 503, false);
+  if (config.productMode && config.allowPaidAI && config.modelPolicies?.some(m => m.tier !== 'paid')) throw new ApiError('PAID_AI_DISABLED','付費專案的所有候選模型都必須設定保守費用預留。',503,false);
   if (config.ci) throw new ApiError('LIVE_AI_DISABLED_IN_CI', 'CI 僅允許本地與示範測試。', 503, false);
-  if (!config.freeTierConfirmed) throw new ApiError('FREE_TIER_NOT_CONFIRMED', '請先確認 API Key 所屬專案為 Free Tier，且未啟用 Billing。', 503, false);
+  if (config.productMode && config.allowPaidAI && (!config.billingConfirmed || !config.paidAuthorization || config.paidBudgetCents <= 0)) throw new ApiError('PAID_AI_DISABLED', '付費模式尚未取得帳單與明確預算授權。', 503, false);
+  if (!config.allowPaidAI && !config.freeTierConfirmed) throw new ApiError('FREE_TIER_NOT_CONFIRMED', '請先確認 API Key 所屬專案為 Free Tier，且未啟用 Billing。', 503, false);
 }
 // Manual runs keep a process cap; production also enforces the persistent Pacific-day cap.
 export function createAIRequestBudget(limit = DEFAULT_LIVE_REQUEST_LIMIT, { daily = false, now = Date.now } = {}) {

@@ -1,0 +1,8 @@
+[Unit]
+Description=NAVI Atlas DNS egress refresh timer
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=60
+RandomizedDelaySec=5
+[Install]
+WantedBy=timers.target

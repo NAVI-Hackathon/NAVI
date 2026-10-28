@@ -56,7 +56,7 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
   );
 }
 
-export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, taskBar = null, ref }) {
+export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, taskBar = null, preparation = null, ref }) {
   const breakpoint = useBreakpoint();
   const { journey } = snapshot;
   // Full: the document workflow (timeline, documents, readiness score). Compact: every other service.
@@ -82,7 +82,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
     <ReadinessPanel snapshot={snapshot} busy={busy} onAction={actions.next} onSample={actions.sample} sampleByAi={actions.sampleByAi} onHandoff={actions.handoff} onNavigate={actions.navigate} preflight={preflight} {...props} />
   );
   const assistant = <AssistantPanel snapshot={snapshot} onHandoff={actions.handoff} onNavigate={actions.navigate} />;
-  const center = (withDocuments) => (hasDocuments ? timeline(withDocuments) : <ServiceBrief snapshot={snapshot} onNavigate={actions.navigate} />);
+  const center = (withDocuments) => (hasDocuments ? timeline(withDocuments) : <ServiceBrief snapshot={snapshot} onNavigate={actions.navigate}>{preparation}</ServiceBrief>);
 
   return (
     <motion.main

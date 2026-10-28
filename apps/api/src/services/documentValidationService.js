@@ -18,14 +18,15 @@ export function calculateDelayMinutes(fields) {
 export function travelInformationComplete(document) {
   return document?.documentType === 'boarding_pass' && ['passengerName', 'flightNumber', 'origin', 'destination', 'departureDate'].every(key => Boolean(document.fields[key]));
 }
-export function documentVerified(document, threshold) {
+export function documentVerified(document, threshold, serviceType) {
   if (document.requiresRevalidation) return false;
   if (!DocumentAnalysisSchema.safeParse({ documentType: document.documentType, confidence: document.confidence, fields: document.fields }).success) return false;
   const fields = document.fields;
   const sufficient = document.documentType === 'boarding_pass'
     ? Boolean(fields.flightNumber || (fields.origin && fields.destination))
     : document.documentType === 'delay_certificate' ? calculateDelayMinutes(fields) !== null
-      : document.documentType === 'diagnosis_certificate' ? Boolean(['diagnosis_certificate', 'hospitalization_proof'].includes(fields.certificateKind) && fields.patientName && fields.hospitalName && calculateStay(fields).days !== null && (!fields.admissionDate || !fields.dischargeDate || !fields.reportedInpatientDays || calculateStay(fields).days === fields.reportedInpatientDays))
+      : document.documentType === 'diagnosis_certificate' ? Boolean((serviceType==='outpatient_claim'?['diagnosis_certificate']:['diagnosis_certificate','hospitalization_proof']).includes(fields.certificateKind) && fields.patientName && fields.hospitalName && (serviceType==='outpatient_claim'?fields.visitDate:calculateStay(fields).days !== null && (!fields.admissionDate || !fields.dischargeDate || !fields.reportedInpatientDays || calculateStay(fields).days === fields.reportedInpatientDays)))
         : document.documentType === 'bank_passbook' && Boolean(fields.accountHolder && fields.bankName && /^\d{4}$/.test(fields.accountLast4 ?? ''));
-  return Boolean(sufficient && document.confidence >= threshold);
+  const weakField = Object.entries(document.fieldConfidence ?? {}).some(([key,value]) => fields[key] != null && value < threshold);
+  return Boolean(sufficient && !weakField && document.confidence >= threshold);
 }

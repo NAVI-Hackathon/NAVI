@@ -1,3 +1,4 @@
+import { deriveServiceWorkflow } from '../services/serviceWorkflows.js';
 import rules from '../../../../knowledge/claims.json' with { type: 'json' };
 import { JOURNEY_STATES as STATES } from '../../../../shared/journey.js';
 import { getJourneyDefinition } from '../services/knowledgeService.js';
@@ -15,7 +16,7 @@ export function determineNextAction(journey, config) {
   if (journey.serviceType === 'unknown') return action('PROVIDE_INFORMATION', 'incident', '請再描述你的情況', '可以再說明目前想處理的事情，或發生了什麼嗎？');
   const hospital = journey.serviceType === 'hospitalization_claim';
   if (journey.confidence < (hospital ? config.confidenceThreshold : config.journeyConfidenceThreshold) || journey.documents.some(doc => doc.status === 'needs_review')) return action('CONTACT_SPECIALIST', null, '轉由專員協助', '部分資料需要進一步確認，已整理好資訊供專員接續處理。');
-  if (!journey.supported) return action('NONE', null, 'NAVI 已辨識你的需求', '目前 Prototype 尚未開放這項服務的完整旅程。');
+  if (!journey.supported) return action('NONE', null, 'NAVI 已辨識你的需求', config.productMode?'目前可靠來源不足以建立這項服務流程，請查詢其他服務或洽專員。':'目前 Prototype 尚未開放這項服務的完整旅程。');
   if (hospital) {
     for (const [type, destination] of [['diagnosis_certificate', hospitalDestinations.documents], ['bank_passbook', hospitalDestinations.rules]]) {
       if (!journey.documents.some(doc => doc.documentType === type && doc.status === 'verified')) {
@@ -33,7 +34,8 @@ export function determineNextAction(journey, config) {
   return journey.confirmed ? action('PROCEED_TO_SERVICE', null, '前往服務', '資料已準備完成，可接續既有服務；這不代表理賠核准或已送出申請。') : action('REVIEW_INFORMATION', null, '確認案件資料', '請確認航班資訊與已提供的文件。');
 }
 export function deriveJourney(journey, config) {
-  const definition = getJourneyDefinition(journey.serviceType);
+  if (config.productMode && journey.workflowId) return deriveServiceWorkflow(journey, config);
+  const definition = config.productMode && journey.serviceType !== 'hospitalization_claim' ? null : getJourneyDefinition(journey.serviceType);
   const documents = journey.documents.map(document => {
     const verified = Boolean(definition && (definition.documentTypes ?? ['boarding_pass', 'delay_certificate']).includes(document.documentType) && documentVerified(document, config.journeyConfidenceThreshold));
     return { ...document, verification: { scope: 'prototype_field_consistency', authenticity: 'not_assessed', eligibility: 'not_assessed' }, status: verified ? 'verified' : 'needs_review', matchedRequirements: verified ? [document.documentType] : [] };

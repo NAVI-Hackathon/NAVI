@@ -290,3 +290,9 @@ Release 1 已部署 A 的可信來源 UI 與公開資料安全修正，精確應
 Backend 的受控合成測試 Session、案件 Cookie、持久化免費額度與錯誤契約見 [Live Production Isolation](docs/live-production-isolation.md)。正式 API 不使用 Demo Fixture 回退，`/demo` 保留前端離線備援。一般民眾真實敏感文件尚未開放。
 
 一般模式的合成文件自行上傳權限見 [Live 接入與公開合成上傳](docs/regular-live-access.md)：`AI_PUBLIC_SYNTHETIC=true` 時不需要操作員 Token 或命中固定 SHA，既有案件 Session、格式驗證與額度仍有效。原始合成 PDF 位元組驗證紀錄見 [2026-10-26 文件上傳驗證](docs/live-synthetic-verification-2026-10-26.md)；其中操作員／hash 限制由目前公開上傳規則取代。真實個人文件仍不允許，不能將離線 Transport 測試宣稱為 Live 辨識成果。
+
+### Persistent product runtime
+
+See [production runtime and API integration](docs/production-product.md) for MongoDB Atlas persistence, account/session recovery, contextual conversation, resource queue/model routing, source-grounded service checklists, backup/restore, and the remaining unpaid-provider privacy boundary. Existing Demo routes remain browser-local.
+
+The [A3 persistence contract](docs/a3-persistence-contract.md) describes ownership, email verification/recovery, durable tasks, paginated history, handoff drafts and Atlas deployment prerequisites. Persistence tests require an official local MongoDB replica-set binary (`MONGOD_BINARY`); the test runner never starts MongoDB on the VPS.

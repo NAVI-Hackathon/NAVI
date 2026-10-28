@@ -82,7 +82,7 @@ export async function evaluateLocal(cases, config) {
   }
   const boarding = await service.addDocument(base.id, { documentType: 'boarding_pass', filename: 'synthetic.pdf', mimeType: 'application/pdf', bytes: samplePdf('boarding_pass'), size: samplePdf('boarding_pass').length });
   const delay = await service.addDocument(base.id, { documentType: 'delay_certificate', filename: 'synthetic.pdf', mimeType: 'application/pdf', bytes: samplePdf('delay_certificate'), size: samplePdf('delay_certificate').length });
-  const review = service.review(base.id);
+  const review = await service.review(base.id);
   assert.deepEqual([base.readiness, boarding.journey.readiness, delay.journey.readiness, review.readiness], [35, 70, 90, 100]);
   return { ...summarizeEvaluation(results, 'local'), goldenPath: [35, 70, 90, 100] };
 }

@@ -50,10 +50,10 @@ test('two tabs on one journey: the other tab shows the server state when it is s
   const close = await formalBackend(context);
   try {
     await openJourney(page);
-    // A duplicated tab carries the same sessionStorage (journey ids only).
-    const stored = await page.evaluate(() => sessionStorage.getItem('navi.journey'));
+    // A duplicated tab carries the same localStorage (journey ids only).
+    const stored = await page.evaluate(() => localStorage.getItem('navi.journey'));
     const other = await context.newPage();
-    await other.addInitScript(value => { if (!sessionStorage.getItem('navi.journey')) sessionStorage.setItem('navi.journey', value); }, stored);
+    await other.addInitScript(value => { if (!localStorage.getItem('navi.journey')) localStorage.setItem('navi.journey', value); }, stored);
     await other.setViewportSize({ width: 1280, height: 900 }); await other.goto('/#workspace');
     await expect(ring(other)).toHaveAttribute('aria-valuenow', '35');
     await other.locator('[data-document="diagnosis_certificate"]').getByRole('button', { name: '使用合成範例（示範資料辨識）' }).click();

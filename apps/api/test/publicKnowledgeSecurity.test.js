@@ -57,3 +57,8 @@ test('production scanner inspects JS, JSON, source maps and static export; missi
   const result=await scanPublicArtifacts([bad],[fingerprint(canary)]);assert.equal(result.passed,false);assert.equal(result.findings.length,5);
   await assert.rejects(scanPublicArtifacts([join(root,'missing')],[]));
 });
+test('public assets reject MongoDB credentials, encryption/admin configuration and encoded secrets',()=>{
+ const synthetic='mongodb+srv://synthetic:NOT_A_REAL_PASSWORD@cluster.example.invalid/navi';
+ for(const text of [synthetic,encodeURIComponent(synthetic),Buffer.from(synthetic).toString('base64'),'NAVI_DATA_ENCRYPTION_KEY','SMTP_PASSWORD'])assert.ok(inspectPublicText(text).length);
+ assert.deepEqual(inspectPublicText('資料加密保存，僅限自己存取。'),[]);
+});

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import ProductDataDialog from './components/dialogs/ProductDataDialog.jsx';
+import AccountRecoveryDialog from './components/dialogs/AccountRecoveryDialog.jsx';
+import ServiceWorkflow from './components/workspace/ServiceWorkflow.jsx';
 import AppHeader, { EmbedHeader } from './components/AppHeader.jsx';
 import Landing from './components/landing/Landing.jsx';
 import Workspace from './components/workspace/Workspace.jsx';
@@ -82,6 +85,9 @@ function wait(ms, signal) {
 
 export default function App() {
   const service = useMemo(() => (mode === 'demo' ? createMockAdapter() : createApiAdapter()), []);
+  const [recovery,setRecovery]=useState(()=>{const action=new URLSearchParams(location.search).get('auth'),token=new URLSearchParams(location.hash.slice(1)).get('token');return service.mode==='live'&&['verify','reset'].includes(action)&&/^[a-f0-9]{64}$/.test(token??'')?{action,token}:null;});
+  const [productReady,setProductReady]=useState(false);
+  const [productDialog,setProductDialog]=useState(null);
   const [snapshot, setSnapshot] = useState(() => service.restore());
   // Embedded NAVI reopens on the journey in progress (the host page may have reloaded the iframe).
   const [view, setView] = useState(() => ((location.hash === '#workspace' || embedded) && snapshot ? 'workspace' : 'landing'));
@@ -143,6 +149,10 @@ export default function App() {
     return () => { window.removeEventListener('popstate', onPop); analysisCtl.current?.abort(); };
   }, []);
 
+  useEffect(()=>{if(!service.init)return;let disposed=false;service.init().then(data=>{if(!data||disposed)return;setProductReady(true);if(data.conversation?.messages)setMessages([{id:'welcome',role:'navi',kind:'welcome'},...data.conversation.messages.map((m,i)=>({id:'stored-'+i,role:m.role==='user'?'user':'navi',kind:'note',tone:'info',title:m.role==='user'?undefined:'先前的對話',text:m.text,body:m.text}))]);}).catch(()=>{});return()=>{disposed=true;};},[service]);
+
+  useEffect(()=>{const change=e=>{if(e.key==='navi.identity.updated'&&service.mode==='live'){service.reset();location.reload();}};window.addEventListener('storage',change);return()=>window.removeEventListener('storage',change);},[service]);
+
   // Formal mode: the server explains each requirement (reason code, earned points) for the Preflight board.
   // Until it arrives — and always in /demo — the board uses the local mirror of the same rules.
   useEffect(() => {
@@ -181,9 +191,10 @@ export default function App() {
       setResuming(false);
     }).catch(error => {
       if (ctl.signal.aborted) return;
-      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+      if(['AUTH_REQUIRED','SESSION_EXPIRED','EMAIL_NOT_VERIFIED'].includes(error?.code)){setProductDialog('data');say({kind:'note',tone:'info',title:'請重新登入',body:'登入並完成信箱驗證後，可從我的資料與歷程繼續處理。'});}
+      else if (error?.code === 'JOURNEY_NOT_FOUND') expire();
       // Any other failure keeps the stored journey: say so instead of opening on an empty chat.
-      else say({ kind: 'note', tone: 'error', title: '暫時無法讀回你的服務旅程', body: '請確認網路連線後重新整理頁面；旅程會在建立後 1 小時內保留。也可以直接重新描述你的情況。' });
+      else say({ kind: 'note', tone: 'error', title: '暫時無法讀回你的服務旅程', body: '請確認網路連線後重新整理頁面；已保存的資料會依服務保存政策保留。也可以先查詢有來源的服務資訊。' });
       setResuming(false);
     });
     return () => ctl.abort();
@@ -300,11 +311,15 @@ export default function App() {
     const startedAt = performance.now();
     try {
       // 住院醫療理賠 opens the full journey; other services show the official answers when there are any.
-      const openJourney = kind => kind === 'hospital' || !answered;
+      const openJourney = kind => service.productEnabled || kind === 'hospital' || !answered;
       let understanding = picked?.understanding ?? null;
+      if(service.productEnabled){const info=await service.productInfo();if(info.session.authRequired&&!info.session.authenticated){setProductDialog('data');reply({kind:'note',tone:'info',title:'請先登入',body:'登入後才能保存並繼續處理你的服務需求。',retry:{text,label}});return;}if(!info.session.consentAccepted){setProductDialog('consent');reply({kind:'note',tone:'info',title:'請先確認資料處理說明',body:'確認後，請再送出這項需求；資料不會在你同意前交給 AI。',retry:{text,label}});return;}}
       if (!picked && service.capabilities.tasks) {
         // Several independent requests: list them and let the user choose one; nothing opens on its own.
         const split = await service.understandTasks(text, { signal: ctl.signal });
+        if(split?.productReply?.correctionRequired){reply({kind:'note',tone:'info',title:'請選擇要修正的事情',body:split.productReply.answer});return;}
+        if(split?.productReply&&!split.productReply.understanding){const p=split.productReply;reply(p.evidence.status==='answered'?{kind:'answers',result:service.knowledgeResult(p),notice:p.errorCode?'AI 暫時無法回應，以下為已核對來源的資料。':undefined}:{kind:'note',tone:'info',title:'下一步',body:p.answer});return;}
+        if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
           setOpenTasks({ split, tasks: split.tasks });
@@ -537,7 +552,7 @@ export default function App() {
     proceed() { setDialog('proceed'); },
     handoff() { setDialog('handoff'); },
     summary() { setDialog('summary'); },
-    privacy() { setDialog('privacy'); },
+    privacy() { if(productReady)setProductDialog('data');else setDialog('privacy'); },
     next(action) {
       switch (action.type) {
         case 'UPLOAD_DOCUMENT': {
@@ -647,14 +662,16 @@ export default function App() {
         {embedded ? (
           <EmbedHeader
             mode={serverDemo ? 'demo' : mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')} onPrivacy={() => productReady ? setProductDialog('data') : setDialog('privacy')}
+            onData={productReady?()=>setProductDialog('data'):null}
             onClose={host.connected ? () => host.send(naviMessage('navi:close')) : null}
           />
         ) : (
           <AppHeader
             mode={mode} demoData={serverDemo} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
             onHome={goLanding} onResume={goWorkspace} onReset={reset}
-            onSearch={() => setDialog('search')} onPrivacy={() => setDialog('privacy')}
+            onSearch={() => setDialog('search')} onPrivacy={() => productReady ? setProductDialog('data') : setDialog('privacy')}
+            onData={productReady?()=>setProductDialog('data'):null}
             reduceMotion={reduceMotion} onReduceMotion={setReduceMotion}
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
@@ -662,6 +679,8 @@ export default function App() {
         {serverDemo && <p className="demo-banner" role="note">NAVI 服務目前以示範資料回答，不是 AI 分析：需求理解與文件辨識都是固定的合成結果，只供體驗流程。</p>}
         {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'}>示範模式</a>體驗完整流程。</p>}
         {offline && <p className="network-banner" role="status"><Icon name="alert" size={13} />目前沒有網路連線：NAVI 暫停送出與上傳，已有的內容不會遺失。</p>}
+        {recovery&&<AccountRecoveryDialog service={service} {...recovery} onClose={()=>{history.replaceState(null,'',location.pathname);setRecovery(null);setProductDialog('data');}}/>}
+        {productDialog&&<ProductDataDialog service={service} consentOnly={productDialog==='consent'} onClose={()=>setProductDialog(null)} onJourney={next=>{setSnapshot(next);goWorkspace();}} onDeleted={reset}/>}
         {mode === 'demo' && !embedded && (
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>
         )}
@@ -678,6 +697,7 @@ export default function App() {
                 key="workspace" snapshot={snapshot} explanation={explanation} docStates={docStates} busy={busyType}
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
+                preparation={snapshot.journey.workflowId?<ServiceWorkflow snapshot={snapshot} service={service} onUpdate={setSnapshot}/>:null}
                 taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} />}
               />
             ) : (

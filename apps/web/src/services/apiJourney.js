@@ -1,3 +1,5 @@
+import {HandoffDraftResponseSchema} from '../../../../shared/product.js';
+import {createProductClient} from './productClient.js';
 import { z } from 'zod';
 import { ServiceJourneySchema } from '../../../../shared/journey.js';
 import { HandoffConfirmationSchema, HandoffPreviewSchema, JourneyExplanationSchema, NavigationPlanResponseSchema } from '../../../../shared/competition.js';
@@ -154,13 +156,37 @@ export function createApiJourneyService({
       const message = code === 'JOURNEY_NOT_FOUND' ? JOURNEY_EXPIRED_MESSAGE : typeof result?.error?.message === 'string' ? result.error.message : '目前暫時無法處理，請稍後再試。';
       throw new JourneyApiError(code, message, response.status);
     }
+    if (!schema) return result;
     const parsed = schema.safeParse(result);
     if (!parsed.success) throw new JourneyApiError('AI_RESPONSE_INVALID', '服務回應格式不完整，請稍後再試。');
     return parsed.data;
   }
 
+  const product=createProductClient(request,storage);
+  function identityChanged(){selection++;state=null;pending=null;refs=[];seen.clear();product.reset();save();try{storage?.setItem('navi.identity.updated',crypto.randomUUID());}catch{/* Storage is optional. */}}
+  const download=(data,name,type)=>{const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+
   return {
     mode: 'live',
+    get productEnabled(){return product.enabled;},
+    init:()=>product.init(),
+    productInfo:async()=>{const session=await request('/session',{schema:null});if(session.authRequired&&!session.authenticated)return {session,history:{journeys:[],conversations:[]},tasks:[]};const history=session.authenticated?await request('/journeys',{schema:null}):null;return {session,history:history?{journeys:history.items,nextCursor:history.nextCursor}:await request('/history',{schema:null}),tasks:session.authenticated?(await request('/tasks',{schema:null})).tasks:[]};},
+    historyPage:cursor=>request('/journeys?limit=20'+(cursor?'&cursor='+encodeURIComponent(cursor):''),{schema:null}),
+    acceptConsent:()=>request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'},schema:null}),
+    register:async(username,password)=>{const result=await request('/auth/register',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
+    login:async(username,password)=>{const result=await request('/auth/login',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
+    logout:async()=>{await request('/session/logout',{method:'POST',json:{},schema:null});identityChanged();},
+    exportData:async()=>download(JSON.stringify(await request('/account/export',{schema:null}),null,2),'navi-data.json','application/json'),
+    deleteData:async()=>{await request('/account/data',{method:'DELETE',json:{confirmed:true},schema:null});identityChanged();},
+    continueTask:async taskId=>{const stamp=++selection;const journey=await request('/journeys',{method:'POST',json:{taskId,idempotencyKey:crypto.randomUUID()}});if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':'gemini',handoffRequested:false};save();return snapshot();},
+    requestPasswordReset:email=>request('/auth/password/forgot',{method:'POST',json:{email},schema:null}),
+    requestVerification:email=>request('/auth/verification/request',{method:'POST',json:{email},schema:null}),
+    verifyEmail:token=>request('/auth/verify-email',{method:'POST',json:{token},schema:null}),
+    resetPassword:(token,password)=>request('/auth/password/reset',{method:'POST',json:{token,password},schema:null}),
+    openJourney:async id=>{const stamp=++selection;const journey=await request('/journeys/'+id);if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':'gemini',handoffRequested:false};pending=null;save();return snapshot();},
+    workflow:id=>request('/service-workflows/'+id,{schema:null}),
+    checklist:async checked=>commit(await request('/journeys/'+requireState().journey.id+'/checklist',{method:'POST',json:{checked,revision:requireState().journey.revision}})),
+    knowledgeResult:reply=>product.result(reply),
     // Manual information is accepted but never verified: it is stored as「待確認」 next to the
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
     // Formal mode is real use: its sample is the synthetic PDF, sent to the server and read by the
@@ -204,7 +230,7 @@ export function createApiJourneyService({
       return null;
     },
     hasStoredJourney: () => Boolean(pending),
-    /** Read a stored journey back from the server (it may have expired: 1 hour TTL, cleared on restart). */
+    /** Read a stored journey back from the server (retention and authorization are enforced by the server). */
     async resume({ signal } = {}) {
       if (!pending) return null;
       const stamp = ++selection;
@@ -278,6 +304,7 @@ export function createApiJourneyService({
      * Null when the server has no such endpoint (older release): the caller then understands it as one request.
      */
     async understandTasks(message, { signal } = {}) {
+      if(product.enabled){const reply=await product.send(message.trim(),signal);return {...reply.understanding,productReply:reply,tasks:reply.understanding?.tasks??[]};}
       try {
         return await request('/intelligence/tasks', { method: 'POST', json: { message: message.trim() }, signal, schema: TaskUnderstandingSchema });
       } catch (error) {
@@ -293,11 +320,11 @@ export function createApiJourneyService({
       // Only a 住院醫療理賠 service request has a server-owned journey. Information questions
       // (intent knowledge_query) are answered from official data; the server refuses them with 409.
       const serviceRequest = understanding.data.intent === 'service_request';
-      if (kind !== 'hospital' || !serviceRequest || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
+      if ((!product.enabled && kind !== 'hospital') || (!serviceRequest && (!product.enabled || kind === 'hospital')) || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
       const journey = await request('/journeys', { method: 'POST', json: { message: message.trim(), intentResult: understanding.data }, signal });
       if (stamp !== selection) throw new DOMException('已選擇其他旅程。', 'AbortError');
       pending = null; // the new journey is the one shown; earlier ones stay in the list
-      if (journey.serviceType !== 'hospitalization_claim') return { understanding, kind: kindOf(journey.serviceType), snapshot: null };
+      if (journey.serviceType !== 'hospitalization_claim' && !journey.workflowId) return { understanding, kind: kindOf(journey.serviceType), snapshot: null };
       state = { journey: remember(journey), story: redactIdentifiers(message.trim()), source: understanding.meta.source, handoffRequested: false };
       save();
       return { understanding, kind, snapshot: snapshot() };
@@ -355,6 +382,8 @@ export function createApiJourneyService({
       return request(`/journeys/${journey.id}/explanation`, { signal, schema: JourneyExplanationSchema });
     },
     /** Consent-based handoff: a redacted preview bound to this journey version, then the user's confirmation. Nothing is sent. */
+    handoffDraft:({signal}={})=>request('/journeys/'+requireState().journey.id+'/handoff/draft',{signal,schema:HandoffDraftResponseSchema}),
+    saveHandoffDraft:(text,version)=>request('/journeys/'+requireState().journey.id+'/handoff/draft',{method:'PUT',json:{text,version,journeyVersion:requireState().journey.revision},schema:HandoffDraftResponseSchema}),
     async handoffPreview({ signal } = {}) {
       const { journey } = requireState();
       return request(`/journeys/${journey.id}/handoff/preview`, { method: 'POST', json: {}, signal, schema: HandoffPreviewSchema });
@@ -381,7 +410,7 @@ export function createApiJourneyService({
       return { snapshot: commit(result.journey, { story: redactIdentifiers(message.trim()) }), previousServiceType: result.previousServiceType };
     },
     /** 重新開始: this browser forgets every journey (the server copies expire on their own). */
-    reset() { selection++; state = null; pending = null; refs = []; seen.clear(); save(); },
+    reset() { selection++; state = null; pending = null; refs = []; seen.clear(); product.reset(); save(); },
     setFailNextDocument() { /* Demo-only control; the server decides recognition outcomes. */ },
   };
 }

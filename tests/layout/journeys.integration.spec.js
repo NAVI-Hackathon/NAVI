@@ -52,7 +52,7 @@ for (const width of [390, 1280]) test(`two journeys: listed by hospital, switche
     await expect(chip(page, '臺中榮民總醫院')).toHaveAttribute('aria-current', 'true');
 
     // The browser keeps ids only; a reload reads both journeys back from the server.
-    const stored = await page.evaluate(() => sessionStorage.getItem('navi.journey'));
+    const stored = await page.evaluate(() => localStorage.getItem('navi.journey'));
     expect(stored).not.toMatch(/台中|臺中|臺大|住院/);
     await page.reload();
     await expect(page.locator('.trip-strip strong').first()).toHaveText('臺中榮民總醫院');
@@ -84,7 +84,7 @@ test('one expired journey leaves the list; the other stays and opens', async ({ 
     await page.setViewportSize({ width: 1280, height: 900 }); await page.goto('/');
     await ask(page, '我上週在台中榮總住院五天，要怎麼申請理賠？');
     await expect(page.getByRole('button', { name: '開啟工作區' })).toBeVisible();
-    expired = JSON.parse(await page.evaluate(() => sessionStorage.getItem('navi.journey'))).current;
+    expired = JSON.parse(await page.evaluate(() => localStorage.getItem('navi.journey'))).current;
     await ask(page, '我上個月在臺大醫院住院三天，想申請住院理賠');
     await chip(page, '臺中榮民總醫院').click();
     await expect(page.getByText(/已從清單移除；其他事情不受影響/)).toBeVisible();
