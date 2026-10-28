@@ -20,7 +20,7 @@ export function SearchDialog({ onClose, onNavigate, onAsk }) {
       <label className="search-field">
         <Icon name="search" size={16} />
         <span className="visually-hidden">搜尋服務</span>
-        <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="搜尋服務、表單或問題" maxLength={60} autoComplete="off" />
+        <input type="search" data-autofocus value={query} onChange={e => setQuery(e.target.value)} placeholder="搜尋服務、表單或問題" maxLength={60} autoComplete="off" />
       </label>
       <div className="search-results" aria-live="polite">
         {result?.status === 'answered' && (

@@ -816,3 +816,4 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .workspace-tools { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .privacy-link { min-height: 44px; padding: 0 4px; font-size: 11px; color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
 .workspace-footer span:first-child { flex-wrap: wrap; }
+.network-banner { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-bottom: var(--border); background: var(--color-warning-soft); font-size: 12px; line-height: 1.6; text-align: center; color: var(--color-warning); }

@@ -7,11 +7,13 @@ import Toast from './components/Toast.jsx';
 import { CorrectionDialog, HandoffDialog, ProceedDialog, ReviewDialog, ServiceDialog } from './components/dialogs/JourneyDialogs.jsx';
 import { createApiAdapter, createMockAdapter, isEmbedPath, resolveMode } from './services/adapters.js';
 import { useHostBridge } from './hooks/useHostBridge.js';
+import { useOnline } from './hooks/useOnline.js';
 import { naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
+import Icon from './components/Icon.jsx';
 import GuideCard from './components/guide/GuideCard.jsx';
 import { journeyPrerequisites, serviceSteps, singleStepPlan } from './domain/guidance.js';
 import TaskBar from './components/tasks/TaskBar.jsx';
@@ -110,6 +112,9 @@ export default function App() {
     if (message.type === 'host:navigated') setArrival(current => (current?.id === message.id && current.status === 'going' ? { ...current, status: message.status } : current));
   });
   const reduced = reduceMotion || systemReduced;
+  // Formal mode needs the NAVI service; /demo works offline (everything is local).
+  const offline = !useOnline() && !service.capabilities.manualEntry;
+  const wasOffline = useRef(false);
 
   const analysisCtl = useRef(null);
   const snapshotRef = useRef(snapshot);
@@ -215,7 +220,35 @@ export default function App() {
   }
 
   const busyType = Object.entries(docStates).find(([, s]) => s.status === 'processing')?.[0] ?? null;
+
+  // Another tab (a duplicated tab keeps the same journey) may have changed it: when this tab is shown
+  // again, read the journey from the server and say so if it differs. Never while something is running.
+  const quietRefresh = useRef(null);
+  quietRefresh.current = async () => {
+    const shown = snapshotRef.current;
+    if (!service.refresh || !shown || offline || busyType || analysisPhase !== null || document.visibilityState !== 'visible') return;
+    try {
+      const next = await service.refresh();
+      if (snapshotRef.current?.journey.id !== shown.journey.id) return; // switched meanwhile
+      if (JSON.stringify(next.journey) === JSON.stringify(snapshotRef.current.journey)) return;
+      setSnapshot(next);
+      notify('這件事在其他分頁有更新，已顯示最新狀態。');
+    } catch (error) {
+      if (error?.code === 'JOURNEY_NOT_FOUND') expire();
+    }
+  };
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') quietRefresh.current(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };
+  }, []);
   const notify = useCallback(message => setToast({ message, key: Date.now() }), []);
+  // Back online: say so once. Nothing is re-sent on its own.
+  useEffect(() => {
+    if (offline) wasOffline.current = true;
+    else if (wasOffline.current) { wasOffline.current = false; notify('已恢復連線，可以繼續操作。'); }
+  }, [offline, notify]);
   const dismissToast = useCallback(() => setToast(null), []);
   const closeDialog = useCallback(() => setDialog(null), []);
 
@@ -338,6 +371,7 @@ export default function App() {
 
   async function upload(type, source) {
     if (busyType) return;
+    if (offline) { notify('目前沒有網路連線，文件沒有送出；恢復連線後再試一次。'); return; }
     const ctl = new AbortController();
     uploads.current[type] = ctl;
     // Formal mode reports real progress (bytes sent, then the server reading the file); /demo sends nothing.
@@ -612,6 +646,7 @@ export default function App() {
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
         )}
+        {offline && <p className="network-banner" role="status"><Icon name="alert" size={13} />目前沒有網路連線：NAVI 暫停送出與上傳，已有的內容不會遺失。</p>}
         {mode === 'demo' && !embedded && (
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>
         )}
@@ -635,7 +670,7 @@ export default function App() {
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot} openTasks={openTasks}
                 journeysSlot={journeyList.length > (snapshot ? 1 : 0) ? <TaskBar variant="chat" journeys={journeyList} busy={analysisPhase !== null} onSwitch={switchJourney} /> : null}
                 onSwitchJourney={service.switchJourney ? switchJourney : null}
-                dock={guideLayer} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                dock={guideLayer} offline={offline} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
