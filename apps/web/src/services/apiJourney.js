@@ -18,11 +18,13 @@ export const JOURNEY_EXPIRED_MESSAGE = '這份服務旅程已失效或不存在�
 export const RECOGNITION_UNAVAILABLE_MESSAGE = '目前線上服務尚未啟用文件辨識，NAVI 無法讀取你上傳的文件。你可以先提供資訊（尚未驗證），或洽客服專線由專人協助。';
 
 const kindOf = serviceType => (serviceType === 'hospitalization_claim' ? 'hospital' : serviceType);
-// Privacy: the browser keeps only the journey id and display flags. The description and document
+// Privacy: the browser keeps only journey ids and display flags. The description and document
 // fields stay on the server and are read back after a reload.
-const Stored = z.object({
-  v: z.literal(2), journeyId: z.string().uuid(), source: z.enum(['gemini', 'demo_fallback']), handoffRequested: z.boolean(),
-}).strict();
+const JourneyRef = z.object({ journeyId: z.string().uuid(), source: z.enum(['gemini', 'demo_fallback']), handoffRequested: z.boolean() }).strict();
+const StoredV2 = JourneyRef.extend({ v: z.literal(2) }).strict();
+// v3: several journeys of this browser (most recent first) and the one shown now.
+const Stored = z.object({ v: z.literal(3), current: z.string().uuid().nullable(), journeys: z.array(JourneyRef).max(5) }).strict();
+const MAX_JOURNEYS = 5;
 // The server does not retain the description (it keeps a neutral note instead). Until a reload the
 // user sees their own masked words, held in memory only; afterwards the server's note.
 const storyOf = journey => journey.conversation.find(entry => entry.role === 'user')?.message ?? '';
@@ -40,25 +42,49 @@ export function understandingOfTask(split, task) {
   return parsed.success ? parsed.data : null;
 }
 
+/** What a task list shows for one journey: the server's own fields, plus the hospital to tell two claims apart. */
+export function journeySummary(journey) {
+  const hospital = journey.claimContext?.hospital;
+  return {
+    title: journey.title, serviceType: journey.serviceType, supported: journey.supported, currentStage: journey.currentStage,
+    readiness: journey.readiness, createdAt: journey.createdAt, updatedAt: journey.updatedAt, detail: hospital?.matchedName ?? hospital?.mentioned ?? null,
+  };
+}
+
 export function createApiJourneyService({
   understand, storage, storageKey = 'navi.journey', fetchImpl = (...args) => fetch(...args),
   baseUrl = import.meta.env?.VITE_API_BASE_URL || '', timeoutMs = 15000, documentTimeoutMs = 45000,
 }) {
   let state = null;
   let pending = null; // stored journey reference waiting to be read back from the server
+  let refs = []; // journeys of this browser, most recent first: ids and display flags only
+  // The server's latest answer for each journey seen in this tab (memory only), so listing the tasks does
+  // not GET every journey again on each change (the API is rate limited). Switching always reads afresh.
+  const seen = new Map();
+  const remember = journey => { seen.set(journey.id, journey); return journey; };
   // X-NAVI-AI-Mode of the server. A 'demo' server answers every upload with fixed sample fields
   // whatever the file holds, so formal mode never sends the user's own file there.
   let aiMode = null;
   const api = path => `${baseUrl.replace(/\/$/, '')}/api${path}`;
 
+  const drop = id => { refs = refs.filter(ref => ref.journeyId !== id); seen.delete(id); };
   function save() {
+    if (state) refs = [{ journeyId: state.journey.id, source: state.source, handoffRequested: state.handoffRequested }, ...refs.filter(ref => ref.journeyId !== state.journey.id)].slice(0, MAX_JOURNEYS);
     try {
-      if (state) storage?.setItem(storageKey, JSON.stringify({ v: 2, journeyId: state.journey.id, source: state.source, handoffRequested: state.handoffRequested }));
+      if (refs.length) storage?.setItem(storageKey, JSON.stringify({ v: 3, current: state?.journey.id ?? pending?.journeyId ?? null, journeys: refs }));
       else storage?.removeItem(storageKey);
-    } catch { /* Storage can be unavailable; the journey id then lives in memory only. */ }
+    } catch { /* Storage can be unavailable; the journey ids then live in memory only. */ }
+  }
+  /** GET one journey; a journey the server no longer has leaves this browser's list. */
+  async function read(id, { signal } = {}) {
+    try { return remember(await request(`/journeys/${id}`, { signal })); }
+    catch (error) {
+      if (error.code === 'JOURNEY_NOT_FOUND') { drop(id); save(); }
+      throw error;
+    }
   }
   const snapshot = () => (state ? { journey: state.journey, context: { kind: kindOf(state.journey.serviceType), story: state.story ?? storyOf(state.journey), source: state.source, handoffRequested: state.handoffRequested } } : null);
-  function commit(journey) { state = { ...state, journey }; save(); return snapshot(); }
+  function commit(journey) { state = { ...state, journey: remember(journey) }; save(); return snapshot(); }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
   async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema } = {}) {
@@ -93,15 +119,22 @@ export function createApiJourneyService({
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
     // Formal mode is real use: its sample is the synthetic PDF, sent to the server and read by the
     // AI like any upload (Live accepts only approved synthetic files). /demo samples never leave the browser.
-    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true },
-    /** Nothing to show synchronously: the journey itself is only on the server (see resume). */
+    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true },
+    /** Nothing to show synchronously: the journeys themselves are only on the server (see resume). */
     restore() {
       state = null;
+      pending = null;
+      refs = [];
       try {
-        const parsed = Stored.safeParse(JSON.parse(storage?.getItem(storageKey) ?? 'null'));
-        pending = parsed.success ? parsed.data : null;
-        if (!parsed.success) storage?.removeItem(storageKey); // older formats held the raw description
-      } catch { pending = null; }
+        const raw = JSON.parse(storage?.getItem(storageKey) ?? 'null');
+        const v3 = Stored.safeParse(raw);
+        const v2 = v3.success ? null : StoredV2.safeParse(raw);
+        if (v3.success) refs = v3.data.journeys;
+        else if (v2.success) refs = [{ journeyId: v2.data.journeyId, source: v2.data.source, handoffRequested: v2.data.handoffRequested }];
+        else storage?.removeItem(storageKey); // older formats held the raw description
+        const current = v3.success ? v3.data.current : v2?.success ? v2.data.journeyId : null;
+        pending = refs.find(ref => ref.journeyId === current) ?? null;
+      } catch { pending = null; refs = []; }
       return null;
     },
     hasStoredJourney: () => Boolean(pending),
@@ -110,7 +143,7 @@ export function createApiJourneyService({
       if (!pending) return null;
       const { journeyId, source, handoffRequested } = pending;
       try {
-        const journey = await request(`/journeys/${journeyId}`, { signal });
+        const journey = await read(journeyId, { signal });
         pending = null;
         state = { journey, source, handoffRequested };
         save();
@@ -119,6 +152,44 @@ export function createApiJourneyService({
         if (error.code === 'JOURNEY_NOT_FOUND') { pending = null; save(); }
         throw error;
       }
+    },
+    /**
+     * This browser's journeys as the server has them now (GET each; no AI call). A journey the server no
+     * longer has is removed from the list; one that could not be read (network) stays, marked unavailable.
+     */
+    async listJourneys({ signal } = {}) {
+      const ids = refs.map(ref => ref.journeyId);
+      const known = id => (id === state?.journey.id ? state.journey : seen.get(id));
+      const results = await Promise.allSettled(ids.map(id => (known(id) ? Promise.resolve(known(id)) : read(id, { signal }))));
+      if (signal?.aborted) throw signal.reason;
+      return ids.flatMap((id, i) => {
+        const result = results[i];
+        if (result.status === 'rejected' && result.reason?.code === 'JOURNEY_NOT_FOUND') return [];
+        const journey = result.status === 'fulfilled' ? result.value : null;
+        return [{
+          id, current: id === state?.journey.id, unavailable: !journey,
+          ...(journey && journeySummary(journey)),
+        }];
+      });
+    },
+    /** Show another journey of this browser: its state is read from the server, not from a local copy. */
+    async switchJourney(id, { signal } = {}) {
+      const ref = refs.find(item => item.journeyId === id);
+      if (!ref) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404);
+      const journey = await read(id, { signal });
+      state = { journey, source: ref.source, handoffRequested: ref.handoffRequested };
+      pending = null;
+      save();
+      return snapshot();
+    },
+    /** The shown journey expired: drop only it. Returns how many other journeys this browser still has. */
+    forgetCurrent() {
+      if (state) drop(state.journey.id);
+      if (pending) drop(pending.journeyId);
+      state = null;
+      pending = null;
+      save();
+      return refs.length;
     },
     /**
      * Several independent requests in one message (POST /intelligence/tasks: one AI call, at most four tasks).
@@ -141,9 +212,9 @@ export function createApiJourneyService({
       const serviceRequest = understanding.data.intent === 'service_request';
       if (kind !== 'hospital' || !serviceRequest || !opensJourney(understanding, kind) || !openJourney(kind)) return { understanding, kind, snapshot: null };
       const journey = await request('/journeys', { method: 'POST', json: { message: message.trim(), intentResult: understanding.data }, signal });
-      pending = null; // a new journey replaces any stored one that was not read back yet
+      pending = null; // the new journey is the one shown; earlier ones stay in the list
       if (journey.serviceType !== 'hospitalization_claim') return { understanding, kind: kindOf(journey.serviceType), snapshot: null };
-      state = { journey, story: redactIdentifiers(message.trim()), source: understanding.meta.source, handoffRequested: false };
+      state = { journey: remember(journey), story: redactIdentifiers(message.trim()), source: understanding.meta.source, handoffRequested: false };
       save();
       return { understanding, kind, snapshot: snapshot() };
     },
@@ -224,7 +295,8 @@ export function createApiJourneyService({
       state = { ...state, story: redactIdentifiers(message.trim()) };
       return { snapshot: commit(result.journey), previousServiceType: result.previousServiceType };
     },
-    reset() { state = null; save(); },
+    /** 重新開始: this browser forgets every journey (the server copies expire on their own). */
+    reset() { state = null; pending = null; refs = []; seen.clear(); save(); },
     setFailNextDocument() { /* Demo-only control; the server decides recognition outcomes. */ },
   };
 }

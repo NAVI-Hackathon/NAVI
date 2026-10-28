@@ -225,6 +225,15 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .basic-steps li::before { content: counter(s); font-size: 10px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .safe-note { display: flex; align-items: flex-start; gap: 10px; margin-top: 27px; padding-top: 20px; border-top: var(--border); font-size: 10px; line-height: 1.9; color: var(--color-text-muted); }
 .safe-note svg { margin-top: 3px; }
+/* Compact workspace (services without a document workflow): summary, open conditions, sources. */
+.brief-sections { display: grid; gap: 26px; }
+.brief-text { font-size: 13px; line-height: 1.85; color: var(--color-text-secondary); }
+.brief-text.is-muted { font-size: 12px; color: var(--color-text-muted); }
+.brief-conditions { display: grid; gap: 8px; }
+.brief-conditions li { position: relative; padding-left: 16px; font-size: 12px; line-height: 1.8; color: var(--color-text-secondary); }
+.brief-conditions li::before { content: ''; position: absolute; left: 2px; top: 0.72em; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-muted); }
+.brief-conditions li.is-warn::before { background: var(--color-warning); }
+.brief-sources { display: grid; gap: 10px; }
 
 /* Hospital claim: strip notes, channels, reminders */
 .strip-note { display: block; margin-top: 3px; font-size: 10px; color: var(--color-text-muted); }
@@ -714,6 +723,22 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .chat-journey-title { font-size: 16px; font-weight: 500; color: var(--color-text); }
 .chat-journey-next { font-size: 13px; color: var(--color-text-secondary); }
 .chat-journey-open { grid-column: 1 / -1; justify-self: start; }
+.chat-journey-past { display: grid; gap: 4px; justify-items: start; }
+
+/* Task bar: this browser's journeys (read from the server) and requests not handled yet. */
+.task-bar { margin: -6px 0 26px; }
+.task-bar .eyebrow { margin-bottom: 8px; }
+.task-bar ul { display: flex; flex-wrap: wrap; gap: 8px; }
+.task-bar li { min-width: 0; max-width: 100%; }
+.task-chip { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 40px; padding: 6px 14px; border: var(--border); border-radius: 999px; font-size: 12px; color: var(--color-text-secondary); text-align: left; }
+.task-chip svg { flex: none; color: var(--color-text-muted); }
+.task-chip-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text); }
+.task-chip-state { flex: none; font-size: 11px; color: var(--color-text-muted); }
+.task-chip.is-current { border-color: var(--color-accent-line); background: var(--color-accent-soft); }
+.task-chip.is-current svg { color: var(--color-accent); }
+.task-chip.is-open { border-style: dashed; }
+.task-chip:disabled { opacity: 0.55; }
+.task-bar-chat { margin: 14px 0 0; }
 .chat-composer { margin: 0; }
 .chat-composer-box { display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 18px; border: 1.5px solid var(--chat-brand); border-radius: 24px; background: #14181c; box-shadow: 0 0 0 4px rgba(0, 145, 90, 0.12), 0 12px 40px rgba(0, 0, 0, 0.35); }
 .chat-composer-box:focus-within { border-color: #00b26e; box-shadow: 0 0 0 3px rgba(0, 178, 110, 0.6), 0 12px 40px rgba(0, 0, 0, 0.35); }
