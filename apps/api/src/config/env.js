@@ -18,6 +18,7 @@ export function loadConfig(env = process.env) {
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid GEMINI_MODEL configuration');
   const product = productConfig(env, model, env.GEMINI_FREE_TIER_CONFIRMED === 'true');
   if (!product.productMode && env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || env.GEMINI_FREE_TIER_CONFIRMED !== 'true' || model !== FREE_TIER_MODEL || !env.AI_USAGE_FILE?.startsWith('/') || (env.AI_PUBLIC_SYNTHETIC !== 'true' && (env.NAVI_TEST_SESSION_TOKEN?.trim().length ?? 0) < 32))) throw new Error('Production Live configuration is incomplete or unapproved');
+  if (product.productMode && env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || !product.modelPolicies.some(p => p.id === model && p.confirmed && (p.tier === 'free' ? env.GEMINI_FREE_TIER_CONFIRMED === 'true' : env.ALLOW_PAID_AI === 'true' && product.billingConfirmed && product.paidAuthorization.length >= 32 && product.paidBudgetCents > 0)))) throw new Error('Production Live configuration is incomplete or unapproved');
   const requestLimit = numeric(env, 'LIVE_AI_REQUEST_LIMIT', env.MAX_LIVE_EVAL_REQUESTS_PER_RUN ? Number(env.MAX_LIVE_EVAL_REQUESTS_PER_RUN) : DEFAULT_LIVE_REQUEST_LIMIT, 1, 1000);
   const publicSynthetic = env.AI_PUBLIC_SYNTHETIC === 'true';
   const restrictedLive = env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true';

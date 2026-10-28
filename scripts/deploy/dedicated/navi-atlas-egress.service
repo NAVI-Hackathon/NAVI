@@ -1,0 +1,17 @@
+[Unit]
+Description=NAVI Atlas DNS egress refresh
+After=network-online.target
+Wants=network-online.target
+Before=navi-api.service
+[Service]
+Type=oneshot
+ExecStart=/opt/navi-hackathon/runtime/node/bin/node /opt/navi-hackathon/scripts/atlas-egress.mjs --apply
+TimeoutStartSec=30
+MemoryMax=96M
+CPUQuota=10%
+UMask=0077
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/navi-hackathon/config /etc/systemd/system/navi-api.service.d
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

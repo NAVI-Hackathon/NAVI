@@ -14,7 +14,7 @@ Secrets belong only in `/opt/navi-hackathon/config/api.env` (root-only), never G
 | --- | --- |
 | `NAVI_PRODUCT_MODE` | `true` for persistent product mode |
 | `MONGODB_URI` | dedicated Atlas `mongodb+srv://…`, authenticated TLS; no disabled certificate checks |
-| `MONGODB_DATABASE` | dedicated `navi` or `navi_<suffix>` database; system/other-project names rejected |
+| `MONGODB_DB_NAME` / `MONGODB_DATABASE` | dedicated `navi` or `navi_<suffix>` database; DB_NAME is preferred, DATABASE remains compatible; conflicting values fail startup; system/other-project names rejected |
 | `NAVI_DATA_ENCRYPTION_KEY` | independent random 32-byte base64 key; back up separately under access control |
 | `NAVI_PRIVATE_STATE_PATH` | private directory, e.g. `/opt/navi-hackathon/run/state`; generated transient files and encrypted backups only |
 | `NAVI_AUTH_REQUIRED` | enable only for the coordinated A3 cutover; otherwise old synthetic Session compatibility remains |
@@ -141,3 +141,13 @@ Machine-readable request/response JSON Schemas are generated in `docs/a3-product
 The current in-memory release supports only browser-held Journey references and the existing short-lived server cases. “Forget this case” removes its browser reference; it is not a whole-Journey server DELETE. No account, permanent history or Atlas restoration is promised before the coordinated A3 activation. Individual document/manual-information DELETE endpoints remain real server operations.
 
 A3 default live-record retention is 30 days and session validity is 30 days; the deployed configuration, explicit expiry query and TTL cleanup control actual lifetime. Account identity retention differs from Journey retention. Account/Journey erasure takes effect in the online database after the transaction commits; retained encrypted backups expire on their own seven-day rotation. Raw upload files are not retained as Journey attachments. A must show the actual `/session` retention policy, never promise immediate deletion from every backup or an unimplemented fixed 24-hour limit.
+
+## Atlas cutover and controlled accounts (no SMTP)
+
+This release retains anonymous synthetic Sessions so the current website keeps working. Public signup without configured SMTP returns `ACCOUNT_REGISTRATION_UNAVAILABLE` (503, retryable=false), before creating an account. An operator Session activated with the existing private token may provision a username-only synthetic test account. Only these server-designated accounts carry encrypted `testOnly:true`; clients cannot set the flag. This permits controlled account/history validation without claiming email ownership or sending fake verification messages. Normal email accounts still require verification before private account APIs when verification is enabled.
+
+`GET /session` adds `registrationAvailable` and `emailDeliveryConfigured`; the latter means configuration exists, not proof of successful delivery. Keep login available for existing authorized test accounts; disable public registration when the former is false. No SMTP or billing configuration is invented. Auth, Cookie and account erasure behavior remain as documented above.
+
+Atlas DNS egress uses `scripts/deploy/dedicated/atlas-egress.mjs` and its NAVI-only systemd timer. The existing deny-all and original DNS/Gemini addresses remain; only the configured Atlas SRV nodes' public addresses are added. Refresh changes this service's policy without restarting it. No public MongoDB port is opened. The production MongoDB user currently has atlasAdmin privileges, which the user explicitly chose to retain; the application still restricts database selection to the configured NAVI database. This credential has broader compromise impact than a scoped readWrite user.
+
+Record retention is sliding from the last mutation, not an unconditional deletion timestamp. Backup rotation runs during the scheduled backup operation; it is an approximate seven-day rotation, not immediate deletion from every backup. A public disaster restore must reconcile later deletions before reopening access.

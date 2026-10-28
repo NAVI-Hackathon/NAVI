@@ -49,8 +49,10 @@ export function createApp(config, provider = null, repository = null) {
   app.post('/api/test-sessions', sessions.activate);
   app.use('/api', async (req, res, next) => {
     const path = req.path.toLowerCase().replace(/\/+$/, '');
-    const ai = path === '/intelligence/understand' || path === '/intelligence/tasks' || path === '/analyze-intent' || path === '/knowledge/answer' || path === '/journeys'
-      || (req.method === 'POST' && /^\/journeys\/[^/]+\/(?:documents|intent-correction)$/.test(path))
+    const ai = (req.method === 'POST' && (
+      ['/intelligence/understand', '/intelligence/tasks', '/analyze-intent', '/knowledge/answer'].includes(path)
+      || (path === '/journeys' && !(config.productMode && req.body?.taskId))
+      || /^\/journeys\/[^/]+\/(?:documents|intent-correction)$/.test(path)))
       || (req.method === 'GET' && /^\/journeys\/[^/]+\/handoff-summary$/.test(path) && req.query.enhance === 'true');
     if (path.startsWith('/journeys/')) {
       try { await sessions.authorize(req, req.path.split('/')[2]); } catch (error) { return next(error); }

@@ -1,3 +1,4 @@
+import {loadConfig} from '../src/config/env.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -101,3 +102,39 @@ test('bounded PDF parser rejects active documents and deletes temporary bytes on
 
 
 test('confirmed handoff downloads become stale after a document edit and require fresh consent',async t=>{const f=fixture(t),a=await api(t,f);await a.start();const j=(await a.call('/journeys',{message:'我住院五天'})).data,p=(await a.call('/journeys/'+j.id+'/handoff/preview',{})).data;await a.call('/journeys/'+j.id+'/handoff/confirm',{previewId:p.previewId,confirmed:true});let r=await fetch(a.base+'/journeys/'+j.id+'/handoff/download',{headers:{Origin:origin,Cookie:a.cookie}});assert.equal(r.status,200);assert.match(await r.text(),/尚未|不代表|準備/);await a.upload(j.id,'diagnosis_certificate');r=await fetch(a.base+'/journeys/'+j.id+'/handoff/download',{headers:{Origin:origin,Cookie:a.cookie}});assert.equal(r.status,409);assert.equal((await r.json()).error.code,'HANDOFF_PREVIEW_STALE');const fresh=(await a.call('/journeys/'+j.id+'/handoff/preview',{})).data;await a.call('/journeys/'+j.id+'/handoff/confirm',{previewId:fresh.previewId,confirmed:true});r=await fetch(a.base+'/journeys/'+j.id+'/handoff/download',{headers:{Origin:origin,Cookie:a.cookie}});assert.equal(r.status,200);assert.match(await r.text(),/診斷|住院/);});
+
+test('Atlas DB_NAME alias is compatible and conflicting database names fail closed', () => {
+  const env = { NAVI_PRODUCT_MODE: 'true', MONGODB_DB_NAME: 'navi_atlas' };
+  assert.equal(loadConfig(env).mongoDatabase, 'navi_atlas');
+  assert.equal(loadConfig({ MONGODB_DATABASE: 'navi_legacy' }).mongoDatabase, 'navi_legacy');
+  assert.throws(() => loadConfig({ ...env, MONGODB_DATABASE: 'navi_other' }), /Conflicting/);
+});
+
+test('saved tasks and private history remain available when generation is unavailable', async t => {
+  const f=fixture(t), a=await api(t,f);await a.start();
+  assert.equal((await a.call('/auth/register',credentials)).status,201);
+  await a.call('/session/consent',{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'});
+  const split=await a.call('/intelligence/tasks',{message:'我想改地址，也想知道要怎麼申請住院理賠。'});
+  assert.equal(split.status,200);const cookie=a.cookie;
+  const b=await api(t,f,{}, {mode:'unavailable',understandIntent:async()=>{throw Error('Must not generate');}});
+  assert.equal((await b.call('/journeys',undefined,'GET',cookie)).status,200);
+  const created=await b.call('/journeys',{taskId:split.data.tasks[0].persistedTaskId,idempotencyKey:randomUUID()},'POST',cookie);
+  assert.equal(created.status,201);
+  const again=await b.call('/journeys',{taskId:split.data.tasks[0].persistedTaskId,idempotencyKey:randomUUID()},'POST',cookie);
+  assert.equal(again.data.id,created.data.id);
+  assert.equal((await b.call('/journeys/'+created.data.id,undefined,'GET',cookie)).status,200);
+});
+
+test('without SMTP production blocks public signup but permits authorized synthetic test accounts', async t => {
+  const f=fixture(t),token='NAVI-synthetic-operator-token-at-least-32',a=await api(t,f,{production:true,authRequireVerifiedEmail:true,sessionToken:token});
+  await a.start();const info=await a.call('/session');assert.equal(info.data.registrationAvailable,false);
+  const denied=await a.call('/auth/register',{email:'synthetic@example.invalid',password:credentials.password});
+  assert.equal(denied.status,503);assert.equal(denied.data.error.code,'ACCOUNT_REGISTRATION_UNAVAILABLE');
+  assert.equal((await a.call('/test-sessions',{token,syntheticOnly:true})).status,201);
+  assert.equal((await a.call('/auth/register',credentials)).status,201);
+  assert.equal((await a.call('/auth/me')).status,200);
+  const record=(await a.c.store.list('accounts'))[0];assert.equal(record.value.testOnly,true);assert.equal(record.value.email,null);
+  await a.call('/auth/logout',{});
+  assert.equal((await a.call('/auth/login',credentials)).status,200);
+  assert.equal((await a.call('/journeys')).status,200);
+});
