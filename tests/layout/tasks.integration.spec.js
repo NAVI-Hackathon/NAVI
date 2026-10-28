@@ -40,5 +40,11 @@ for (const width of [390, 1280]) test(`formal chat selects both tasks, creates o
     await page.getByRole('button', { name: '送出修正' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0); await expect(page.getByRole('heading', { name: '需要補充說明', exact: true, level: 1 })).toBeVisible();
     expect(latest.id).toBe(id); expect(latest.readiness).toBe(0); expect(latest.sources).toEqual([]); expect(calls).toEqual(['tasks', 'intent']);
+    // No document workflow any more: the compact workspace, without a score, stages or a documents tab.
+    await expect(page.locator('.workspace.profile-compact')).toBeVisible();
+    await expect(page.locator('[role=progressbar][aria-label="準備完成度"]')).toHaveCount(0);
+    await expect(page.locator('.timeline')).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: /文件/ })).toHaveCount(0);
+    for (const section of ['NAVI 理解的需求', '待確認條件', '官方資料來源']) await expect(page.getByRole('heading', { name: section, level: 3 })).toBeVisible();
   } finally { await page.unroute('**/api/**'); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 });

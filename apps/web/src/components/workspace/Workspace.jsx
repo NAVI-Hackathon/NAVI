@@ -7,15 +7,23 @@ import ReadinessPanel, { ReadinessRing } from './ReadinessPanel.jsx';
 import NextActionCard from './NextActionCard.jsx';
 import DocumentCard from './DocumentCard.jsx';
 import PreflightBoard from './PreflightBoard.jsx';
+import ServiceBrief from './ServiceBrief.jsx';
 import { useBreakpoint } from '../../hooks/useBreakpoint.js';
-import { DOCUMENT_TYPES } from '../../mocks/hospitalClaim.js';
+import { documentTypesOf, stageLabel, workspaceProfile } from '../../domain/workspace.js';
 import { transition } from '../../motion/tokens.js';
 
-const mobileTabs = [
-  { id: 'journey', label: '旅程', icon: 'route' },
-  { id: 'documents', label: '文件', icon: 'document' },
-  { id: 'assistant', label: 'AI 助手', icon: 'spark' },
-];
+const mobileTabs = {
+  full: [
+    { id: 'journey', label: '旅程', icon: 'route' },
+    { id: 'documents', label: '文件', icon: 'document' },
+    { id: 'assistant', label: 'AI 助手', icon: 'spark' },
+  ],
+  // No document workflow: the service tab holds the next step, checklist and sources.
+  compact: [
+    { id: 'journey', label: '服務', icon: 'route' },
+    { id: 'assistant', label: 'AI 助手', icon: 'spark' },
+  ],
+};
 
 function readinessCaption(journey) {
   if (journey.currentStage === 'READY_TO_PROCEED') return '已完成 NAVI 初步資料準備，仍需依正式規定確認與送件。';
@@ -23,20 +31,10 @@ function readinessCaption(journey) {
   return missing ? `還有 ${missing} 項資料待補齊` : '必要文件已備齊，請確認資料';
 }
 
-function stateLabel(journey) {
-  return {
-    EVIDENCE_COLLECTION: '正在準備資料',
-    READY_FOR_REVIEW: '可以進行確認',
-    READY_TO_PROCEED: '資料初步準備完成',
-    HUMAN_REVIEW: '需要專員確認',
-    SERVICE_IDENTIFIED: '已找到相關服務',
-  }[journey.currentStage] ?? '旅程已建立';
-}
-
 export function DocumentList({ snapshot, docStates, busy, actions, registerInput }) {
   return (
     <div className="doc-list">
-      {DOCUMENT_TYPES.map(type => (
+      {documentTypesOf(snapshot.journey).map(type => (
         <DocumentCard
           key={type} type={type}
           document={snapshot.journey.documents.find(d => d.documentType === type)}
@@ -52,17 +50,21 @@ export function DocumentList({ snapshot, docStates, busy, actions, registerInput
   );
 }
 
-export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, ref }) {
+export default function Workspace({ snapshot, explanation, docStates, busy, tab, onTab, assistantOpen, onAssistantOpen, actions, registerInput, taskBar = null, ref }) {
   const breakpoint = useBreakpoint();
-  const { journey, context } = snapshot;
-  const hasDocuments = context.kind === 'hospital' && journey.currentStage !== 'HUMAN_REVIEW';
+  const { journey } = snapshot;
+  // Full: the document workflow (timeline, documents, readiness score). Compact: every other service.
+  const profile = workspaceProfile(snapshot);
+  const hasDocuments = profile === 'full';
+  const tabs = mobileTabs[profile];
+  const shownTab = tabs.some(item => item.id === tab) ? tab : 'journey';
   const heading = useRef(null);
   useEffect(() => { heading.current?.focus({ preventScroll: true }); }, []);
 
   const documents = hasDocuments ? <DocumentList snapshot={snapshot} docStates={docStates} busy={busy} actions={actions} registerInput={registerInput} /> : null;
   const timeline = (withDocuments) => (
     <JourneyTimeline snapshot={snapshot} documentsSlot={withDocuments ? documents : null}
-      onReview={actions.review} onProceed={actions.proceed} onViewService={() => actions.next(journey.nextAction)} onNavigate={actions.navigate} />
+      onReview={actions.review} onProceed={actions.proceed} onNavigate={actions.navigate} />
   );
   // Preflight buttons reuse the journey actions: upload opens the picker (and the documents tab on phones).
   const preflight = {
@@ -74,10 +76,11 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
     <ReadinessPanel snapshot={snapshot} busy={busy} onAction={actions.next} onSample={actions.sample} sampleByAi={actions.sampleByAi} onHandoff={actions.handoff} onNavigate={actions.navigate} preflight={preflight} {...props} />
   );
   const assistant = <AssistantPanel snapshot={snapshot} onHandoff={actions.handoff} onNavigate={actions.navigate} />;
+  const center = (withDocuments) => (hasDocuments ? timeline(withDocuments) : <ServiceBrief snapshot={snapshot} onNavigate={actions.navigate} />);
 
   return (
     <motion.main
-      ref={ref} id="main-content" className={`workspace bp-${breakpoint}`}
+      ref={ref} id="main-content" className={`workspace bp-${breakpoint} profile-${profile}`}
       initial={{ opacity: 0, scale: 0.985 }} animate={{ opacity: 1, scale: 1, transition: { ...transition.slow, delay: 0.05 } }}
       exit={{ opacity: 0, transition: transition.exit }}
     >
@@ -87,7 +90,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
           <h1 ref={heading} tabIndex={-1}>{journey.title}</h1>
         </div>
         <div className="workspace-meta">
-          <span className={`state-pill stage-${journey.currentStage.toLowerCase()}`}><span className="pulse-dot" aria-hidden="true" />{stateLabel(journey)}</span>
+          <span className={`state-pill stage-${journey.currentStage.toLowerCase()}`}><span className="pulse-dot" aria-hidden="true" />{stageLabel(journey)}</span>
           {actions.correct && <button type="button" className="link-button correct-link" onClick={actions.correct}><Icon name="edit" size={14} />需求不對？修正</button>}
           {breakpoint === 'tablet' && (
             <button type="button" className="button button-secondary button-small" aria-expanded={assistantOpen} aria-controls="assistant-drawer" onClick={() => onAssistantOpen(!assistantOpen)}>
@@ -96,11 +99,12 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
           )}
         </div>
       </div>
+      {taskBar}
 
       {breakpoint === 'desktop' && (
         <div className="workspace-grid">
           {assistant}
-          {timeline(true)}
+          {center(true)}
           {readiness()}
         </div>
       )}
@@ -115,7 +119,7 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
               </motion.div>
             )}
           </AnimatePresence>
-          {timeline(true)}
+          {center(true)}
           {readiness()}
         </div>
       )}
@@ -123,18 +127,18 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
       {breakpoint === 'mobile' && (
         <>
           <nav className="mobile-tabs" role="tablist" aria-label="工作區檢視">
-            {mobileTabs.map(item => (
-              <button key={item.id} id={`tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`tabpanel-${item.id}`} onClick={() => onTab(item.id)}>
+            {tabs.map(item => (
+              <button key={item.id} id={`tab-${item.id}`} type="button" role="tab" aria-selected={shownTab === item.id} aria-controls={`tabpanel-${item.id}`} onClick={() => onTab(item.id)}>
                 <Icon name={item.icon} size={16} />{item.label}
-                {item.id === 'documents' && hasDocuments && <span className="tab-count">{journey.documents.length}/{DOCUMENT_TYPES.length}</span>}
-                {tab === item.id && <motion.span className="tab-indicator" layoutId="tab-indicator" transition={transition.normal} />}
+                {item.id === 'documents' && <span className="tab-count">{journey.documents.length}/{documentTypesOf(journey).length}</span>}
+                {shownTab === item.id && <motion.span className="tab-indicator" layoutId="tab-indicator" transition={transition.normal} />}
               </button>
             ))}
           </nav>
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={tab} id={`tabpanel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="mobile-panel"
+            <motion.div key={shownTab} id={`tabpanel-${shownTab}`} role="tabpanel" aria-labelledby={`tab-${shownTab}`} className="mobile-panel"
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: transition.enter }} exit={{ opacity: 0, transition: transition.exit }}>
-              {tab === 'journey' && (
+              {shownTab === 'journey' && (
                 <>
                   {hasDocuments && (
                     <section className="panel mobile-readiness" aria-label="準備完成度">
@@ -160,11 +164,11 @@ export default function Workspace({ snapshot, explanation, docStates, busy, tab,
                     </section>
                   )}
                   {!hasDocuments && readiness()}
-                  {timeline(false)}
+                  {center(false)}
                 </>
               )}
-              {tab === 'documents' && (hasDocuments ? documents : readiness({ showNextAction: false }))}
-              {tab === 'assistant' && assistant}
+              {shownTab === 'documents' && documents}
+              {shownTab === 'assistant' && assistant}
             </motion.div>
           </AnimatePresence>
         </>

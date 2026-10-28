@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import Icon from '../Icon.jsx';
 import Modal from './Modal.jsx';
-import { basicJourneys } from '../../mocks/basicJourneys.js';
 import { documentSpecs } from '../../mocks/hospitalClaim.js';
 import { claimApplicationForm } from '../../content/cardifData.js';
 import { maskAccount, stayDays, stayText } from '../../content/format.js';
@@ -291,16 +290,21 @@ export function HandoffDialog({ snapshot, service, onConfirmed, onClose }) {
   );
 }
 
-export function ServiceDialog({ snapshot, onHandoff, onClose }) {
-  const basic = basicJourneys[snapshot.context.kind] ?? basicJourneys.unknown;
+/** A service NAVI guides without a document workflow: the server's next step and its official entry. */
+export function ServiceDialog({ snapshot, onHandoff, onNavigate, onClose }) {
+  const { journey } = snapshot;
+  const destination = journey.nextAction.destination;
   return (
-    <Modal title={basic.title} onClose={onClose}>
-      <p className="modal-lead">{snapshot.journey.nextAction.description}</p>
-      <ol className="numbered-steps">{basic.steps.map(step => <li key={step}>{step}</li>)}</ol>
-      <p className="modal-footnote"><Icon name="info" size={14} />這項服務目前提供辦理導引；完整服務旅程將於後續版本開放。</p>
+    <Modal title={journey.title} onClose={onClose}>
+      <p className="modal-lead">{journey.nextAction.description}</p>
+      <p className="modal-footnote"><Icon name="info" size={14} />NAVI 只提供辦理導引，不會代為送件；實際辦理請依官網說明或洽專員。</p>
       <div className="modal-actions">
-        <button type="button" className="button button-secondary" onClick={onClose}>我知道了</button>
-        <button type="button" className="button button-primary" onClick={onHandoff}>轉由專員協助<Icon name="arrow" size={16} /></button>
+        <button type="button" className="button button-secondary" onClick={onHandoff}>轉由專員協助</button>
+        {destination && onNavigate ? (
+          <button type="button" className="button button-primary" onClick={() => { onClose(); onNavigate(destination); }}>帶我去：{destination.label}<Icon name="arrow" size={16} /></button>
+        ) : (
+          <button type="button" className="button button-primary" onClick={onClose}>我知道了</button>
+        )}
       </div>
     </Modal>
   );
