@@ -22,6 +22,6 @@ else{
   if(!client)throw Error('Test MongoDB did not start');
   try{await client.db('admin').command({replSetInitiate:{_id:'naviTest',members:[{_id:0,host:`127.0.0.1:${port}`}]}});let ready=false;for(let n=0;n<80;n++){if((await client.db('admin').command({hello:1})).isWritablePrimary){ready=true;break;}await new Promise(r=>setTimeout(r,100));}if(!ready)throw Error('Test replica set not ready');}finally{await client.close();}
   console.info('Isolated MongoDB replica set ready; no Atlas or Gemini requests.');
-  running=spawn(args[0],args.slice(1),{stdio:'inherit',env:{...process.env,MONGODB_TEST_URI:`mongodb://127.0.0.1:${port}/?replicaSet=naviTest`}});process.exitCode=await new Promise(r=>running.once('exit',code=>r(code??1)));
+  running=spawn(args[0],args.slice(1),{stdio:'inherit',env:{...process.env,MONGOD_BINARY:binary,MONGODB_TEST_URI:`mongodb://127.0.0.1:${port}/?replicaSet=naviTest`}});process.exitCode=await new Promise(r=>running.once('exit',code=>r(code??1)));
  }finally{server.kill('SIGTERM');await closed;await log.close();process.removeListener('SIGINT',stop);process.removeListener('SIGTERM',stop);const stat=await lstat(dir);if(!stat.isSymbolicLink()&&stat.uid===process.getuid()&&dir.startsWith(root+'/run-'))await rm(join(dir,'db'),{recursive:true,force:true});}
 }

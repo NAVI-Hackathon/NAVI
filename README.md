@@ -22,7 +22,7 @@ Knowledge 的定向更新、受權限保護的本機審核、版本發布與回�
 - 2026-10-27唯讀盤點：一般入口的 Backend 為 `AI_MODE=live`、`gemini-3.1-flash-lite`，只限合成資料；`/demo` 與 `/embed?mode=demo` 為獨立前端 Mock，不呼叫 Gemini。模型錯誤不以Demo替代。此配置盤點不是當日Free Tier或真實推論成功證據。
 - 程式預設每日／process上限皆12；Production明確設定兩者20、每Session6、併發1、單次10秒、attempt1。沒有提高額度；Google專案實際配額仍須人工核對。管道的入口存在／院所快照比對不等於申請資格。詳見[第二位評審契約](docs/judge2-contract.md)、[Live Evidence Matrix](docs/live-evidence-matrix.md)。
 - 2026-10-20 完整驗收（Developer A，示範資料、零 Gemini 請求）：官網開啟 NAVI → 住院醫療理賠 35% → 範例診斷書 70% → 範例存摺 90% → 確認 100%；重新整理後由 Backend 讀回 100%；移除存摺退回 70% 並撤回確認；假案件編號顯示「已失效」；「帶我去」與前往服務皆使模擬官網切換分頁並高亮；手機寬度（375px）流程與確認對話框無橫向溢出；`/demo` 全程不呼叫 API；知識問答與帶我去正常。部署版本含 `38934f4`。實機手機尚未測試。
-- 三個網域憑證已簽發並通過續期模擬；`www.navitw.com` 轉往主網域，舊 IP／8080 入口只保留轉址。仍只接受合成展示資料。案件只存在記憶體：服務重啟即清空、1 小時後過期，之後會顯示「這份服務旅程已失效」。
+- 三個網域憑證已簽發並通過續期模擬；`www.navitw.com` 轉往主網域，舊 IP／8080 入口只保留轉址。仍只接受合成展示資料。目前一般服務已使用 MongoDB Atlas 加密保存與 owner 隔離；資料保存約30天（依互動更新），詳細以 API 揭露及[持久化契約](docs/a3-persistence-contract.md)為準。Demo 仍為獨立本地 Mock；SMTP 未配置，公開註冊關閉，真實敏感文件仍不開放。
 - 請勿輸入真實病歷、姓名、身分證或帳號。線上服務無法使用時，以本機 `npm run dev:all` 作為展示備案。
 
 - Developer B 已完成桌面／390px住院35→70→90→100、嵌入導航、檔案刪除／重傳、API離線時的 `/demo` 備援及少量並行驗收；詳細資源與測試數據見[專用VPS指南](docs/vps-dedicated-deployment.md)。
@@ -30,6 +30,8 @@ Knowledge 的定向更新、受權限保護的本機審核、版本發布與回�
 網域部署與回滾以[HTTPS 指南](docs/domain-https-deployment.md)為準；底層服務管理仍沿用[專用VPS指南](docs/vps-dedicated-deployment.md)。舊共享 VPS 的[隔離部署報告](docs/vps-isolated-deployment.md)僅作歷史紀錄，不代表目前服務狀態。
 
 ## Latest Main Readiness
+
+最新候選修復的[Judge 稽核報告](docs/judge-audit-acceptance-2026-10-29.md)與[Backend／Renderer 契約](docs/judge-audit-contract.md)分開記錄離線、Browser 與正式唯讀證據；E13 Renderer 尚有阻擋，不代表修復已正式部署。
 
 最新修正（待 PR review）：地址變更移除內部筆記、名詞頁採用7個已核對官網短定義；保留本地待審Snapshot。Backend新增待確認手動文件資訊API（不計文件分數，正式UI由A接入），沿用10秒整體AI deadline與零成本護欄。整合方式及未完成限制見[本次報告](docs/production-readiness-2026-10-21.md)。
 

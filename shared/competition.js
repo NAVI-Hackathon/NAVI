@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { JOURNEY_STATES, KnowledgeSourceSchema, NextActionSchema, NavigationTargetSchema, RequirementSchema, ConsistencyIssueSchema } from './journey.js';
 
+import { ClarificationSchema } from './knowledge/clarification.js';
+
 // Additive contracts: existing Journey, navigation messages and endpoints are unchanged.
 export const NavigationPlanRequestSchema = z.union([
   z.object({ query: z.string().trim().min(1).max(500) }).strict(),
@@ -27,7 +29,7 @@ export const KnowledgeEvidenceSchema = z.object({
 }).strict();
 export const KnowledgeEvidenceResponseSchema = z.object({
   status: z.enum(['answered', 'not_found', 'out_of_scope']), results: z.array(KnowledgeEvidenceSchema).max(3),
-  hotline: z.string(), disclaimer: z.string(),
+  hotline: z.string(), disclaimer: z.string(), clarification: ClarificationSchema.optional(),
 }).strict().refine(value => (value.status === 'answered') === (value.results.length > 0));
 export const JourneyExplanationSchema = z.object({
   journeyId: z.uuid(), journeyUpdatedAt: z.iso.datetime(), readiness: z.number().int().min(0).max(100),

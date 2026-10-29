@@ -7,6 +7,71 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
+        "failure": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^[A-Z_]+$"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "additionalProperties": false
+        },
+        "clarification": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "enum": [
+                "service_unspecified",
+                "claim_type_missing",
+                "date_context_missing",
+                "payment_or_dividend",
+                "address_type_missing",
+                "beneficiary_type_missing",
+                "payment_details_missing",
+                "insurance_decision"
+              ]
+            },
+            "blocking": {
+              "type": "boolean"
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "options": {
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            }
+          },
+          "required": [
+            "reason",
+            "blocking",
+            "question",
+            "options"
+          ],
+          "additionalProperties": false
+        },
         "correctionRequired": {
           "type": "boolean"
         },
@@ -527,6 +592,48 @@
             },
             "disclaimer": {
               "type": "string"
+            },
+            "clarification": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "service_unspecified",
+                    "claim_type_missing",
+                    "date_context_missing",
+                    "payment_or_dividend",
+                    "address_type_missing",
+                    "beneficiary_type_missing",
+                    "payment_details_missing",
+                    "insurance_decision"
+                  ]
+                },
+                "blocking": {
+                  "type": "boolean"
+                },
+                "question": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "options": {
+                  "maxItems": 4,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                }
+              },
+              "required": [
+                "reason",
+                "blocking",
+                "question",
+                "options"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [

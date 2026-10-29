@@ -1,5 +1,5 @@
 import { GroundedAnswerSchema } from '../ai/schemas.js';
-import { retrieveAnswerContext, getSources } from './knowledgeService.js';
+import { retrieveAnswerContext, getSources, searchPublicKnowledge } from './knowledgeService.js';
 import { requestValidatedAI } from './providerRequest.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
@@ -19,6 +19,8 @@ export function validateGroundedAnswer(raw, context) {
   return { ...data, sourceIds };
 }
 export async function answerKnowledge(question, { provider, config, signal }) {
+  const search = searchPublicKnowledge(question);
+  if (search.clarification?.blocking && !/班機|航班|延誤|flight/i.test(question)) return { ...insufficient(), answer: search.clarification.reason==='insurance_decision'&&!/保證|承諾/.test(question)?INSUFFICIENT_ANSWER:search.clarification.question, clarification: search.clarification };
   const context = retrieveAnswerContext(question);
   if (!context) return insufficient();
   try {
