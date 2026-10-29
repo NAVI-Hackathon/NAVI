@@ -8,14 +8,14 @@ import { answerKnowledge } from '../src/services/knowledgeAnswerService.js';
 import { conversationFailure } from '../src/services/conversationService.js';
 
 const payment = ['我要變更保費付款方式。','更換保費扣款方式','想把繳費改成轉帳','保費要用信用卡付款','payment method change','保費繳納方式如何更改','我想換扣繳的信用卡','缴费方式變更','不要改紅利，只改保費扣款'];
-const dividend = ['我要變更紅利給付方式','紅利領取要怎麼改','我想修改分紅方式','dividend option change','紅利抵繳保費怎麼選','不要改保費，只改紅利領取方式'];
+const dividend = ['我要變更紅利給付方式','紅利領取要怎麼改','我想修改分紅方式','dividend option change','紅利抵繳保費怎麼選','不要改保費，只改紅利領取方式','紅利給付可改轉帳嗎','dividend payment change'];
 for (const [queries,id,anchor] of [[payment,'service:change_payment_method','service-change-payment-method'],[dividend,'service:change_dividend_option','service-change-dividend-option']]) for (const query of queries) test('subject before ranking and navigation: '+query,()=>{
  const result=searchKnowledge(query);assert.equal(result.status,'answered');assert.equal(result.results[0].id,id);assert.equal(result.results[0].destination.anchor,anchor);
  const evidence=searchVerifiedKnowledge(query);assert.equal(evidence.results[0].source.id,id);assert.ok(evidence.results.every(r=>r.excerpts.every(x=>verifyEvidenceSnippet(r.source.id,x))));
  const plan=planNavigation({query});assert.equal(plan.plan.rootSourceId,id);assert.ok(plan.plan.steps.every(s=>verifyNavigationDestination(s.destination,s.sourceId)));
  const wrong=id.includes('payment')?'service:change_dividend_option':'service:change_payment_method';assert.ok(!result.results.some(r=>r.id===wrong));
 });
-for(const query of ['我不知道要辦什麼。','不清楚要辦哪個，幫我處理一下','我不確定要辦哪個事情','I don\'t know what to do','我要申請理賠，可是忘記日期。','理賠的日期我不記得了','申請理賠，但不知道是哪一天','我要申請理賠'])test('ambiguous input does not select an incident or route: '+query,()=>{
+for(const query of ['我不知道要辦什麼。','不清楚要辦哪個，幫我處理一下','我不確定要辦哪個事情','I don\'t know what to do','我要申請理賠，可是忘記日期。','我要理賠但忘了哪天','理賠的日期我不記得了','申請理賠，但不知道是哪一天','我要申請理賠'])test('ambiguous input does not select an incident or route: '+query,()=>{
  const r=searchKnowledge(query);assert.equal(r.status,'not_found');assert.deepEqual(r.results,[]);assert.equal(r.clarification.blocking,true);assert.ok(r.clarification.options.length);assert.equal(planNavigation({query}).plan,null);
  const unsafe={intent:'service_request',serviceType:'hospitalization_claim',confidence:.99,summary:'MODEL INVENTED',extractedData:{origin:null,destination:null,delayMinutes:null,incidentDate:'2026-10-01',hospitalName:'MODEL INVENTED'}};
  const normalized=normalizeIntent(unsafe,query);assert.equal(normalized.serviceType,'unknown');assert.equal(normalized.extractedData.incidentDate,null);assert.equal(normalized.extractedData.hospitalName,undefined);
@@ -38,3 +38,5 @@ test('knowledge answer endpoint services refuse guarantees and clarify without A
 });
 
 test('generic benefit-method changes do not guess payment or dividend',()=>{const r=searchKnowledge('我要變更給付方式');assert.equal(r.status,'not_found');assert.equal(r.clarification.reason,'payment_or_dividend');});
+
+test('normal claim document requirements are not classified as demands for guaranteed payout',()=>{for(const q of ['理賠一定要正本嗎','理賠一定要準備哪些文件'])assert.equal(searchKnowledge(q).status,'answered');});
