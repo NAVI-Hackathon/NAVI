@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { searchKnowledge, verifyEvidenceSnippet, verifyNavigationDestination } from '../../../shared/knowledge/index.js';
 import { searchVerifiedKnowledge } from '../../../shared/knowledge/evidence.js';
+import { isDecisionQuestion } from '../../../shared/knowledge/vocabulary.js';
 import { planNavigation } from '../../../shared/knowledge/navigationPlan.js';
 import { normalizeIntent } from '../src/schemas/intent.schema.js';
 import { answerKnowledge } from '../src/services/knowledgeAnswerService.js';
@@ -40,3 +41,5 @@ test('knowledge answer endpoint services refuse guarantees and clarify without A
 test('generic benefit-method changes do not guess payment or dividend',()=>{const r=searchKnowledge('我要變更給付方式');assert.equal(r.status,'not_found');assert.equal(r.clarification.reason,'payment_or_dividend');});
 
 test('normal claim document requirements are not classified as demands for guaranteed payout',()=>{for(const q of ['理賠一定要正本嗎','理賠一定要準備哪些文件'])assert.equal(searchKnowledge(q).status,'answered');});
+
+test('negating a request for a payout decision does not erase a separate positive request',()=>{for(const q of ['不要保證一定核賠，我只想看申請流程','不用你判斷是否給付，請提供應備文件','我沒有要你幫我推算金額，只問理賠說明'])assert.equal(isDecisionQuestion(q),false,q);assert.equal(isDecisionQuestion('不要判斷資格，請保證一定理賠'),true);});

@@ -18,7 +18,7 @@ export function paymentTopics(query) {
 }
 export function queryClarification(query) {
   const text = normalizeQuery(query).trim();
-  if (isDecisionQuestion(text)) return clarification('insurance_decision', 'NAVI 無法保證一定核賠，也不判斷保障適用或給付金額。可以協助查詢申請流程與資料準備；資格與條款請由保險公司專員確認。', ['查詢申請流程', '查詢應備文件', '聯絡客服']);
+  if (isDecisionQuestion(query)) return clarification('insurance_decision', 'NAVI 無法保證一定核賠，也不判斷保障適用或給付金額。可以協助查詢申請流程與資料準備；資格與條款請由保險公司專員確認。', ['查詢申請流程', '查詢應備文件', '聯絡客服']);
   const topics = paymentTopics(text);
   if (!topics.premium && !topics.dividend && /(?:變更|更改|修改|改).{0,4}給付方式/.test(text)) return clarification('payment_or_dividend', '你指的是保費繳費方式、紅利給付方式，還是其他服務？請先確認，避免帶到錯誤入口。', ['保費繳費方式', '紅利給付方式', '其他服務']);
   if (topics.premium && topics.dividend) return clarification('payment_or_dividend', '你想處理的是保費繳費方式、紅利給付方式，還是分開處理兩項需求？', ['保費繳費方式', '紅利給付方式', '分開處理兩項需求']);
