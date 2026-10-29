@@ -25,6 +25,7 @@ export function searchVerifiedKnowledge(query, options) {
   const results = search.results.map(entry => verifiedEvidence(entry.id, { ...options, preferredLines: search.highlights[entry.id] })).filter(Boolean);
   return KnowledgeEvidenceResponseSchema.parse({
     status: search.status === 'answered' && !results.length ? 'not_found' : search.status,
+    ...(search.clarification ? { clarification: search.clarification } : {}),
     results, hotline: search.hotline,
     disclaimer: '摘錄已與本地官網資料快照核對，並非即時官網查核；不判斷保障適用或理賠結果。',
   });

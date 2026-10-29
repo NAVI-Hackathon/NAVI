@@ -4,6 +4,8 @@ export const SYNONYMS = [
   [/^(?:需要)?(?:哪些)?文件[？?]?\s*$|^what (?:insurance claim )?documents are required[?]?\s*$/gi, '理賠申請文件'],
   [/outpatient(?: surgery| treatment)?|門診(?:小)?(?:手術|開刀)/gi, '門診 手術'],
   [/hospitali[sz]ation|inpatient|hospitali[sz]ed/gi, '住院醫療'],
+  [/premium payment|payment method|保費付款|保費繳納|扣繳方式|扣款方式|缴费方式/gi, '繳費方式'],
+  [/dividend payment|dividend option|紅利領取/gi, '紅利給付'],
   [/policy loan|borrow money|保單借貸/gi, '保單借款'],
   [/beneficiary(?: change)? form/gi, '受益人變更 表單'], [/beneficiary(?: change)?/gi, '受益人變更'],
   [/change (?:my )?address|address change|moving house/gi, '變更通訊地址'],
@@ -29,13 +31,13 @@ export function tokens(text) {
   return out;
 }
 export const TYPE_CUES = [
-  { pattern: /表單|申請書|下載|填寫|form|download/i, type: 'form', boost: 1.4 },
+  { pattern: /表單|申請書|授權書|下載|填寫|form|download/i, type: 'form', boost: 1.4 },
   { pattern: /多久|幾天|幾次|收不到|鎖住|密碼|條件|password/i, type: 'faq', boost: 1.3 },
   { pattern: /文件|準備|證明|資料|documents?|requirements?/i, type: 'claim_documents', boost: 1.2 },
 ];
 export const SERVICE_CUES = [{ pattern: /變更.*受益人|受益人.*變更|change.*beneficiary|beneficiary.*change/i, exclude: /表單|申請書|下載|form|download/i, id: 'service:change_beneficiary' }, { pattern: /官網.*(?:入口|服務)|網路保險服務|online service|website service/i, id: 'service:online_service_membership' }, { pattern: /^(?:保險理賠|保險)?醫起通(?:是什麼)?[？?]?$/, id: 'service:claim_hospital_upload' }];
 export const RANKING = Object.freeze({ title: 3, keyword: 2.5, body: 1, exactTitle: 8, partialTitle: 3, phrase: 6, phraseCoverage: .8, minCoverage: .45, minScore: 2.5, minDistinctive: 2.2, resultRatio: .6, contextPhrase: 24, outpatientBoost: 1.8, inpatientBoost: 1.4 });
-export const isDecisionQuestion = query => /買.{0,6}(險|保單)|推薦|划算|該買|買哪|要不要買|適合.*(保單|保險)|(?:能|可|會)不(?:能|可|會)?(?:以)?(?:理)?賠|能否.*(?:理賠|獲賠)|可否.*理賠|(?:能|可以|會|是否).{0,8}(?:理賠|獲賠|給付|賠)(?!表單|申請書|文件|流程|服務|方式|入口).{0,3}[嗎?？]|賠不賠|賠多少|(?:領|賠).{0,5}多少|保險金額|給付日數|給付金額|理賠金額|核准|拒賠|保障適用|符合理賠|是否.*保障|am i covered|eligible|compensation amount|will.*pay|can (?:i|we) (?:claim|get compensation|receive compensation)(?! forms?| documents?)|recommend.*insurance|(?:which|what) insurance.*(?:buy|best|choose)|should.*buy.*insurance|best.*insurance|insurance.*recommendation/i.test(String(query ?? '').normalize('NFKC').replace(/\s+/g, ' '));
+export const isDecisionQuestion = query => /(?:保證|一定|肯定|百分之百|100[%％]).{0,12}(?:理賠|核賠|給付|獲賠)|(?:理賠|核賠|給付).{0,8}(?:保證|一定|肯定)|買.{0,6}(險|保單)|推薦|划算|該買|買哪|要不要買|適合.*(保單|保險)|(?:能|可|會)不(?:能|可|會)?(?:以)?(?:理)?賠|能否.*(?:理賠|獲賠)|可否.*理賠|(?:能|可以|會|是否).{0,8}(?:理賠|獲賠|給付|賠)(?!表單|申請書|文件|流程|服務|方式|入口).{0,3}[嗎?？]|賠不賠|賠多少|(?:領|賠).{0,5}多少|保險金額|給付日數|給付金額|理賠金額|核准|拒賠|保障適用|符合理賠|是否.*保障|am i covered|eligible|compensation amount|will.*pay|can (?:i|we) (?:claim|get compensation|receive compensation)(?! forms?| documents?)|recommend.*insurance|(?:which|what) insurance.*(?:buy|best|choose)|should.*buy.*insurance|best.*insurance|insurance.*recommendation/i.test(String(query ?? '').normalize('NFKC').replace(/(?:不需要|不用|不必|不要求|無法|不能|不會|不)保證/g, ' ').replace(/\s+/g, ' '));
 export function queryProfile(text) {
   return {
     outpatient: /門診|看診|看醫生|outpatient/i.test(text),

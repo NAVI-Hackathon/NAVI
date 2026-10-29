@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { cardif, claimsUrl, formsUrl, sitePaths, officialSource as baseOfficialSource, kebab, formAnchor } from '../cardif.js';
 import { hasNegatedHospitalization } from '../hospitalization.js';
 import { queryProfile, rewrite, tokens, TYPE_CUES, SERVICE_CUES, RANKING, isDecisionQuestion } from './vocabulary.js';
+import { queryClarification, paymentTopics } from './clarification.js';
 // Isolated candidate evaluation reuses the production ranking and source checks.
 export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(snapshot.meta.syntheticDemo) } = {}) {
   const cardif = snapshot;
@@ -186,8 +187,10 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
    */
   function searchKnowledge(query, { limit = 3 } = {}) {
     const text = String(query ?? '').trim().slice(0, 500);
-    const none = status => ({ status, results: [], related: [], highlights: {}, hotline, ...(knowledgeVersion ? { knowledgeVersion } : {}) });
+    const clarification = byId.has(text) ? null : queryClarification(text);
+    const none = status => ({ ...(clarification ? { clarification } : {}), status, results: [], related: [], highlights: {}, hotline, ...(knowledgeVersion ? { knowledgeVersion } : {}) });
     if (isDecisionQuestion(text)) return none('out_of_scope');
+    if (clarification?.blocking) return none('not_found');
     if (queryProfile(text).unsupported) return none('not_found');
     const queryTokens = tokens(text);
     if (queryTokens.size === 0) return none('not_found');
@@ -195,10 +198,19 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     const profile = queryProfile(text);
     const outpatient = profile.outpatient || hasNegatedHospitalization(text);
     const exact = byId.get(text);
+    const payment = paymentTopics(text);
+    const wantsForm = /表單|申請書|授權書|下載|form|download/i.test(text);
+    const paymentIds = new Set(['service:change_payment_method', 'form:form_credit_card_auth', 'form:form_bank_auth']);
+    const dividendId = 'service:change_dividend_option';
     const ranked = indexed
+      // Subject fit comes before keyword ranking; shared form words cannot choose a different service.
+      .filter(doc => exact || !(payment.premium && !payment.dividend && doc.entry.id === dividendId) && !(payment.dividend && !payment.premium && paymentIds.has(doc.entry.id)))
       .filter(doc => doc.entry.type !== 'claim_documents' || (!outpatient && !profile.inpatient) || doc.entry.id === (outpatient ? 'claim-doc:1' : 'claim-doc:2'))
       .map(doc => {
         const scored = scoreEntry(doc, text, queryTokens);
+        if (!exact && (payment.premium && !payment.dividend && !wantsForm && doc.entry.id === 'service:change_payment_method' || payment.dividend && !payment.premium && doc.entry.id === dividendId)) {
+          scored.score += RANKING.contextPhrase; scored.coverage = Math.max(scored.coverage, RANKING.phraseCoverage); scored.specific = true;
+        }
         for (const cue of SERVICE_CUES) if (cue.id === doc.entry.id && cue.pattern.test(text) && !cue.exclude?.test(text)) scored.score += RANKING.contextPhrase;
         if (outpatient && doc.entry.id === 'claim-doc:1') {
           scored.score = scored.score * RANKING.outpatientBoost + RANKING.contextPhrase;
@@ -218,7 +230,7 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     const shown = new Set(results.map(r => r.id));
     const related = results.flatMap(r => r.relatedIds).filter(id => !shown.has(id) && byId.has(id) && (shown.add(id), true)).slice(0, 3).map(id => byId.get(id));
     const highlights = Object.fromEntries(results.map(r => [r.id, relevantLines(r, queryTokens)]));
-    return { status: 'answered', results, related, highlights, hotline, ...(knowledgeVersion ? { knowledgeVersion } : {}) };
+    return { ...(clarification ? { clarification } : {}), status: 'answered', results, related, highlights, hotline, ...(knowledgeVersion ? { knowledgeVersion } : {}) };
   }
 
   const getKnowledgeEntry = id => byId.get(id) ?? null;
