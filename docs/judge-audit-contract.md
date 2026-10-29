@@ -39,7 +39,7 @@ Request 不變。Response 仍由 `ConversationReplySchema` 驗證，新增 optio
 
 `failure={code,message,retryable}` 只含穩定公開碼及靜態繁中訊息；不轉送 Google 原始 payload、憑證或任意 exception.message。failure 出現時必須 mode=retrieval、understanding=null、errorCode=code。
 
-- 可稍後手動重試：AI_PROVIDER_ERROR、AI_TIMEOUT、AI_BUSY、AI_UNAVAILABLE、AI_USAGE_UNAVAILABLE、AI_RATE_LIMITED、AI_SESSION_RATE_LIMITED、TEST_SESSION_CAPACITY。
+- 可稍後手動重試：AI_PROVIDER_ERROR、AI_TIMEOUT、AI_BUSY、AI_UNAVAILABLE、AI_USAGE_UNAVAILABLE、AI_RATE_LIMITED、AI_SESSION_RATE_LIMITED、TEST_SESSION_CAPACITY、STORAGE_UNAVAILABLE。
 - 原請求不可立即自動重試：AI_DAILY_LIMIT_REACHED、AI_SESSION_LIMIT_REACHED、AI_REQUEST_BUDGET_REACHED、AI_PROJECT_QUOTA_REACHED、AI_COST_LIMIT_REACHED、AI_RESPONSE_INVALID、AI_SAFETY_REJECTION、AI_MODEL_UNAVAILABLE、FREE_TIER_NOT_CONFIRMED、PAID_AI_DISABLED、LIVE_AI_DISABLED_IN_CI、AI_NOT_CONFIGURED、DATA_CONSENT_REQUIRED、TEST_SESSION_REQUIRED、TEST_SESSION_DENIED。需依狀況等待、補資料、完成同意或由操作員確認設定。
 - HTTP 200 的 retrieval 回應代表「成功取得受標記的備援／澄清」，不是 AI 成功；硬性認證、儲存或請求驗證錯誤仍走既有非2xx error schema，不能一律視為可重試。
 - `X-NAVI-AI-Mode=live` 表示伺服器 Provider boundary；同一回應的 mode=retrieval 明確表示此次沒有成功生成答案。不得從 Header 推導「這則是 Gemini 成功」。Conversation 沒有新造 isMock 欄位；有 understanding 時其 isMock 為實際來源，null 時不可讀取它。

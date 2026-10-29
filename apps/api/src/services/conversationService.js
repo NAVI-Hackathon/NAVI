@@ -64,8 +64,8 @@ function mergeTasks(previous,current){return [...previous.filter(t=>!current.som
 
 // Only stable public codes/messages cross the provider boundary; never raw transport errors.
 export function conversationFailure(error) {
- const retryable = new Set(['AI_PROVIDER_ERROR','AI_TIMEOUT','AI_BUSY','AI_UNAVAILABLE','AI_USAGE_UNAVAILABLE','AI_RATE_LIMITED','AI_SESSION_RATE_LIMITED','TEST_SESSION_CAPACITY']);
- const known = new Set([...retryable,'AI_DAILY_LIMIT_REACHED','AI_SESSION_LIMIT_REACHED','AI_REQUEST_BUDGET_REACHED','AI_RESPONSE_INVALID','AI_SAFETY_REJECTION','AI_MODEL_UNAVAILABLE','AI_PROJECT_QUOTA_REACHED','AI_COST_LIMIT_REACHED','AI_NOT_CONFIGURED','DATA_CONSENT_REQUIRED','TEST_SESSION_REQUIRED','TEST_SESSION_DENIED','FREE_TIER_NOT_CONFIRMED','PAID_AI_DISABLED','LIVE_AI_DISABLED_IN_CI']);
+ const retryable = new Set(['AI_PROVIDER_ERROR','AI_TIMEOUT','AI_BUSY','AI_UNAVAILABLE','AI_USAGE_UNAVAILABLE','AI_RATE_LIMITED','AI_SESSION_RATE_LIMITED','TEST_SESSION_CAPACITY','STORAGE_UNAVAILABLE']);
+ const known = new Set([...retryable,'AI_DAILY_LIMIT_REACHED','AI_SESSION_LIMIT_REACHED','AI_REQUEST_BUDGET_REACHED','AI_RESPONSE_INVALID','AI_SAFETY_REJECTION','AI_MODEL_UNAVAILABLE','AI_PROJECT_QUOTA_REACHED','AI_COST_LIMIT_REACHED','AI_NOT_CONFIGURED','DATA_CONSENT_REQUIRED','TEST_SESSION_REQUIRED','TEST_SESSION_DENIED','DATA_INTEGRITY_ERROR','FREE_TIER_NOT_CONFIRMED','PAID_AI_DISABLED','LIVE_AI_DISABLED_IN_CI']);
  const code=known.has(error?.code)?error.code:'AI_RESPONSE_INVALID';
  const message=code.startsWith('TEST_SESSION_')?'請重新啟用核准的合成測試工作階段；目前沒有執行 AI 分析。':code==='DATA_CONSENT_REQUIRED'?'請先確認合成資料與第三方處理說明，再繼續操作。':code==='AI_DAILY_LIMIT_REACHED'||code==='AI_SESSION_LIMIT_REACHED'||code==='AI_REQUEST_BUDGET_REACHED'?'目前 AI 使用量已達設定上限；仍可查詢有來源的資料，請稍後再試。':code==='AI_TIMEOUT'?'AI 分析逾時；尚未確認新的需求，可稍後手動重試或查詢來源。':'目前 AI 暫時無法回應；可查詢有來源的資料，或稍後手動重試。';
  return {code,message,retryable:retryable.has(code)};

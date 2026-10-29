@@ -29,7 +29,7 @@ test('address and beneficiary subtype questions preserve known source without el
  assert.equal(planNavigation({sourceId:'form:form_contract_change'}).plan.steps.length,1);const steps=planNavigation({sourceId:'service:change_address'}).plan.steps;assert.equal(steps.length,2);assert.equal(new Set(steps.map(s=>s.destination.path+'#'+s.destination.anchor)).size,2);
 });
 test('provider failures expose stable actionable codes without raw transport details',()=>{
- for(const code of ['AI_PROVIDER_ERROR','AI_TIMEOUT','AI_BUSY','AI_DAILY_LIMIT_REACHED','AI_USAGE_UNAVAILABLE']){const f=conversationFailure({code,message:'secret mongodb://PRIVATE Cookie=PRIVATE'});assert.equal(f.code,code);assert.equal(f.retryable,!['AI_DAILY_LIMIT_REACHED'].includes(code));assert.doesNotMatch(JSON.stringify(f),/PRIVATE|mongodb|Cookie/);}
+ for(const code of ['AI_PROVIDER_ERROR','AI_TIMEOUT','AI_BUSY','AI_DAILY_LIMIT_REACHED','AI_USAGE_UNAVAILABLE','STORAGE_UNAVAILABLE']){const f=conversationFailure({code,message:'secret mongodb://PRIVATE Cookie=PRIVATE'});assert.equal(f.code,code);assert.equal(f.retryable,!['AI_DAILY_LIMIT_REACHED'].includes(code));assert.doesNotMatch(JSON.stringify(f),/PRIVATE|mongodb|Cookie/);}
  assert.equal(conversationFailure({code:'SECRET_UNTRUSTED_MESSAGE'}).code,'AI_RESPONSE_INVALID');
 });
 
