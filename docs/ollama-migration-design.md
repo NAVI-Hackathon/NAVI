@@ -2,9 +2,11 @@
 
 日期：2026-10-30。狀態：**設計提案，尚未實作／部署／切換 Provider**。
 
+雙模型決策更新：Text／Agent 使用 Qwen3 4B，圖片／掃描頁使用獨立 Vision Provider；先驗證既有 Qwen3.5 4B，再比較 Qwen3-VL 4B。原 OCR-first 選型改為 Vision 讀圖、OCR 輔助欄位核對，完整方案見 [視覺比較與資源計畫](ollama-vision-evaluation-plan.md)。本文件下列單元／Browser 數據保留為首次設計的 main 基準，不是新的視覺模型實測。
+
 本輪依使用者最新決策，以 Express、MongoDB Atlas 及現有 NAVI 引擎為基礎規劃；SPEC／AGENTS 中早期的 OpenAI、Turso、Cloudflare 技術描述不代表目前實作。本 PR 不修改這些協作文件、不安裝相依套件、不修改 shared 或 UI。後續契約另開 PR 與 A 對齊。
 
-配套文件：[Provider 與工具契約](ollama-provider-contract.md)、[Tunnel Staging 設計](ollama-tunnel-staging-plan.md)。這些是技術設計文件，不包含簡報、帳戶資料、環境密鑰或原始私人紀錄。
+配套文件：[Provider 與工具契約](ollama-provider-contract.md)、[Tunnel Staging 設計](ollama-tunnel-staging-plan.md)、[雙模型文件評測](ollama-vision-evaluation-plan.md)。這些是技術設計文件，不包含簡報、帳戶資料、環境密鑰或原始私人紀錄。
 
 ## 1. 版本與既有缺陷：先完成 Phase 0
 
@@ -47,12 +49,12 @@ E13：開啟 `/embed`，輸入「我要改通訊地址」，注入 `Conversation
 | 現有位置 | 保留 | 必須補的差距 |
 |---|---|---|
 | `apps/api/src/ai/provider.js` | `live/demo/unavailable` 分離、禁止假辨識 | `live` 目前固定建立 Gemini；新增 `AI_BACKEND`，最終只允許 Ollama，連不上不改走 Gemini |
-| `apps/api/src/services/gemini.service.js` | 六個方法的輸入／領域輸出介面、Prompt 與 Zod | Google payload、`inlineData`、API Key、正規化名稱不能直接改 URL 充當 Ollama |
+| `apps/api/src/services/gemini.service.js` | 六個方法的輸入／領域輸出介面、Prompt 與 Zod | Google payload、`inlineData`、API Key、正規化名稱不能直接改 URL 充當 Ollama；Facade 內分 Text／Vision，舊介面不變 |
 | `apps/api/src/config/env.js`、`config/product.js`、`ai/costGuard.js` | Production fail-closed、安全設定集中管理 | 模型 regex、Free Tier、金鑰與政策綁 Google；分離模式、Backend、模型與資源限制 |
 | `ai/modelRouter.js`、`resourceQueue.js`、`services/providerRequest.js` | FIFO、背壓、中止、整體 Deadline、錯誤分類 | 不沿用 Google Models API／跨模型備援；消除重複 Queue／重試／計數，診斷改 requestId 而非 operation 共用 Map |
 | `middleware/productSession.js`、`testSession.js` | owner／Session、同意、上傳權限與限流 | Google 專屬同意版本／文案、以 `getModelRouter()` 判斷計數的隱式規則須改；不能套用舊同意 |
 | `intent.service.js`、`shared/intelligence.js`、Web `services/apiJourney.js` | 舊 response／歷史 Journey | `meta.source` 及本地 Journey ref 只容許 `gemini/demo_fallback`；新增 `ollama` 需 A 先更新讀取者，不能把本地推論標記為 Gemini |
-| `services/documentService.js`、`documentValidationService.js` | MIME／Magic、10 MiB、SHA、qpdf／影像解碼、日期計算、Consistency | 尚無文字層抽取／OCR／欄位證據綁定，不能把 PDF／圖片原始 bytes 交給文字 Qwen 當視覺能力 |
+| `services/documentService.js`、`documentValidationService.js` | MIME／Magic、10 MiB、SHA、qpdf／影像解碼、日期計算、Consistency | 尚無文字層抽取／頁面 Render／Vision／欄位證據綁定，不能把 PDF／圖片原始 bytes 交給文字 Qwen 當視覺能力 |
 | Mongo Store／Repository、Journey／Task Service | 加密欄位、ownerId、版本、交易、Idempotency、歷程恢復 | 只補 Backend／Pipeline provenance；不建第二個資料庫或記憶體 Workflow |
 | `shared/knowledge/*`、Knowledge／Navigation Service | 本地搜尋、Source ID、原文驗證、版本、目的地白名單 | Agent 呼叫同一套服務；失敗轉 retrieval-only，不生成無來源規定／網址 |
 | Handoff Service | 遮蔽、Preview／Confirm、已知事實、`not_sent` | 本地摘要仍只能選取／整理已知事實，失敗用既有 deterministic 摘要 |
@@ -70,34 +72,35 @@ flowchart LR
   WF --> DB[(MongoDB Atlas)]
   API --> T[私有 Reverse Tunnel + mTLS]
   T --> G[家中 NAVI Gateway / 有界工作佇列]
-  G --> OCR[CPU PDF 抽取 / OCR Worker]
-  OCR --> L[文字與欄位證據]
-  G --> O[既有 Loopback Ollama / 固定 Qwen]
-  L --> O
-  O --> API
+  G --> P[CPU PDF 抽取 / Render / 核對 Worker]
+  P --> L[Text Provider / Qwen3 4B]
+  P --> V[Vision Provider / 通過評測的視覺模型]
+  G --> L
+  L --> API
+  V --> API
 ```
 
-Ollama 是最終唯一生成 Backend；Demo 留在原有獨立 Adapter。模型斷線時，Knowledge 可以回傳可驗證的原文、聯絡／導航入口與澄清，`mode: retrieval`；不得標成模型成功，不取得文件驗證分數，不用 Google 或 Fixture 頂替。
+Text 與 Vision 都透過既有 Loopback Ollama；Ollama 是最終唯一生成 Backend，任務分流不等於允許故障切外部 Provider。Demo 留在原有獨立 Adapter。模型斷線時，Knowledge 可以回傳可驗證的原文、聯絡／導航入口與澄清，`mode: retrieval`；不得標成模型成功，不取得文件驗證分數，不用 Google 或 Fixture 頂替。
 
 ## 4. 完全本地文件 Pipeline
 
 ### 4.1 選型與位置
 
-優先選 **Poppler + Tesseract（`chi_tra+eng`）CPU Worker，放家中 Ubuntu**。VPS 1 GB 只做既有上傳／權限檢查和串流轉送，不能在 VPS 開大型 OCR 常駐服務，也不假設 Qwen 有視覺能力。[Qwen 模型卡](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507)將此模型列為 Text Generation；工具和 Structured Output 仍須在指定 Ollama／模型實測。
+雙模型更新：**Poppler 直接解析文字型 PDF；掃描頁轉圖片／圖片由獨立 Vision Provider 分析**，Worker 與推論放家中 Ubuntu。VPS 1 GB 只做既有上傳／權限檢查和轉送，不做高負載頁面 Render。主 Qwen3 4B 只處理文字／Agent，不假設它能看圖；既有 Qwen3.5 與新 Qwen3-VL 的實際視覺能力須分別驗收。
 
-先比較 Tesseract `fast/best` 語料，固定版本與模型檔 SHA；[Tesseract 語言資料](https://tesseract-ocr.github.io/tessdoc/Data-Files.html)與[影像品質指引](https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html)是設定依據，不是 NAVI 正確率證據。[PaddleOCR](https://www.paddleocr.ai/main/en/version3.x/algorithm/PP-OCRv5/PP-OCRv5.html)只在同一凍結題組顯示 Tesseract 確有缺口時評估，不先加 Python／GPU 複雜依賴。安裝套件須另依 AGENTS 溝通；本輪沒有安裝。
+Tesseract `chi_tra+eng` 保留作本地文字佐證／品質對照，不強迫所有圖片先 OCR 再交給文字模型。[Tesseract 語言資料](https://tesseract-ocr.github.io/tessdoc/Data-Files.html)與[影像品質指引](https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html)是設定依據，不是 NAVI 正確率證據。先重用 Poppler／Tesseract，無已證明需求不另加 PaddleOCR 或第二套 GPU OCR；本輪沒有安裝相依套件。
 
 ### 4.2 執行步驟與信任邊界
 
 1. Express 對實際 bytes 計算 SHA、限制 MIME／副檔名／Magic／大小，驗證 owner、Session、用途同意、請求與文件權限。合成 SHA 僅識別範例，不替代檔案驗證或分析。
 2. Gateway 再驗檔案，無權限 Worker 依 qpdf、解碼器做結構檢查，拒絕加密、主動內容、附件、損壞及資源炸彈。保留現有最多 20 頁的上限；上限不代表每份 20 頁文件都能在 Deadline 內完成。
-3. 按頁處理：有文字層 PDF 使用 Poppler 文字／位置抽取；掃描頁／圖片本地 Render／OCR。混合 PDF 逐頁決定，不以整份 PDF 有幾個字就跳過其他頁。限制頁面像素、CPU、RAM、子程序、輸出長度及佇列時間；先完成一頁再處理下一頁。
-4. 保留 `pageId / label / boundingBox / extractionMethod`；對醫療／銀行關鍵欄位做文字層與可見影像對照，避免隱藏文字層欺騙。不清楚的欄位為 null，品質不足就 `needs_review`。
-5. Qwen 只接收有頁碼與標籤的文字、Schema 及必要上下文。輸出文件類型及可見欄位，不輸出 verified、readiness、資格、送件狀態或計算住院天數。文件中的指令一律是不可信資料，文件分析方法沒有工具權限。
-6. Express 驗 Zod，再把每個關鍵值綁回 Worker 的來源位置。**字串出現並不足夠**，還須符合欄位標籤、同一列／位置與允許的正規化；不得拿另一個人的姓名或一串日期填錯欄位。任意模型產生的 pageId 不算證據。
+3. 按頁處理：有可用文字層 PDF 使用 Poppler → Text Provider；掃描頁 → 受限 Render → Vision Provider，圖片解碼／正規化後直接走 Vision。混合 PDF 逐頁決定，限制像素、CPU、RAM、子程序、輸出長度及佇列時間，不把 raw PDF 當成模型可直接讀取的影像。
+4. 保留 `pageId / label / boundingBox / extractionMethod` 與原始／Render hash；對醫療／銀行關鍵欄位做文字層／OCR 與實際可見頁面對照，避免隱藏文字層或模型自行生成的引文欺騙。品質不足為 null／`needs_review`。
+5. Text Qwen 只接收文字，Vision 只接收實際頁面影像與必要 Schema。兩者都只提取可見欄位，不輸出 verified、readiness、資格、送件狀態或計算住院天數；文件分析不啟用工具。Vision 結果直接交 Backend 驗證，不預設再叫一次文字模型潤飾。
+6. Express 驗 Zod，再把關鍵值綁回來源頁面與欄位位置。**字串出現或模型聲稱看見均不足夠**，還須符合標籤／列位置及獨立抽取佐證；不把 Vision 的 bbox／confidence 當可信 Worker 證據。不確定仍不給分。
 7. Backend 沿用日期計算、跨文件姓名／院所／日期／帳戶衝突、重複 SHA 及原有 Requirement 機制。需重新驗證、低品質、矛盾或未知文件不加分；刪除仍按原規則撤回。verified 只代表欄位／一致性檢查，文件真偽與保險資格仍未驗證。
 
-初版 OCR 不承諾手寫、複雜表格、印章、低解析度及旋轉嚴重文件的可靠性。每類都要有獨立測試；不支持時說明原因並轉人工確認，不填預設臺中榮總或範例帳戶。
+初版不承諾 Vision／OCR 對手寫、複雜表格、印章、低解析度及旋轉嚴重文件的可靠性。診斷書、住院證明、存摺及表單使用同一凍結合成題組比較；表單不冒充現有診斷／銀行 Schema。詳見 [比較計畫](ollama-vision-evaluation-plan.md)。
 
 ### 4.3 資料生命週期
 
@@ -109,6 +112,8 @@ Ollama 是最終唯一生成 Backend；Demo 留在原有獨立 Adapter。模型�
 ## 5. RTX 2060 SUPER 與 Adrift 共用策略
 
 使用者提供的主機、Ollama 版本及 GPU 資訊是規劃輸入，未由本輪連線核實。[指定 Ollama tag](https://ollama.com/library/qwen3:4b-instruct-2507-q4_K_M)存在；模型檔約 2.5 GB **不等於實際 VRAM**，還有 KV Cache、Context、Workspace 與其他模型。
+
+雙模型不等於同時常駐：8 GB VRAM 先採 Text／Vision 交錯排程，兩個視覺候選也分開測；模型載入本身可能驅逐 Adrift，不只手動卸載才會影響。卸載只允許共同排程核准、確定無其他使用者的 NAVI 獨占模型；候選保留額及量測方法見 [資源與共用策略](ollama-vision-evaluation-plan.md#6-8-gb-gpu12-gb-ram-的資源預估)。
 
 | 項目 | 初版策略與限制 |
 |---|---|
@@ -147,11 +152,12 @@ Adrift 單獨、NAVI 單獨、兩者小量並行各量測 GPU VRAM、CPU、RAM�
 
 | 階段／建議 PR | 實際範圍 | 必須通過才能往下 |
 |---|---|---|
-| D：本設計 PR | 三份設計與 main 基準 | A／主機擁有者審閱，不變更 Runtime |
+| D：本設計 PR | 原三份設計、雙模型比較計畫與 main 基準 | A／主機擁有者審閱，不變更 Runtime |
 | R：既有可靠性整合 | Review／重基底 #35／#36，A 修 Renderer | E13 三種失敗狀態不 crash；既有 Journey／Grounding／還原防護／Graceful Shutdown 回歸。不可自動合併本來開啟的 PR |
 | T：Tunnel／Gateway Staging | 專用帳號、mTLS Gateway、SSH 與假 Upstream | 正負權限、公開不可連、斷線復原、Adrift Baseline；先在隔離環境，兩台主機變更另獲授權 |
-| O：Provider／契約 | OllamaProvider、設定、正規化、來源／同意／計數 | Mock HTTP：schema、abort、deadline、queue、0 Gemini；A 先支援來源新值與舊歷史讀取 |
-| F：本地文件 | Poppler／OCR Worker、欄位證據、清理 | 中文／英文／日期／表格／模糊／多頁／Injection／衝突／無關／取消；不足不加分 |
+| O：Provider／契約 | Text／Vision 私有介面、Facade、設定、來源／同意／計數 | Mock HTTP：schema、images 實際 bytes、abort、deadline、queue、0 Gemini；A 先支援來源新值與舊歷史讀取 |
+| V：模型比較 | 先既有 Qwen3.5 qualification，再 Qwen3-VL，同一凍結合成 Corpus | Field P/R/F1、漏讀／補猜、延遲、VRAM／Adrift；未實測不選定正式 Vision |
+| F：本地文件 | Poppler／Vision／OCR 核對 Worker、跨頁證據、清理 | 中文／英文／日期／表格／模糊／多頁／Injection／衝突／無關／取消；不足不加分 |
 | A：唯讀 Agent | 有界工具 registry，沿用現有服務 | owner、Schema、Source、Navigation、總 Deadline、無副作用、歷史與 task correction 回歸 |
 | E：獨立 Staging | 核准的真實本地模型／OCR／Browser及 Adrift 並行驗收 | 固定版本／分母／原始失敗紀錄；GPU 負載與外部零生成驗證 |
 | C：正式切換 PR | 使用者確認後才部署，先備份／相容性檢查 | reader-first、Rollback rehearsal、無 Google 生成、Production Marker／Mongo ready／UI／Demo／資源正常 |

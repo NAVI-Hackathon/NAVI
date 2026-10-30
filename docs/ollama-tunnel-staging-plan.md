@@ -2,6 +2,8 @@
 
 2026-10-30，設計基準 `6bc1a90d49a50344d4fde89b873bcbf622faeb38`。**本輪未 SSH、未建立帳號／Tunnel、未變更任一主機。以下設定及命令均是待審閱提案，不能直接當成已驗收部署腳本。**
 
+雙模型更新：同一私有通道承載 Text 與 Vision，Gateway 依後端操作選固定模型，禁止訪客或 Agent 任意選 tag；兩者共用 GPU 排程。先測既有 Qwen3.5，再比較 Qwen3-VL，詳細見 [視覺測試計畫](ollama-vision-evaluation-plan.md)。不新增公開 Vision Port。
+
 只規劃新 VPS `207.148.113.119` 與使用者的家中 Ubuntu。不得連線或修改舊 VPS。家中地址、SSH 路徑、實際 Ollama／OS 版本及 Adrift 拓樸尚未核實，不猜測或掃描。
 
 ## 1. 連線方向與界線
@@ -12,8 +14,8 @@ Internet Browser
       └─NAVI mTLS Client → VPS 127.0.0.1:19134（候選私有 Port）
           ═ SSH -R，由家中主動連到 VPS ═
               家中 127.0.0.1:11435（候選 NAVI 專用 HTTPS Gateway）
-                  ├─有界本地 PDF / OCR Worker
-                  └─家中 127.0.0.1:11434（既有 Ollama，不改監聽）
+                  ├─有界本地 PDF / Render / OCR 核對 Worker
+                  └─家中 127.0.0.1:11434（Text / Vision，共用 Ollama，不改監聽）
 ```
 
 兩個新增 Port 需先查占用，本輪沒有保留／測試。Nginx 不新增 Gateway 公開路由，防火牆不開 11434／11435／19134；Ollama 不綁 `0.0.0.0`，家中不需開入站 Port 或 Router Port Forward。
@@ -89,10 +91,10 @@ Host Key 從可信管道核對指紋，不使用單純 `ssh-keyscan` 輸出即�
 
 ## 4. Gateway 與模型資格檢查
 
-- Gateway 僅讓核准 Client 呼叫白名單：本機模型 metadata、受限 Chat、NAVI 文件 Job。限制 body／response／工作時間、固定模型、Schema 與產生參數；拒絕任意 model、URL、options、工具清單及檔案路徑。
-- 不代理 `/api/pull`、push、create、delete、copy、管理設定、Web Search 或其他 Cloud 功能。模型已安裝才可用，不自動下載或切模型。
+- Gateway 僅讓核准 Client 呼叫白名單：本機模型 metadata、受限 Text Chat、Vision 頁面觀察、NAVI 文件 Job。操作分別綁 Text／選定 Vision 的固定 digest；Staging 比較模型另由管理設定指定。限制 body／解碼後圖像／response／工作時間、Schema 與產生參數；拒絕訪客指定的 model、URL、options、工具清單及檔案路徑。
+- 不代理 `/api/pull`、push、create、delete、copy、管理設定、Web Search 或其他 Cloud 功能。模型已安裝才可用，不自動下載、不因失敗切模型。模型卸載若有需求，只能由家中受控 Scheduler 在共同排程確認無其他使用者後處理 NAVI 獨占模型；不將管理能力暴露給 Browser／Agent／一般 Gateway API。
 - Staging 只用 metadata 驗證 [version](https://docs.ollama.com/api-reference/get-version)、[show](https://docs.ollama.com/api-reference/show-model-details)及 [ps](https://docs.ollama.com/api/ps)，並由 `/api/tags` 取得安裝模型的完整 digest；不以 metadata check 暗中執行生成。記模型宣告能力及實際 Ollama 版本。Gateway 只投影核准 NAVI 模型的必要欄位，不公開 Adrift 模型清單、Modelfile、System Prompt 或完整模板。
-- 指定 tag 的 Structured Output／工具能力仍需後續真實本地評測。`/api/ps` 看得見載入模型不等於 GPU 可接納 NAVI 工作。
+- 指定 Text tag 的 Structured Output／工具、Vision tag 的實際 image＋Schema 能力仍需真實本地評測。`/api/ps` 看得見載入模型不等於 GPU 可接納 NAVI 工作；新模型載入也可能驅逐 Adrift，因此模型安裝／載入／卸載都要納入共同驗收窗口。
 - [Ollama FAQ](https://docs.ollama.com/faq)提供停用 Cloud 的設定；共享 Daemon 是否能停用必須先與 Adrift 擁有者核對。本輪不改全域環境、模型或網路。Gateway 先拒絕 Cloud 路徑／模型，另核對實際本地模型請求沒有雲端流量；無法證明時不能正式切換。
 
 Gateway／Worker 的 timeout、資源限制、檔案暫存清理與敏感 Log 防護見 [Pipeline 設計](ollama-migration-design.md#4-完全本地文件-pipeline)。SSH Key 不給 Gateway 進程，模型也不能要求 SSH、HTTP 或任意檔案操作。
