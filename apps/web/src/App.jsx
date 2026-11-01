@@ -38,6 +38,8 @@ const demoEntry = embedded && mockSiteOrigin ? `${mockSiteOrigin}/?navi=demo` : 
 const ARRIVAL_TIMEOUT_MS = 7000;
 const noSubscription = () => () => {};
 const tryDemo = `想先看完整流程，可以改用示範模式（${demoEntry}）。`;
+// What demo mode keeps, said wherever its tasks are listed.
+const DEMO_SCOPE = '示範模式：任務只存在這個分頁，重新整理會保留，關閉分頁即清除，不會跨裝置。';
 
 const errorCopy = {
   ...analysisErrors,
@@ -109,9 +111,10 @@ export default function App() {
   // unverified (the release has no verified place for it) or opened (standalone, a new tab).
   const [arrival, setArrival] = useState(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  // Requests from one message not handled yet (from POST /intelligence/tasks), and this browser's journeys
-  // as the server has them (formal mode). Neither is a local copy of journey state.
-  const [openTasks, setOpenTasks] = useState(null);
+  // Requests from one message (from POST /intelligence/tasks): those not handled yet, and those answered
+  // without a journey. And this browser's journeys as the service has them. In formal mode neither is a
+  // local copy of journey state; /demo keeps both in this tab (they come back after a reload).
+  const [openTasks, setOpenTasks] = useState(() => service.restoreTasks?.() ?? null);
   const [journeys, setJourneys] = useState([]);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
@@ -135,6 +138,7 @@ export default function App() {
   const fileInputs = useRef({});
   const uploads = useRef({}); // document type → AbortController of the upload in progress
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
+  useEffect(() => { service.saveTasks?.(openTasks); }, [service, openTasks]);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(reduced); }, [reduced]);
   useEffect(() => { document.documentElement.dataset.embedded = String(embedded); }, []);
   useEffect(() => { document.documentElement.dataset.guide = String(Boolean(guide)); }, [guide]);
@@ -331,7 +335,7 @@ export default function App() {
         if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
-          setOpenTasks({ split, tasks: split.tasks });
+          setOpenTasks({ split, tasks: split.tasks, answered: [] });
           reply({ kind: 'tasks', split });
           return true;
         }
@@ -349,7 +353,8 @@ export default function App() {
       setSnapshot(result.snapshot);
       // The journey opens as a card in the chat; the user enters the workspace from there.
       reply({ kind: 'journey', journeyId: result.snapshot.journey.id });
-      return true;
+      if (result.reused) notify('這件事已經有服務旅程，已切回原本那份，不會重複建立。');
+      return result.snapshot.journey.id;
     } catch (error) {
       if (ctl.signal.aborted) return false;
       // The official answers do not depend on the AI service, so they still help when it is down.
@@ -368,14 +373,19 @@ export default function App() {
     }
   }
 
-  /** Handle one task of several; the others stay listed for later. */
+  /**
+   * Handle one task of several; the others stay listed for later. A task answered without a journey stays
+   * listed as answered (to read again); one that opened a journey is in the journey list from then on.
+   */
   async function pickTask(split, task) {
     const understanding = understandingOfTask(split, task);
     const handled = await send(task.input, task.input, understanding ? { understanding, split } : null);
     if (handled) setOpenTasks(current => {
       if (current?.split !== split) return current;
       const tasks = current.tasks.filter(other => other.id !== task.id);
-      return tasks.length ? { split: current.split, tasks } : null;
+      const others = (current.answered ?? []).filter(other => other.id !== task.id);
+      const answered = typeof handled === 'string' ? others : [...others, task];
+      return tasks.length || answered.length ? { split: current.split, tasks, answered } : null;
     });
   }
   /** From the workspace: back to the chat, where the chosen request is handled. */
@@ -628,7 +638,7 @@ export default function App() {
       setGuide(null);
       goLanding();
     }
-    notify(service.forgetJourney ? '已從這個瀏覽器移除這件事；NAVI 服務上的案件會在 1 小時內自動失效。' : '已移除這件事的示範資料。');
+    notify(service.mode === 'demo' ? '已移除這件事的示範資料。' : '已從這個瀏覽器移除這件事；NAVI 服務上的案件會在 1 小時內自動失效。');
   }
 
   function reset() {
@@ -707,12 +717,12 @@ export default function App() {
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
                 preparation={snapshot.journey.workflowId?<ServiceWorkflow snapshot={snapshot} service={service} onUpdate={setSnapshot}/>:null}
-                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} />}
+                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} note={mode === 'demo' ? DEMO_SCOPE : null} />}
               />
             ) : (
               <Landing
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot} openTasks={openTasks}
-                journeysSlot={journeyList.length > (snapshot ? 1 : 0) ? <TaskBar variant="chat" journeys={journeyList} busy={analysisPhase !== null} onSwitch={switchJourney} /> : null}
+                journeysSlot={journeyList.length > (snapshot ? 1 : 0) || openTasks?.answered?.length ? <TaskBar variant="chat" journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null} onSwitch={switchJourney} onPickOpen={pickTask} note={mode === 'demo' ? DEMO_SCOPE : null} /> : null}
                 onSwitchJourney={service.switchJourney ? switchJourney : null}
                 dock={guideLayer} offline={offline} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}

@@ -105,7 +105,7 @@ export function PrivacyDialog({ snapshot, formal, onRemoveData, onForget, onClos
         ) : (
           <>
             <dt>示範模式</dt><dd>所有內容只在這個分頁中處理，使用示範資料；你的檔案不會被讀取或上傳。</dd>
-            <dt>保留多久</dt><dd>關閉分頁後清除。</dd>
+            <dt>保留多久</dt><dd>任務與服務旅程只存在這個分頁：重新整理後仍在，關閉分頁即清除；不會上傳，也無法在其他裝置繼續。</dd>
           </>
         )}
       </dl>

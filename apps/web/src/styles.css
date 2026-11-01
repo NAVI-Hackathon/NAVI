@@ -761,6 +761,8 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .task-chip.is-current { border-color: var(--color-accent-line); background: var(--color-accent-soft); }
 .task-chip.is-current svg { color: var(--color-accent); }
 .task-chip.is-open { border-style: dashed; }
+.task-chip.is-answered svg { color: var(--color-accent); }
+.task-bar-note { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--color-text-muted); }
 .task-chip:disabled { opacity: 0.55; }
 .task-bar-chat { margin: 14px 0 0; }
 .chat-composer { margin: 0; }
