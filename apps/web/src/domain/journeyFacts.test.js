@@ -20,12 +20,12 @@ test('demo: unknown → certificate → replaced → removed, every statement fo
   const uploaded = (await service.uploadDocument('diagnosis_certificate', { sample: true })).journey;
   const facts = hospitalFacts(uploaded);
   assert.deepEqual([facts.name, facts.source, facts.listed], ['臺中榮民總醫院', 'certificate', true]);
-  assert.equal(hospitalLabel(facts), '臺中榮民總醫院（來自診斷書）');
+  assert.equal(hospitalLabel(facts), '臺中榮民總醫院（診斷書記載）');
   assert.equal(partnerLabel(facts), '合作名單內・資格待確認', 'on the list is not eligibility');
   assert.ok(facts.toConfirm.length > 0, 'the conditions still to confirm are named');
   assert.equal(hospitalStep(uploaded).done, true);
   assert.doesNotMatch(hospitalStep(uploaded).text, /還不知道/);
-  assert.match(hospitalStep(uploaded).text, /依診斷書.*臺中榮民總醫院.*仍需確認，請留意：/);
+  assert.match(hospitalStep(uploaded).text, /依診斷書記載.*臺中榮民總醫院.*仍需確認，請留意：/);
 
   const replaced = service.submitManual('diagnosis_certificate', manual('長庚醫院')).journey;
   assert.deepEqual([hospitalFacts(replaced).name, hospitalFacts(replaced).listed], ['長庚醫院', false]);
@@ -37,12 +37,14 @@ test('demo: unknown → certificate → replaced → removed, every statement fo
   assert.equal(hospitalStep(removed).done, false);
 });
 
-test('demo: the description names the hospital until a certificate names another', async () => {
+test('demo: a hospital no document names is shown without a source; a certificate then names its own', async () => {
   const service = demo();
   const { snapshot } = await service.analyze('我在長庚醫院住院三天，想申請理賠');
-  assert.equal(hospitalLabel(hospitalFacts(snapshot.journey)), '長庚醫院（來自你的描述）');
+  assert.equal(hospitalLabel(hospitalFacts(snapshot.journey)), '長庚醫院');
+  assert.equal(hospitalFacts(snapshot.journey).source, null);
+  assert.doesNotMatch(hospitalStep(snapshot.journey).text, /描述|診斷書記載/);
   const uploaded = (await service.uploadDocument('diagnosis_certificate', { sample: true })).journey;
-  assert.equal(hospitalLabel(hospitalFacts(uploaded)), '臺中榮民總醫院（來自診斷書）');
+  assert.equal(hospitalLabel(hospitalFacts(uploaded)), '臺中榮民總醫院（診斷書記載）');
 });
 
 test('formal journey: the server context and its own list of conditions to confirm', () => {
