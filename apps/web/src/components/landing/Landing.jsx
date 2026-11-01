@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Icon from '../Icon.jsx';
+import ErrorBoundary from '../ErrorBoundary.jsx';
 import AnalysisSequence from './AnalysisSequence.jsx';
 import AnswerCard from '../knowledge/AnswerCard.jsx';
 import { ReadinessRing } from '../workspace/ReadinessPanel.jsx';
@@ -56,6 +57,19 @@ function RetryOptions({ retry, busy, mode, onSend }) {
   );
 }
 
+/** One reply that could not be shown: say so in its place; the rest of the chat and the input keep working. */
+function BrokenMessage() {
+  return (
+    <div className="msg msg-navi">
+      <span className="msg-avatar" aria-hidden="true">N</span>
+      <div className="msg-bubble">
+        <p className="chat-title tone-error"><Icon name="alert" size={15} />這則回覆無法顯示</p>
+        <p className="chat-text">其他對話不受影響，可以換個說法再問一次。</p>
+      </div>
+    </div>
+  );
+}
+
 /** The journey NAVI opened: a compact card in the chat, entered with 開啟工作區. */
 function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   const current = snapshot?.journey.id === message.journeyId ? snapshot.journey : null;
@@ -95,14 +109,18 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
       </>
     );
   } else if (message.kind === 'answers') {
-    const first = message.result.results[0];
+    // Built by answersMessage (domain/chatAnswers.js); still read defensively, whatever the reply held.
+    const first = message.result?.results?.[0];
+    const hotline = message.result?.hotline;
     body = (
       <>
         {message.notice && <p className="chat-notice" role="note">{message.notice}</p>}
         {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
-        {message.followUp.showAnswers
-          ? <><p className="chat-text">在官網資料中找到：</p><AnswerCard entry={first} onNavigate={onNavigate} compact expandable highlights={message.result.highlights[first.id]} headingLevel={3} /></>
-          : null}
+        {!first
+          ? <p className="chat-text">官網資料中沒有找到可以直接引用的說明{hotline ? `，可以換個說法再問，或洽客服專線 ${hotline}` : '，可以換個說法再問'}。</p>
+          : message.followUp?.showAnswers !== false
+            ? <><p className="chat-text">在官網資料中找到：</p><AnswerCard entry={first} onNavigate={onNavigate} compact expandable highlights={message.result.highlights?.[first.id]} headingLevel={3} /></>
+            : null}
       </>
     );
   } else if (message.kind === 'tasks') {
@@ -218,8 +236,10 @@ export default function Landing({ messages, analysisPhase, snapshot, openTasks =
             <motion.div key={message.id} layout="position" variants={fadeUp} initial="hidden" animate="show">
               {message.role === 'user'
                 ? <div className="msg msg-user"><p className="msg-bubble">{message.text}</p></div>
-                : <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot} openTasks={openTasks} journeysSlot={journeysSlot}
-                  onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />}
+                : <ErrorBoundary name="chat message" fallback={() => <BrokenMessage />}>
+                  <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot} openTasks={openTasks} journeysSlot={journeysSlot}
+                    onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />
+                </ErrorBoundary>}
             </motion.div>
           ))}
           {busy && (

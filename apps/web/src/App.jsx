@@ -13,9 +13,10 @@ import { useHostBridge } from './hooks/useHostBridge.js';
 import { useOnline } from './hooks/useOnline.js';
 import { applyNavigationReply, newNavigationId, naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
+import { answersMessage } from './domain/chatAnswers.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
-import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
+import { followUpForClarification, followUpForRefusal } from './domain/followUps.js';
 import Icon from './components/Icon.jsx';
 import GuideCard from './components/guide/GuideCard.jsx';
 import { journeyPrerequisites, serviceSteps, singleStepPlan } from './domain/guidance.js';
@@ -305,7 +306,7 @@ export default function App() {
     const knowledge = searchKnowledge(text);
     if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return true; }
     const answered = knowledge.status === 'answered';
-    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text) });
+    const answers = notice => answersMessage(knowledge, text, { notice });
     setAnalysisPhase(0);
     const step = reduced ? 0 : 520;
     const startedAt = performance.now();
@@ -318,7 +319,15 @@ export default function App() {
         // Several independent requests: list them and let the user choose one; nothing opens on its own.
         const split = await service.understandTasks(text, { signal: ctl.signal });
         if(split?.productReply?.correctionRequired){reply({kind:'note',tone:'info',title:'請選擇要修正的事情',body:split.productReply.answer});return;}
-        if(split?.productReply&&!split.productReply.understanding){const p=split.productReply;reply(p.evidence.status==='answered'?{kind:'answers',result:service.knowledgeResult(p),notice:p.errorCode?'AI 暫時無法回應，以下為已核對來源的資料。':undefined}:{kind:'note',tone:'info',title:'下一步',body:p.answer});return;}
+        if(split?.productReply&&!split.productReply.understanding){
+          // The server answered from official sources only (retrieval), e.g. because the AI failed: show the
+          // sources and say why; the request is retried only by hand, and never replaced by demo results.
+          const p=split.productReply;
+          const failed=p.errorCode?(errorCopy[p.errorCode]??['AI 分析暫時無法使用', '請稍後再按「重新分析」。']):null;
+          const again=failed?{retry:{text,label}}:{};
+          if(p.evidence.status==='answered')reply(answersMessage(service.knowledgeResult(p),text,{notice:failed?`${failed[0]}，以下是已核對來源的官網資料。`:undefined,...again}));
+          else reply({kind:'note',tone:failed?'error':'info',title:failed?failed[0]:'下一步',body:failed?`${failed[1]}${p.answer?` ${p.answer}`:''}`:p.answer,...again});
+          return;}
         if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
