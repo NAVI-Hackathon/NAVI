@@ -123,6 +123,9 @@ export default function App() {
     if (message.type === 'host:navigated') setArrival(current => applyNavigationReply(current, message));
   });
   const reduced = reduceMotion || systemReduced;
+  // 改用示範模式 inside the insurer site: the site switches (and remembers it for this tab, NAVI-004);
+  // without a verified host the link itself opens the demo entry.
+  const chooseDemo = event => { if (embedded && host.send(naviMessage('navi:mode', { mode: 'demo' }))) event.preventDefault(); };
   // Formal mode needs the NAVI service; /demo works offline (everything is local).
   const offline = !useOnline() && !service.capabilities.manualEntry;
   const wasOffline = useRef(false);
@@ -696,7 +699,7 @@ export default function App() {
           />
         )}
         {serverDemo && <p className="demo-banner" role="note">NAVI 服務目前以示範資料回答，不是 AI 分析：需求理解與文件辨識都是固定的合成結果，只供體驗流程。</p>}
-        {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'}>示範模式</a>體驗完整流程。</p>}
+        {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'} onClick={chooseDemo}>示範模式</a>體驗完整流程。</p>}
         {offline && <p className="network-banner" role="status"><Icon name="alert" size={13} />目前沒有網路連線：NAVI 暫停送出與上傳，已有的內容不會遺失。</p>}
         {recovery&&<AccountRecoveryDialog service={service} {...recovery} onClose={()=>{history.replaceState(null,'',location.pathname);setRecovery(null);setProductDialog('data');}}/>}
         {productDialog&&<ProductDataDialog service={service} consentOnly={productDialog==='consent'} onClose={()=>setProductDialog(null)} onJourney={next=>{setSnapshot(next);goWorkspace();}} onDeleted={reset}/>}
@@ -724,7 +727,7 @@ export default function App() {
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot} openTasks={openTasks}
                 journeysSlot={journeyList.length > (snapshot ? 1 : 0) || openTasks?.answered?.length ? <TaskBar variant="chat" journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null} onSwitch={switchJourney} onPickOpen={pickTask} note={mode === 'demo' ? DEMO_SCOPE : null} /> : null}
                 onSwitchJourney={service.switchJourney ? switchJourney : null}
-                dock={guideLayer} offline={offline} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                dock={guideLayer} offline={offline} onDemo={chooseDemo} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
