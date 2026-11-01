@@ -82,7 +82,7 @@ function BrokenMessage() {
 /** The journey NAVI opened: a compact card in the chat, entered with 開啟工作區. */
 function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   const current = snapshot?.journey.id === message.journeyId ? snapshot.journey : null;
-  // Formal mode keeps earlier journeys (read back from the server on switching); /demo holds one.
+  // Earlier journeys are kept (formal: read back from the server on switching; /demo: in this tab).
   if (!current && onSwitch) {
     return (
       <div className="chat-journey-past">

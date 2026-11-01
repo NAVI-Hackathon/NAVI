@@ -2,6 +2,7 @@ import { createJourneyService } from './naviService.js';
 import { createApiJourneyService } from './apiJourney.js';
 import { understandIntent } from './intelligence.js';
 import { mockUnderstanding } from '../mocks/understanding.js';
+import { mockTasks } from '../mocks/tasks.js';
 
 function safeSessionStorage() {
   try { return globalThis.sessionStorage ?? null; } catch { return null; }
@@ -10,7 +11,7 @@ function safeSessionStorage() {
 /** Mock Adapter: no network. Golden Path is always reproducible, even with the API down. */
 export function createMockAdapter({ storage = safeSessionStorage(), analysisDelayMs = 650, documentDelayMs = 1000 } = {}) {
   return createJourneyService({
-    mode: 'demo', storage, storageKey: 'navi.demo.journey', documentDelayMs,
+    mode: 'demo', storage, storageKey: 'navi.demo.journey', documentDelayMs, splitTasks: mockTasks,
     understand: (message, { signal } = {}) => new Promise((resolve, reject) => {
       signal?.throwIfAborted();
       const timer = setTimeout(() => resolve(mockUnderstanding(message)), analysisDelayMs);
