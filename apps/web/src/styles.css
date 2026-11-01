@@ -151,8 +151,10 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .story-card { position: relative; isolation: isolate; }
 .story-surface { position: absolute; inset: -12px -14px 10px; z-index: -1; border-radius: var(--radius); background: transparent; }
 .story-text { margin-top: 9px; font-size: 13px; line-height: 1.9; color: var(--color-text-secondary); }
-.insight-summary { font-size: 12px; line-height: 1.9; color: var(--color-text-secondary); }
-.insight-facts { display: grid; gap: 8px; margin-top: 16px; }
+.insight-origin { font-size: 13px; line-height: 1.8; color: var(--color-text-secondary); }
+.insight-now { margin-top: 14px; }
+.insight-facts dd { overflow-wrap: anywhere; }
+.insight-facts { display: grid; gap: 8px; margin-top: 8px; }
 .insight-facts div { display: flex; justify-content: space-between; gap: 12px; }
 .insight-facts dt { font-size: 10px; color: var(--color-text-muted); }
 .insight-facts dd { font-size: 12px; text-align: right; }

@@ -43,7 +43,8 @@ test('a non-partner hospital routes to 理賠聯盟鏈 instead of 醫起通', as
   const { snapshot } = await service.analyze('我在長庚醫院住院三天，想申請理賠');
   assert.equal(snapshot.journey.claimContext.hospital.partner, false);
   assert.equal(snapshot.journey.claimContext.channels.find(c => c.id === 'hospital_upload').available, false);
-  await service.uploadDocument('diagnosis_certificate', { sample: true });
+  // The certificate names the hospital from then on (the sample's is a partner, so enter this one by hand).
+  service.submitManual('diagnosis_certificate', { patientName: '王小明', hospitalName: '長庚醫院', admissionDate: '2026-09-28', dischargeDate: '2026-10-02', diagnosis: '示範' });
   await service.uploadDocument('bank_passbook', { sample: true });
   assert.equal(service.confirm().journey.nextAction.target, 'union_chain');
 });
