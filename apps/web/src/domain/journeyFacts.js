@@ -5,7 +5,7 @@
 import { channelStatus } from './channels.js';
 
 /**
- * @returns {{ name: string|null, source: 'certificate'|'description'|null, listed: boolean|null,
+ * @returns {{ name: string|null, source: 'certificate'|null, listed: boolean|null,
  *   eligibility: string|null, toConfirm: string[] }}
  *   listed: on the 醫起通 partner snapshot list (null while the hospital is unknown).
  *   toConfirm: the 醫起通 conditions still to confirm — the server's own list, else the official notes.
@@ -14,8 +14,9 @@ export function hospitalFacts(journey) {
   const hospital = journey.claimContext?.hospital ?? null;
   if (!hospital) return { name: null, source: null, listed: null, eligibility: null, toConfirm: [] };
   const certificate = journey.documents?.find(doc => doc.documentType === 'diagnosis_certificate' && doc.status === 'verified');
-  // claimContext has no source field: the certificate is the source when it names this hospital.
-  const source = certificate?.fields?.hospitalName === hospital.mentioned ? 'certificate' : 'description';
+  // claimContext has no provenance field yet: only a verified certificate naming this hospital is said to be
+  // its source; anything else is shown without one (never assumed to be the user's own words).
+  const source = certificate?.fields?.hospitalName === hospital.mentioned ? 'certificate' : null;
   const channel = journey.claimContext.channels?.find(item => item.id === 'hospital_upload');
   const shown = channel ? channelStatus(channel, hospital) : null;
   const toConfirm = !hospital.partner || shown?.eligibility === 'eligible' ? []
@@ -23,10 +24,10 @@ export function hospitalFacts(journey) {
   return { name: hospital.matchedName ?? hospital.mentioned, source, listed: hospital.partner, eligibility: shown?.eligibility ?? null, toConfirm };
 }
 
-/** 「臺中榮民總醫院（來自診斷書）」, or 待確認. */
+/** 「臺中榮民總醫院（診斷書記載）」, the name alone when no document names it, or 待確認. */
 export function hospitalLabel(facts) {
   if (!facts.name) return '待確認';
-  return `${facts.name}（${facts.source === 'certificate' ? '來自診斷書' : '來自你的描述'}）`;
+  return facts.source === 'certificate' ? `${facts.name}（診斷書記載）` : facts.name;
 }
 
 /** 醫起通 in a few words: on the list is not eligibility. */
@@ -40,7 +41,7 @@ export function partnerLabel(facts) {
 export function hospitalStep(journey) {
   const facts = hospitalFacts(journey);
   if (!facts.name) return { done: false, text: '還不知道住院的醫院，上傳診斷書或住院證明後會確認。' };
-  const from = facts.source === 'certificate' ? '依診斷書，' : '依你的描述，';
+  const from = facts.source === 'certificate' ? '依診斷書記載，' : '';
   if (!facts.listed) {
     return { done: true, text: `${from}住院醫院是「${facts.name}」，快照中未比對到醫起通合作院所，可改用理賠聯盟鏈或郵寄申請；若是合作院所，請提供醫院全名。` };
   }
