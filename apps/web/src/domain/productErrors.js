@@ -1,6 +1,8 @@
 // What NAVI says for the persistent service's errors (A3 contract). [title, body] like errorCopy in App.
 // The server's own messages stay generic on purpose; these say what happened and what the user can do.
 
+import { userMessage } from './userMessage.js';
+
 export const productErrors = {
   AUTH_REQUIRED: ['請先登入', '登入後才能查看與保存你的服務歷程；NAVI 不會自動重送剛才的內容。'],
   SESSION_EXPIRED: ['登入已過期', '請重新登入後再繼續；NAVI 不會自動重送剛才的內容。'],
@@ -18,9 +20,10 @@ export const productErrors = {
 /** Conflicts: another tab, device or request already changed things. Read the latest state; never re-send. */
 export const reloadCodes = new Set(['TASK_STALE', 'IDEMPOTENCY_CONFLICT', 'CONVERSATION_INCOMPLETE', 'JOURNEY_BUSY']);
 
-/** One line for a toast or an inline alert: ours when we know the code, else the server's message. */
+/** One line for a toast or an inline alert: ours when we know the code, else the server's message when it
+ *  reads as Chinese prose (never a raw code, NAVI-011), else the fallback. */
 export function errorNotice(error, fallback = '目前暫時無法處理，請稍後再試。') {
   const copy = productErrors[error?.code];
   if (copy) return `${copy[0]}：${copy[1]}`;
-  return error?.message && error?.code ? error.message : fallback;
+  return userMessage(error?.code && error, fallback);
 }
