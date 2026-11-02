@@ -25,7 +25,7 @@ export function retrieveKnowledge(query) {
   const topic = /延誤證明|delay certificate/i.test(query) ? 'why-delay' : /文件|document|登機證/i.test(query) ? 'documents' : /理賠|保障|coverage|claim/i.test(query) ? 'coverage' : null;
   const entry = unrelatedService ? null : faq.find(item => item.id === query || item.title === query || item.id === topic);
   // Archived flight disclaimer stays accessible for old tests; never enters public search.
-  return entry ? { answer: entry.answer, sources: getSources(entry.sourceIds), isMock: true, found: true } : { ...search, answer: '目前提供的資料不足以確認，請補充問題或由專員協助。', sources: [], isMock: true, found: false };
+  return entry ? { answer: entry.answer, sources: getSources(entry.sourceIds), isMock: true, found: true } : { ...search, answer: search.clarification?.question ?? '目前提供的資料不足以確認，請補充問題或由專員協助。', sources: [], isMock: true, found: false };
 }
 
 export function retrieveAnswerContext(query) {
