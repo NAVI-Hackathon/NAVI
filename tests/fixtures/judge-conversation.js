@@ -12,5 +12,8 @@ export const judgeConversationFixtures={
  noResults:reply({answer:'目前提供的資料不足以確認。',evidence:searchVerifiedKnowledge('土星導航演唱會')}),
  clarification:(()=>{const e=searchVerifiedKnowledge('我不知道要辦什麼。');return reply({answer:e.clarification.question,evidence:e,clarification:e.clarification});})(),
  insuranceBoundary:(()=>{const e=searchVerifiedKnowledge('幫我保證一定可以理賠。');return reply({answer:e.clarification.question,evidence:e,clarification:e.clarification});})(),
+ // Merged from A's NAVI-001 fixture (tests/fixtures/conversation-replies.json, now removed):
+ retrievalAnswered:reply({}),
+ timeoutNoSource:reply({answer:'目前 AI 暫時無法回應。你仍可查詢服務資料，或補充希望辦理的事情。',evidence:searchVerifiedKnowledge('土星導航演唱會'),errorCode:'AI_TIMEOUT',failure:{code:'AI_TIMEOUT',message:'AI 分析逾時，請稍後手動重試。',retryable:true}}),
  aiSuccess:reply({mode:'live',understanding:{tasks:[{id:'task-1',input:'我要改通訊地址',data:{intent:'service_request',serviceType:'policy_change',summary:'使用者希望了解保單資料變更的辦理方式。',confidence:.9,extractedData:{origin:null,destination:null,delayMinutes:null,incidentDate:null}},outcome:'preview'}],nextStep:'confirm_one_task',provider:'live',isMock:false,disclaimer:'測試替身回覆，不是 Google 模型品質證據。'}}),
 };
