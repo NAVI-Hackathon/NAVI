@@ -35,3 +35,10 @@ test('every recovery copy is Chinese, never a code', () => {
     assert.doesNotMatch(title + fallback, RAW, String(code));
   }
 });
+
+test('formal-mode notices: known codes have our copy; an unknown code never shows the raw message', async () => {
+  const { errorNotice } = await import('./productErrors.js');
+  assert.match(errorNotice({ code: 'SESSION_EXPIRED', message: 'SESSION_EXPIRED' }), /登入已過期/);
+  assert.equal(errorNotice({ code: 'SOMETHING_NEW', message: 'SOMETHING_NEW' }, '請稍後再試。'), '請稍後再試。');
+  assert.equal(errorNotice({ code: 'SOMETHING_NEW', message: '伺服器說明。' }), '伺服器說明。');
+});
