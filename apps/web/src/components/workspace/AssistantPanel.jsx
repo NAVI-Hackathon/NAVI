@@ -15,7 +15,7 @@ function suggestionFor(snapshot) {
   const target = journey.nextAction.target;
   if (target === 'diagnosis_certificate') return '先從診斷書開始：它能確認醫院、住院期間與病名，是後續申請的主要文件。';
   if (target === 'bank_passbook') return '理賠金以匯款給付，準備好存摺封面影本，確認戶名與帳號清楚可辨識。';
-  if (journey.nextAction.type === 'REVIEW_INFORMATION') return '兩份文件都已辨識。確認資料無誤後，記得下載並填妥保險金申請書。';
+  if (journey.nextAction.type === 'REVIEW_INFORMATION') return '兩份文件都已辨識。確認資料無誤後，記得另外取得並填妥保險金申請書。';
   return journey.nextAction.description;
 }
 

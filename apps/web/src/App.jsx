@@ -26,6 +26,7 @@ import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 import { documentRecovery } from './domain/documentRecovery.js';
+import { userMessage } from './domain/userMessage.js';
 
 const embedded = isEmbedPath(location.pathname);
 const mode = resolveMode(location);
@@ -229,7 +230,7 @@ export default function App() {
     catch (error) {
       if (error?.code === 'JOURNEY_NOT_FOUND') expire();
       else if (error?.code === 'JOURNEY_STALE') await reloadStale();
-      else notify(error?.message && error?.code ? error.message : '目前暫時無法處理，請稍後再試。');
+      else notify(userMessage(error?.code && error, '目前暫時無法處理，請稍後再試。'));
       return null;
     }
   }
@@ -413,7 +414,7 @@ export default function App() {
     } catch (error) {
       if (error?.name === 'AbortError') return;
       if (error?.code === 'JOURNEY_NOT_FOUND') notify('這件事的服務旅程已失效（超過 1 小時或服務重新啟動），已從清單移除；其他事情不受影響。');
-      else notify(error?.message && error?.code ? error.message : '目前無法讀取這件事，請確認網路後再試一次。');
+      else notify(userMessage(error?.code && error, '目前無法讀取這件事，請確認網路後再試一次。'));
       refreshJourneys();
     }
   }
@@ -439,7 +440,7 @@ export default function App() {
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
       if (error?.code === 'JOURNEY_STALE') { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); await reloadStale(); return; }
       // Server messages (e.g. 文件類型與目前服務需求不同, JOURNEY_BUSY) are written for the user.
-      const message = error?.code && error.message ? error.message : null;
+      const message = userMessage(error?.code && error, null);
       // The file stays in memory only, so「再試一次」can send the same file again when the user asks.
       const retrySource = documentRecovery(error?.code).actions.includes('retry') ? source : null;
       setDocStates(s => ({ ...s, [type]: { status: 'failed', code: error?.code ?? null, message, retrySource } }));
@@ -770,7 +771,7 @@ export default function App() {
                   return null;
                 } catch (error) {
                   if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return null; }
-                  return error?.code && error.message ? error.message : '目前無法修正，請稍後再試。';
+                  return userMessage(error?.code && error, '目前無法修正，請稍後再試。');
                 }
               }} />
           )}
