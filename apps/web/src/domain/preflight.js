@@ -1,6 +1,7 @@
 // Claim Preflight: sort the journey's requirements into groups the user can act on.
 // The grouping follows the server's reason codes (GET /journeys/:id/explanation, shared/competition.js).
 // /demo has no server, so localCriteria() mirrors the same rules; nothing is scored here.
+import { hospitalFacts, partnerLabel } from './journeyFacts.js';
 import { maskAccount, stayText } from '../content/format.js';
 
 const DOCUMENT_TYPES = new Set(['diagnosis_certificate', 'bank_passbook', 'boarding_pass', 'delay_certificate']);
@@ -32,7 +33,10 @@ function obtainedDetail(journey, requirement) {
   const days = journey.claimContext?.inpatient?.days;
   switch (requirement.id) {
     case 'incident': return '已整理你的住院情況';
-    case 'service': return journey.claimContext?.hospital?.matchedName ? `${journey.claimContext.hospital.matchedName}・醫起通合作醫院` : '已辨識為住院醫療理賠';
+    case 'service': {
+      const hospital = hospitalFacts(journey);
+      return hospital.name ? `已辨識為住院醫療理賠・${hospital.name}（醫起通：${partnerLabel(hospital)}）` : '已辨識為住院醫療理賠';
+    }
     case 'diagnosis_certificate': {
       const fields = documentOf(journey, 'diagnosis_certificate')?.fields ?? {};
       return [fields.hospitalName, fields.admissionDate && stayText(fields.admissionDate, fields.dischargeDate)].filter(Boolean).join('・') || '文件已驗證';
