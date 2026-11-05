@@ -168,7 +168,7 @@ function hospitalNextAction(session, partner) {
     return { type: 'UPLOAD_DOCUMENT', target: 'bank_passbook', title: '請上傳存摺影本', description: `${passbookRule}。`, destination: destinations.rules };
   }
   if (!session.confirmed) {
-    return { type: 'REVIEW_INFORMATION', target: null, title: `確認資料並填寫${applicationForm}`, description: '確認辨識出的資料，並下載保險金申請書填寫簽名。', destination: destinations.form };
+    return { type: 'REVIEW_INFORMATION', target: null, title: `確認資料並填寫${applicationForm}`, description: '確認辨識出的資料，並取得保險金申請書填寫簽名（NAVI 不提供表單檔案）。', destination: destinations.form };
   }
   return partner
     ? { type: 'PROCEED_TO_SERVICE', target: 'hospital_upload', title: '透過醫起通申請理賠', description: `你的醫院在醫起通合作院所名單上，能否使用此管道仍需確認。${reminders.hospitalStillNeedsCertificate}。`, destination: destinations.hospitalUpload }

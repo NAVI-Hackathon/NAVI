@@ -10,7 +10,7 @@ import { TaskUnderstandingSchema } from '../../../../shared/serviceTasks.js';
 import { journeySummary } from './apiJourney.js';
 
 export class DocumentRecognitionError extends Error {
-  constructor() { super('DOCUMENT_RECOGNITION_FAILED'); this.code = 'DOCUMENT_RECOGNITION_FAILED'; }
+  constructor() { super('示範：這次沒有辨識出文件內容（模擬的辨識失敗）。'); this.code = 'DOCUMENT_RECOGNITION_FAILED'; }
 }
 
 function wait(ms, signal) {

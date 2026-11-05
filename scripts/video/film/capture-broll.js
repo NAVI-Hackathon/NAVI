@@ -207,7 +207,7 @@ async function journeySet(browser, dir, contextOptions) {
   await shot(page, dir, 'workspace-90', { marks: [ring(page)] });
   await page.getByRole('button', { name: '確認資料' }).first().click();
   await pause(1000);
-  for (const label of [/我已確認以上資料正確/, /我已下載並填妥/]) await page.getByText(label).click();
+  for (const label of [/我已確認以上資料正確/, /我已另外取得並填妥/]) await page.getByText(label).click();
   await shot(page, dir, 'review-dialog', { marks: [['使用者確認資料後才進下一步', page.getByRole('dialog')]] });
   await page.getByRole('dialog').getByRole('button', { name: '確認資料' }).click();
   await page.getByText('100', { exact: true }).first().waitFor({ timeout: 20_000 });

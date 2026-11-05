@@ -20,6 +20,7 @@ export function documentRecovery(code) {
   if (code === 'BANK_INFORMATION_MISMATCH') return { kind: 'conflict', title: '文件與你先前提供的資訊不一致', fallback: '請確認先前提供的資訊，或由專員協助。', actions: ['manual', 'reselect', 'handoff'] };
   if (noRecognition.includes(code)) return { kind: 'unavailable', title: '目前無法辨識上傳的文件', fallback: '可以先提供資訊（尚未驗證），或由專員協助。', actions: ['manual', 'handoff'] };
   if (quota.includes(code)) return { kind: 'quota', title: '目前無法進行 AI 辨識', fallback: '今日或這次體驗的辨識額度已用完，可以先提供資訊，或稍後再試。', actions: ['manual', 'handoff'] };
+  if (code === 'DOCUMENT_RECOGNITION_FAILED') return { kind: 'unrecognized', title: '這次沒有辨識出文件內容', fallback: '可以用同一份文件再試一次、改選較清楚的文件，或先提供資訊。', actions: ['retry', 'reselect', 'manual'] };
   if (transient.includes(code)) return { kind: 'transient', title: '這次沒有完成辨識', fallback: '連線或服務暫時不穩定，可以用同一份文件再試一次。', actions: ['retry', 'reselect'] };
   return { kind: 'unknown', title: '暫時無法辨識這份文件', fallback: '可以重新上傳較清楚的文件，或先提供資訊。', actions: ['reselect', 'retry', 'manual'] };
 }
