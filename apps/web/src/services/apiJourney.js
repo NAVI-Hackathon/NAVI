@@ -130,7 +130,7 @@ export function createApiJourneyService({
   }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
-  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress } = {}) {
+  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress, headers } = {}) {
     const deadline = AbortSignal.timeout(timeout);
     const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
     let response;
@@ -141,7 +141,8 @@ export function createApiJourneyService({
         onProgress?.({ phase: 'sending' }); // no byte count available: the UI says 上傳並辨識中 without a percentage
         response = await fetchImpl(api(path), {
           method, signal: combined,
-          ...(json ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) } : body ? { body } : {}),
+          headers: { ...headers, ...(json ? { 'Content-Type': 'application/json' } : {}) },
+          ...(json ? { body: JSON.stringify(json) } : body ? { body } : {}),
         });
       }
     } catch (error) {

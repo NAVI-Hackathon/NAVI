@@ -1,10 +1,11 @@
+import { ClarificationSchema } from './knowledge/clarification.js';
 import { z } from 'zod';
 import { TaskUnderstandingSchema } from './serviceTasks.js';
 import { KnowledgeEvidenceResponseSchema } from './competition.js';
 export const CredentialsSchema=z.object({username:z.string().trim().regex(/^[A-Za-z0-9_-]{3,40}$/).optional(),email:z.email().max(254).optional(),password:z.string().min(12).max(128)}).strict().refine(v=>Boolean(v.username)!==Boolean(v.email),'Provide one account identity');
 export const ConversationRequestSchema=z.object({message:z.string().trim().min(1).max(2000),conversationId:z.string().uuid().optional(),requestId:z.string().uuid()}).strict();
 export const SavedMessageSchema=z.object({role:z.enum(['user','assistant']),text:z.string().max(6000),at:z.iso.datetime()}).strict();
-export const ConversationReplySchema=z.object({correctionRequired:z.boolean().optional(),conversationId:z.string().uuid(),messages:z.array(SavedMessageSchema).max(60),understanding:TaskUnderstandingSchema.nullable(),answer:z.string().max(6000),evidence:KnowledgeEvidenceResponseSchema,mode:z.enum(['live','retrieval']),errorCode:z.string().nullable(),knowledgeVersion:z.string()}).strict();
+export const ConversationReplySchema=z.object({failure:z.object({code:z.string().regex(/^[A-Z_]+$/),message:z.string().min(1).max(500),retryable:z.boolean()}).strict().optional(),clarification:ClarificationSchema.optional(),correctionRequired:z.boolean().optional(),conversationId:z.string().uuid(),messages:z.array(SavedMessageSchema).max(60),understanding:TaskUnderstandingSchema.nullable(),answer:z.string().max(6000),evidence:KnowledgeEvidenceResponseSchema,mode:z.enum(['live','retrieval']),errorCode:z.string().nullable(),knowledgeVersion:z.string()}).strict().refine(r=>!r.failure||(r.mode==='retrieval'&&r.understanding===null&&r.errorCode===r.failure.code));
 export const WorkflowProgressSchema=z.object({checked:z.array(z.string().min(1).max(120)).max(20),revision:z.number().int().positive()}).strict();
 export const TaskJourneyRequestSchema=z.object({taskId:z.string().uuid(),idempotencyKey:z.string().uuid()}).strict();
 export const HandoffDraftRequestSchema=z.object({journeyVersion:z.number().int().positive(),text:z.string().max(2000),version:z.number().int().nonnegative()}).strict();

@@ -37,6 +37,10 @@ def install(m, artifact, checksum):
         if any(pathlib.PurePosixPath(p.name).is_absolute() or '..' in pathlib.PurePosixPath(p.name).parts or not (p.isdir() or p.isfile()) for p in members): raise RuntimeError('Unsafe archive')
         meta = json.loads(archive.extractfile('release.json').read())
         if meta['origins'] != m['origins'] or not re.fullmatch(r'[a-f0-9]{40}', meta['sourceCommit']): raise RuntimeError('Wrong origins/revision')
+        schema_file = archive.extractfile('apps/api/src/storage/schema-version.json') if 'apps/api/src/storage/schema-version.json' in archive.getnames() else None
+        storage_schema = json.load(schema_file)['version'] if schema_file else 1
+        if type(storage_schema) is not int or storage_schema not in (1, 2) or storage_schema != meta.get('storageSchema', 1):
+            raise RuntimeError('Release storage schema does not match the sealed artifact')
         target = ROOT / 'releases' / f"{meta['sourceCommit'][:12]}-{int(time.time())}"
         target.mkdir(mode=0o755)
         archive.extractall(target, filter='data')
@@ -52,7 +56,7 @@ def install(m, artifact, checksum):
                 continue
             public = p == target or p.is_relative_to(target / 'web') or p.is_relative_to(target / 'mock')
             os.chown(p, 0, m['gid']); p.chmod((0o755 if public else 0o750) if p.is_dir() else (0o644 if public else 0o640))
-    save(target / 'ready.json', {'sourceCommit': meta['sourceCommit'], 'sha256': checksum, 'origins': m['origins'], 'providerIsolation': meta.get('providerIsolation') is True and (target / 'apps/api/src/middleware/testSession.js').is_file()})
+    save(target / 'ready.json', {'sourceCommit': meta['sourceCommit'], 'sha256': checksum, 'origins': m['origins'], 'storageSchema': storage_schema, 'providerIsolation': meta.get('providerIsolation') is True and (target / 'apps/api/src/middleware/testSession.js').is_file()})
     print(str(target))
 
 def owned_service():
@@ -91,10 +95,31 @@ def write_environment(path, data):
     with os.fdopen(fd, 'wb') as f: f.write(data); f.flush(); os.fsync(f.fileno())
     temp.replace(path)
 
-def activate(target, environment=None):
+def storage_schema(path):
+    return json.loads((path / 'ready.json').read_text()).get('storageSchema', 1) if path else 1
+
+def wait_healthy():
+    for attempt in range(20):
+        try: healthy(); return
+        except Exception:
+            if attempt == 19: raise
+            time.sleep(.5)
+
+def activate(target, environment=None, recovery=None):
     target = release(target)
     if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True: raise RuntimeError('Legacy releases cannot be activated; use an isolated rollback target')
     old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
+    current_schema, target_schema = storage_schema(old), storage_schema(target)
+    if target_schema < current_schema: raise RuntimeError('Rollback would interrupt the erasure ledger')
+    if target_schema > current_schema:
+        if environment: raise RuntimeError('An erasure cutover must retain the current database environment')
+        if not recovery: raise RuntimeError('Stage a tested recovery release with the new storage schema first')
+        recovery = release(recovery)
+        if recovery == target or storage_schema(recovery) != target_schema or json.loads((recovery / 'ready.json').read_text()).get('providerIsolation') is not True:
+            raise RuntimeError('Recovery release does not support the erasure ledger')
+    elif recovery:
+        raise RuntimeError('A recovery override applies only to a storage upgrade')
+    fallback = recovery or old
     owned_service(); run(['nginx', '-t'])
     env = ROOT / 'config/api.env'
     old_env = private_environment(env) if env.exists() else None
@@ -111,30 +136,32 @@ def activate(target, environment=None):
     link('current', target)
     try:
         run(['systemctl', 'restart', UNIT])
-        for attempt in range(20):
-            try: healthy(); break
-            except Exception:
-                if attempt == 19: raise
-                time.sleep(.5)
+        wait_healthy()
         run(['systemctl', 'reload', 'nginx'])
     except BaseException:
         if old_env is not None: write_environment(env, old_env)
-        if old:
-            link('current', old)
-            # Never restore a legacy public Demo API after a live-isolation failure.
-            isolated = json.loads((old / 'ready.json').read_text()).get('providerIsolation') is True
-            run(['systemctl', 'restart' if isolated else 'stop', UNIT]); run(['systemctl', 'reload', 'nginx'])
+        if fallback:
+            link('current', fallback)
+            # A failed storage upgrade can only recover onto another ledger-compatible writer.
+            isolated = json.loads((fallback / 'ready.json').read_text()).get('providerIsolation') is True
+            run(['systemctl', 'restart' if isolated else 'stop', UNIT])
+            if recovery:
+                try: wait_healthy()
+                except Exception:
+                    run(['systemctl', 'stop', UNIT])
+                    raise
+            run(['systemctl', 'reload', 'nginx'])
         else: run(['systemctl', 'stop', UNIT])
         raise
     if next_env is not None: write_environment(saved, next_env)
-    if old and old != target: link('previous', old)
+    if fallback and fallback != target: link('previous', fallback)
     print('Active: ' + str(target))
 
 def main():
-    p = argparse.ArgumentParser(); p.add_argument('action', choices=['install', 'activate', 'rollback', 'restart', 'stop', 'status']); p.add_argument('target', nargs='?'); p.add_argument('checksum', nargs='?'); p.add_argument('--environment'); args = p.parse_args()
+    p = argparse.ArgumentParser(); p.add_argument('action', choices=['install', 'activate', 'rollback', 'restart', 'stop', 'status']); p.add_argument('target', nargs='?'); p.add_argument('checksum', nargs='?'); p.add_argument('--environment'); p.add_argument('--recovery'); args = p.parse_args()
     m = load()
     if args.action == 'install': install(m, args.target, args.checksum)
-    elif args.action == 'activate': activate(args.target, args.environment)
+    elif args.action == 'activate': activate(args.target, args.environment, args.recovery)
     elif args.action == 'rollback': activate(ROOT / 'previous')
     else:
         owned_service()

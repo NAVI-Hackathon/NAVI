@@ -1,3 +1,5 @@
+import schema from './schema-version.json' with {type:'json'};
+import {BACKUP_RETENTION_MS,ERASURE_RETENTION_MS,erasureTag,recordTag,sealErasurePlan,verifyErasurePlan} from './erasure.js';
 import {MongoClient,BSON} from 'mongodb';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {createCipheriv,createDecipheriv,randomBytes,createHash,createHmac,hkdfSync,timingSafeEqual} from 'node:crypto';
@@ -6,7 +8,8 @@ import {createReadStream} from 'node:fs';
 import {createInterface} from 'node:readline';
 import {join} from 'node:path';
 import {ApiError} from '../middleware/errorHandler.js';
-export const COLLECTIONS=Object.freeze({accounts:'users',sessions:'auth_sessions',journeys:'journeys',owners:'journey_owners',documents:'journey_documents',journey_events:'journey_events',task_batches:'task_batches',tasks:'tasks',handoff_drafts:'handoff_drafts',handoff_previews:'handoff_previews',handoff_confirmed:'handoff_confirmations',conversations:'conversations',conversation_requests:'conversation_requests',receipts:'operation_receipts',audit:'audit_events',model_health:'model_health',maintenance:'maintenance',session_issuance:'session_issuance',auth_tokens:'auth_tokens',knowledge_releases:'knowledge_releases'});
+export const COLLECTIONS=Object.freeze({erasures:'erasure_tombstones',accounts:'users',sessions:'auth_sessions',journeys:'journeys',owners:'journey_owners',documents:'journey_documents',journey_events:'journey_events',task_batches:'task_batches',tasks:'tasks',handoff_drafts:'handoff_drafts',handoff_previews:'handoff_previews',handoff_confirmed:'handoff_confirmations',conversations:'conversations',conversation_requests:'conversation_requests',receipts:'operation_receipts',audit:'audit_events',model_health:'model_health',maintenance:'maintenance',session_issuance:'session_issuance',auth_tokens:'auth_tokens',knowledge_releases:'knowledge_releases'});
+const ERASURE_RECORDS=new Set(['accounts','journeys','owners','documents','tasks','task_batches','conversations','conversation_requests','handoff_drafts','handoff_previews','handoff_confirmed','journey_events','receipts']);
 export class MongoStore {
  constructor({uri,database,key,production=false,now=Date.now}){
   if(!/^[A-Za-z0-9+/]{43}=$/.test(key??'')||!/^[a-zA-Z][a-zA-Z0-9_]{2,62}$/.test(database??'')||!/^navi(?:_|$)/.test(database))throw Error('NAVI database and independent 32-byte encryption key required');
@@ -35,9 +38,34 @@ export class MongoStore {
   if(old){const saved=await this.collection(namespace).replaceOne({_id:id,revision:version},row,this.options());if(!saved.modifiedCount)throw new ApiError('JOURNEY_STALE','資料已變更，請重新載入。',409,false);}else await this.collection(namespace).insertOne(row,this.options());return row.revision;
  });}
  async list(namespace,owner){return this.safe(async()=>{const rows=await this.collection(namespace).find({expiresAt:{$gt:new Date(this.now())},...(owner===undefined?{}:{ownerId:owner})},this.options()).toArray();return rows.map(row=>({id:row._id,value:this.decrypt(namespace,row),revision:row.revision,owner:row.ownerId}));});}
- async delete(namespace,id){if(this.requestScope.getStore()&&!this.scope.getStore())return this.transaction(()=>this.delete(namespace,id));return this.safe(()=>this.collection(namespace).deleteOne({_id:id},this.options()));}
- async deleteOwner(owner){return this.transaction(async()=>{for(const namespace of Object.keys(COLLECTIONS))await this.collection(namespace).deleteMany({ownerId:owner},this.options());});}
- async transferOwner(from,to,ttlMs){return this.transaction(async()=>{for(const ns of Object.keys(COLLECTIONS))for(const row of await this.list(ns,from)){if(ns==='sessions')continue;await this.put(ns,row.id,ns==='owners'?{owner:to}:row.value,{owner:to,ttlMs,expectedRevision:row.revision,journeyId:row.value.journeyId});}});}
+ async rememberErasure(namespace,id){
+  const row=await this.get(namespace,id);if(!row)return;
+  const tag=recordTag(this.key,namespace,{_id:id,ownerId:row.owner}),previous=await this.get('erasures',tag);
+  await this.put('erasures',tag,{scope:'record',tag,revision:Math.max(row.revision,previous?.value.revision??0)},{ttlMs:ERASURE_RETENTION_MS});
+ }
+ async exportErasurePlan(){return this.transaction(async()=>{
+  const {coverageSince,epoch}=await this.db.collection('schema_migrations').findOne({_id:schema.version},this.options());
+  return sealErasurePlan(this.key,{kind:'navi-erasure-plan',version:2,database:this.db.databaseName,coverageSince,epoch,asOf:new Date(this.now()).toISOString(),records:(await this.list('erasures')).map(r=>r.value),budgets:(await this.db.collection('usage_budgets').find({},this.options()).toArray()).map(r=>BSON.EJSON.serialize(r))});
+ });}
+ async delete(namespace,id){if(this.requestScope.getStore()&&!this.scope.getStore())return this.transaction(()=>this.delete(namespace,id));if(ERASURE_RECORDS.has(namespace)&&!this.scope.getStore())return this.transaction(()=>this.delete(namespace,id));
+ if(ERASURE_RECORDS.has(namespace))await this.rememberErasure(namespace,id);
+ return this.safe(()=>this.collection(namespace).deleteOne({_id:id},this.options()));}
+ async deleteOwner(owner){return this.transaction(async()=>{const tag=erasureTag(this.key,['owner',owner]);await this.put('erasures',tag,{scope:'owner',tag},{ttlMs:ERASURE_RETENTION_MS});for(const namespace of Object.keys(COLLECTIONS).filter(n=>n!=='erasures'))await this.collection(namespace).deleteMany({ownerId:owner},this.options());});}
+ async transferOwner(from,to,ttlMs){
+  if(from===to)return;
+  return this.transaction(async()=>{
+   // Snapshots before a transfer cannot safely recreate data under the retired guest owner.
+   const tag=erasureTag(this.key,['owner',from]);
+   await this.put('erasures',tag,{scope:'owner',tag},{ttlMs:ERASURE_RETENTION_MS});
+   for(const ns of Object.keys(COLLECTIONS).filter(n=>n!=='sessions'&&n!=='erasures')){
+    const rows=await this.collection(ns).find({ownerId:from,expiresAt:{$gt:new Date(this.now())}},this.options()).toArray();
+    for(const row of rows){
+     const value=this.decrypt(ns,row);
+     await this.put(ns,row._id,ns==='owners'?{owner:to}:value,{owner:to,ttlMs,expectedRevision:row.revision,journeyId:row.journeyId??value.journeyId,sessionId:row.sessionId,updatedAt:row.updatedAt});
+    }
+   }
+  });
+ }
  async cleanup(){return this.safe(async()=>{for(const name of Object.values(COLLECTIONS))await this.db.collection(name).deleteMany({expiresAt:{$lte:new Date(this.now())}});});}
  async charge(day,kind,limit,amount=1,ttlMs=90*86400000){return this.safe(async()=>{
   const c=this.db.collection('usage_budgets'),id=day+':'+kind;try{await c.updateOne({_id:id},{$setOnInsert:{used:0,day,kind,expiresAt:new Date(this.now()+ttlMs)}},{upsert:true});}catch(e){if(e.code!==11000)throw e;}
@@ -48,7 +76,7 @@ export class MongoStore {
  async audit(event,owner='system'){const allowed=Object.fromEntries(Object.entries(event).filter(([k])=>['code','operation','model','previousModel','latencyMs','status','requestId','knowledgeVersion','attempt','tokens'].includes(k)));await this.put('audit',randomBytes(16).toString('hex'),{at:new Date(this.now()).toISOString(),...allowed},{owner});}
  async health(){return this.safe(async()=>{await this.db.command({ping:1});return true;});}
  async migrate(){
-  const migrations=this.db.collection('schema_migrations');if(await migrations.findOne({_id:{$gt:1}}))throw Error('Newer schema');
+  const migrations=this.db.collection('schema_migrations');if(await migrations.findOne({_id:{$gt:schema.version}}))throw Error('Newer schema');
   for(const name of Object.values(COLLECTIONS)){
    const c=this.db.collection(name);await c.createIndex({expiresAt:1},{expireAfterSeconds:0,name:'expire_records'});await c.createIndex({ownerId:1,expiresAt:1},{name:'owner_access'});
   }
@@ -57,29 +85,41 @@ export class MongoStore {
   await this.collection('tasks').createIndex({ownerId:1,sessionId:1},{name:'session_tasks'});
   await this.db.collection('usage_budgets').createIndex({expiresAt:1},{expireAfterSeconds:0});
   await migrations.updateOne({_id:1},{$setOnInsert:{appliedAt:new Date(),name:'encrypted_owned_product_records'}},{upsert:true});
+  // Old applications already refuse any schema above 1. Start a fresh backup epoch.
+  await migrations.updateOne({_id:schema.version},{$setOnInsert:{name:'continuous_erasure_ledger',coverageSince:new Date(this.now()).toISOString(),epoch:randomBytes(16).toString('hex')}},{upsert:true,writeConcern:{w:'majority'}});
  }
  async backup(directory){
   await mkdir(directory,{recursive:true,mode:0o700});const stat=await lstat(directory);if(stat.isSymbolicLink()||stat.uid!==process.getuid()||(stat.mode&0o077))throw Error('Unsafe backup directory');
   const name=`navi-mongo-${this.now()}-${randomBytes(4).toString('hex')}.jsonl`,path=join(directory,name),pending=path+'.partial',file=await open(pending,'wx',0o600);let count=0;const signature=createHmac('sha256',hkdfSync('sha256',this.key,Buffer.alloc(0),'NAVI backup v1',32));const write=async line=>{signature.update(line);await file.write(line);};
-  try{await write(JSON.stringify({kind:'navi-encrypted-mongo-backup',version:1,database:this.db.databaseName,createdAt:new Date().toISOString()})+'\n');
+  try{const {epoch}=await this.db.collection('schema_migrations').findOne({_id:schema.version});await write(JSON.stringify({kind:'navi-encrypted-mongo-backup',version:2,epoch,database:this.db.databaseName,createdAt:new Date(this.now()).toISOString()})+'\n');
    if(this.scope.getStore())throw Error('Backup cannot run inside a mutation transaction');
    const session=this.client.startSession();session.startTransaction({readConcern:{level:'snapshot'}});
    try{await this.scope.run(session,async()=>{for(const ns of [...Object.values(COLLECTIONS),'usage_budgets','schema_migrations'])for await(const doc of this.db.collection(ns).find({},this.options())){await write(BSON.EJSON.stringify({collection:ns,document:doc})+'\n');count++;}});}finally{await session.abortTransaction().catch(()=>{});await session.endSession();}
-   await file.write(JSON.stringify({signature:signature.digest('hex')})+'\n');await file.sync();await file.close();await rename(pending,path);for(const name of await readdir(directory))if(/^navi-mongo-\d+-[a-f0-9]{8}\.jsonl$/.test(name)){const p=join(directory,name),st=await lstat(p);if(st.isFile()&&!st.isSymbolicLink()&&st.uid===process.getuid()&&this.now()-st.mtimeMs>7*86400000)await unlink(p);}const hash=createHash('sha256');for await(const chunk of createReadStream(path))hash.update(chunk);return {filename:name,sha256:hash.digest('hex'),records:count};
+   await file.write(JSON.stringify({signature:signature.digest('hex')})+'\n');await file.sync();await file.close();await rename(pending,path);for(const name of await readdir(directory))if(/^navi-mongo-\d+-[a-f0-9]{8}\.jsonl$/.test(name)){const p=join(directory,name),st=await lstat(p);if(st.isFile()&&!st.isSymbolicLink()&&st.uid===process.getuid()&&this.now()-st.mtimeMs>BACKUP_RETENTION_MS)await unlink(p);}const hash=createHash('sha256');for await(const chunk of createReadStream(path))hash.update(chunk);return {filename:name,sha256:hash.digest('hex'),records:count};
   }catch(e){await file.close().catch(()=>{});await unlink(pending).catch(()=>{});throw e;}
  }
- async restore(path){
-  for(const ns of [...Object.values(COLLECTIONS),'usage_budgets'])if(await this.db.collection(ns).countDocuments())throw Error('Restore requires an empty dedicated NAVI target database');
+ async restore(path,{erasurePlan}={}){
+  for(const ns of [...Object.entries(COLLECTIONS).filter(([ns])=>ns!=='erasures').map(([,name])=>name),'usage_budgets'])if(await this.db.collection(ns).countDocuments())throw Error('Restore requires an empty dedicated NAVI target database');
   const stat=await lstat(path);if(stat.isSymbolicLink()||stat.uid!==process.getuid()||stat.mode&0o077)throw Error('Unsafe backup');
   const signature=createHmac('sha256',hkdfSync('sha256',this.key,Buffer.alloc(0),'NAVI backup v1',32));let previous;for await(const line of createInterface({input:createReadStream(path),crlfDelay:Infinity})){if(previous!==undefined)signature.update(previous+'\n');previous=line;}const footer=JSON.parse(previous??'{}');if(!/^[a-f0-9]{64}$/.test(footer.signature??'')||!timingSafeEqual(Buffer.from(footer.signature,'hex'),signature.digest()))throw Error('Backup signature invalid');
-  const allowed=new Set([...Object.values(COLLECTIONS),'usage_budgets','schema_migrations']);
-  await this.transaction(async()=>{let first=true,signed=false;const currentSignature=createHmac('sha256',hkdfSync('sha256',this.key,Buffer.alloc(0),'NAVI backup v1',32));for await(const line of createInterface({input:createReadStream(path),crlfDelay:Infinity})){
+  const allowed=new Set([...Object.values(COLLECTIONS),'usage_budgets','schema_migrations']);let plan;
+  await this.transaction(async()=>{const excluded=new Map();let first=true,signed=false;const currentSignature=createHmac('sha256',hkdfSync('sha256',this.key,Buffer.alloc(0),'NAVI backup v1',32));for await(const line of createInterface({input:createReadStream(path),crlfDelay:Infinity})){
    if(signed)throw new ApiError('DATA_INTEGRITY_ERROR','備份完整性檢查未通過，尚未還原任何資料。',503,false);
    if(!JSON.parse(line).signature)currentSignature.update(line+'\n');
-   if(first){first=false;const h=JSON.parse(line);if(h.kind!=='navi-encrypted-mongo-backup'||h.version!==1)throw Error('Wrong backup kind');continue;}
+   if(first){first=false;const h=JSON.parse(line);if(h.kind!=='navi-encrypted-mongo-backup'||h.version!==2)throw new ApiError('RESTORE_ERASURE_PLAN_REQUIRED','這份備份早於目前的刪除紀錄起點，不能安全還原。',503,false);plan=verifyErasurePlan(this.key,erasurePlan,this.now(),h.createdAt);if(h.database!==plan.database||h.epoch!==plan.epoch)throw new ApiError('RESTORE_ERASURE_PLAN_REQUIRED','備份與刪除紀錄不屬於同一段連續保護期間。',503,false);for(const r of plan.records)excluded.set(r.tag,r);continue;}
    if(JSON.parse(line).signature){if(!timingSafeEqual(Buffer.from(JSON.parse(line).signature,'hex'),currentSignature.digest()))throw new ApiError('DATA_INTEGRITY_ERROR','備份完整性檢查未通過，尚未還原任何資料。',503,false);signed=true;continue;}const row=BSON.EJSON.parse(line);if(!allowed.has(row.collection))throw Error('Unknown backup collection');const ns=Object.keys(COLLECTIONS).find(k=>COLLECTIONS[k]===row.collection);if(ns)this.decrypt(ns,row.document);
-   if(row.collection==='schema_migrations'){if(row.document._id>1)throw Error('Newer backup schema');continue;}await this.db.collection(row.collection).insertOne(row.document,this.options());
-  }if(first||!signed)throw new ApiError('DATA_INTEGRITY_ERROR','備份完整性檢查未通過，尚未還原任何資料。',503,false);});return true;
+   if(['auth_sessions','auth_tokens','erasure_tombstones','usage_budgets'].includes(row.collection))continue;
+   const record=excluded.get(recordTag(this.key,ns,row.document));if(excluded.has(erasureTag(this.key,['owner',row.document.ownerId]))||record&&row.document.revision<=record.revision||row.document.expiresAt&&row.document.expiresAt.getTime()<=this.now())continue;
+   if(row.document.journeyId&&!await this.get('journeys',row.document.journeyId))continue;
+   if(ns==='owners'&&!await this.get('journeys',row.document._id))continue;
+   if(row.collection==='schema_migrations'){if(row.document._id>schema.version)throw Error('Newer backup schema');continue;}await this.db.collection(row.collection).insertOne(row.document,this.options());
+  }if(first||!signed)throw new ApiError('DATA_INTEGRITY_ERROR','備份完整性檢查未通過，尚未還原任何資料。',503,false);
+   for(const row of await this.list('task_batches')){const taskIds=[];for(const id of row.value.taskIds)if(await this.get('tasks',id))taskIds.push(id);if(taskIds.length!==row.value.taskIds.length){if(taskIds.length)await this.put('task_batches',row.id,{...row.value,taskIds},{owner:row.owner,expectedRevision:row.revision,ttlMs:Math.max(1,(await this.get('task_batches',row.id)).expires-this.now())});else await this.delete('task_batches',row.id);}}
+   for(const row of await this.list('conversations')){const tasks=[];for(const task of row.value.tasks??[])if(!task.persistedTaskId||await this.get('tasks',task.persistedTaskId))tasks.push(task);if(tasks.length!==(row.value.tasks??[]).length)await this.put('conversations',row.id,{...row.value,tasks},{owner:row.owner,expectedRevision:row.revision,ttlMs:Math.max(1,(await this.get('conversations',row.id)).expires-this.now())});}
+   for(const row of await this.list('receipts'))if(row.value.plannedJourneyId&&!await this.get('journeys',row.value.plannedJourneyId))await this.delete('receipts',row.id);
+   for(const entry of plan.records)await this.put('erasures',entry.tag,entry,{ttlMs:ERASURE_RETENTION_MS});
+   for(const budget of plan.budgets)await this.db.collection('usage_budgets').insertOne(BSON.EJSON.deserialize(budget),this.options());
+  });return true;
  }
  async close(){if(this.closed)return;this.closed=true;await this.client.close();this.key.fill(0);}
 }

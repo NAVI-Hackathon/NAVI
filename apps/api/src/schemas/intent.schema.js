@@ -1,3 +1,4 @@
+import { queryClarification } from '../../../../shared/knowledge/clarification.js';
 import { redactIdentifiers } from '../utils/privacy.js';
 import { z } from 'zod';
 import { IntentDataSchema, MAX_MESSAGE_LENGTH } from '../../../../shared/intelligence.js';
@@ -11,6 +12,9 @@ export const providerJsonSchema = z.toJSONSchema(IntentDataSchema);
 export function normalizeIntent(raw, message = '') {
   const parsed = ProviderIntentSchema.parse(raw);
   parsed.confidence = Math.max(0, Math.min(1, parsed.confidence));
+  const clarification = queryClarification(message);
+  if (clarification?.reason === 'insurance_decision' && parsed.intent !== 'unknown') parsed.intent = 'knowledge_query';
+  else if (clarification?.blocking) { parsed.intent = 'unknown'; parsed.serviceType = 'unknown'; }
   if (parsed.serviceType === 'hospitalization_claim' && hasNegatedHospitalization(message)) {
     parsed.intent = 'unknown'; parsed.serviceType = 'unknown'; parsed.confidence = Math.min(parsed.confidence, 0.4);
   }
