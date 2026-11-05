@@ -37,11 +37,15 @@ export function partnerLabel(facts) {
   return facts.eligibility === 'eligible' ? '合作名單內・符合已知條件' : '合作名單內・資格待確認';
 }
 
-/** The 醫院與管道 step: done only once the hospital is known. */
+/** The 醫院與管道 step: done only once the hospital is known — named on the partner list, or by a certificate. */
 export function hospitalStep(journey) {
   const facts = hospitalFacts(journey);
   if (!facts.name) return { done: false, text: '還不知道住院的醫院，上傳診斷書或住院證明後會確認。' };
   const from = facts.source === 'certificate' ? '依診斷書記載，' : '';
+  // J-05: a name only the user gave that matches no partner may not be a real hospital, so it stays to confirm.
+  if (!facts.listed && facts.source !== 'certificate') {
+    return { done: false, text: `你提到的醫院是「${facts.name}」，目前無法在快照中確認這間院所。上傳診斷書或住院證明後會再確認；也可以先查看理賠聯盟鏈或郵寄申請。` };
+  }
   if (!facts.listed) {
     return { done: true, text: `${from}住院醫院是「${facts.name}」，快照中未比對到醫起通合作院所，可改用理賠聯盟鏈或郵寄申請；若是合作院所，請提供醫院全名。` };
   }

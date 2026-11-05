@@ -82,3 +82,18 @@ for (const device of [{ name: 'phone', width: 390, phone: true }, { name: 'deskt
     expect(errors).toEqual([]);
   });
 }
+
+// J-05: a hospital only the user names, matching no partner, may not exist — the step is not marked done.
+for (const device of [{ name: 'phone', width: 390, phone: true }, { name: 'desktop', width: 1440, phone: false }]) {
+  test(`an unknown hospital the user describes stays to confirm, not done — ${device.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: device.width, height: 900 });
+    await page.goto('/demo');
+    await page.locator('#story-input').fill('我在台北火星高課醫院月球分院住院三天');
+    await page.locator('#story-input').press('Enter');
+    await page.getByRole('button', { name: '開啟工作區' }).click();
+    await show(page, device.phone, '旅程');
+    await expect(hospitalStep(page).locator('.step-state')).not.toHaveText('已完成');
+    await expect(hospitalStep(page).locator('.step-state')).toHaveText('待確認');
+    await expect(hospitalStep(page).locator('.step-text')).toContainText('目前無法在快照中確認這間院所');
+  });
+}

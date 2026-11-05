@@ -43,6 +43,9 @@ test('demo: a hospital no document names is shown without a source; a certificat
   assert.equal(hospitalLabel(hospitalFacts(snapshot.journey)), '長庚醫院');
   assert.equal(hospitalFacts(snapshot.journey).source, null);
   assert.doesNotMatch(hospitalStep(snapshot.journey).text, /描述|診斷書記載/);
+  // J-05: only the user named it and it matches no partner, so the step is not done yet.
+  assert.equal(hospitalStep(snapshot.journey).done, false);
+  assert.match(hospitalStep(snapshot.journey).text, /你提到的醫院是「長庚醫院」，目前無法在快照中確認這間院所/);
   const uploaded = (await service.uploadDocument('diagnosis_certificate', { sample: true })).journey;
   assert.equal(hospitalLabel(hospitalFacts(uploaded)), '臺中榮民總醫院（診斷書記載）');
 });
@@ -57,4 +60,18 @@ test('formal journey: the server context and its own list of conditions to confi
   assert.deepEqual(facts.toConfirm, server);
   // A document still to be reviewed is not a source.
   assert.equal(hospitalFacts(journey([{ ...certificate, status: 'needs_review' }])).name, null);
+});
+
+test('J-05: an unknown hospital the user describes is to confirm; a certificate naming a non-partner is done', async () => {
+  const service = demo();
+  const { snapshot } = await service.analyze('我在台北火星高課醫院月球分院住院三天');
+  const step = hospitalStep(snapshot.journey);
+  assert.equal(hospitalFacts(snapshot.journey).listed, false);
+  assert.equal(step.done, false);
+  assert.match(step.text, /目前無法在快照中確認這間院所.*上傳診斷書或住院證明後會再確認/);
+
+  const certified = service.submitManual('diagnosis_certificate', manual('長庚醫院')).journey;
+  assert.equal(hospitalFacts(certified).source, 'certificate');
+  assert.equal(hospitalStep(certified).done, true);
+  assert.match(hospitalStep(certified).text, /依診斷書記載，住院醫院是「長庚醫院」，快照中未比對到醫起通合作院所/);
 });
