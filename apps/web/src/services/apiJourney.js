@@ -291,15 +291,12 @@ export function createApiJourneyService({
     /**
      * Persistent service (A3): delete one whole journey on the server (DELETE /journeys/:id: documents,
      * drafts, events and task links in one transaction). The id is dropped here only after the server
-     * commits; a failure throws and leaves everything as it was. Already gone (404) counts as deleted.
+     * commits and confirms the matching id; an unconfirmed result keeps the local reference.
      * Returns how many journeys remain in this browser.
      */
     async deleteJourney(id) {
-      try {
-        await request(`/journeys/${id}`, { method: 'DELETE', schema: null });
-      } catch (error) {
-        if (error?.code !== 'JOURNEY_NOT_FOUND') throw error;
-      }
+      const confirmation = z.object({ deleted: z.literal(true), id: z.literal(id), deletedAt: z.iso.datetime() }).strict();
+      await request(`/journeys/${id}`, { method: 'DELETE', schema: confirmation });
       return this.forgetJourney(id);
     },
     /**

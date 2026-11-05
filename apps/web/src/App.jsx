@@ -13,7 +13,7 @@ import { useHostBridge } from './hooks/useHostBridge.js';
 import { useOnline } from './hooks/useOnline.js';
 import { applyNavigationReply, newNavigationId, naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
-import { errorNotice, productErrors, reloadCodes } from './domain/productErrors.js';
+import { errorNotice, journeyDeleteNotice, productErrors, reloadCodes } from './domain/productErrors.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
@@ -636,7 +636,7 @@ export default function App() {
     const shown = snapshotRef.current?.journey.id === id;
     if (productReady) {
       try { await service.deleteJourney(id); }
-      catch (error) { notify(`沒有刪除這件事。${errorNotice(error, '請確認網路後再試一次。')}`); return; }
+      catch (error) { notify(journeyDeleteNotice(error)); return; }
       setProductDialog(null);
     } else if (service.forgetJourney) service.forgetJourney(id); else service.reset();
     setJourneys(list => list.filter(item => item.id !== id));

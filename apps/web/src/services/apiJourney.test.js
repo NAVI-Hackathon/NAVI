@@ -357,7 +357,7 @@ test('an AI status failure, invalid mode or conflicting response clears an earli
  for(const next of [()=>Response.json({error:{code:'AI_UNAVAILABLE'}},{status:503,headers:{'X-NAVI-AI-Mode':'live'}}),()=>Response.json({mode:'demo'},{headers:{'X-NAVI-AI-Mode':'live'}}),()=>Response.json({mode:'not-a-provider'}),()=>{throw new TypeError('offline');}]){response=next;assert.equal(await service.checkAiMode(),null);assert.equal(service.aiMode,null);}
 });
 
-test('deleting a whole journey (A3): the id goes only after the server commits; 404 counts as gone', async () => {
+test('deleting a whole journey (A3): the id goes only after an explicit matching server confirmation', async () => {
   const ids = ['00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b', '00000000-0000-4000-8000-00000000000c'];
   const storage = memoryStorage();
   storage.setItem('navi.journey', JSON.stringify({ v: 3, current: ids[0], journeys: ids.map(journeyId => ({ journeyId, source: 'gemini', handoffRequested: false })) }));
@@ -377,7 +377,12 @@ test('deleting a whole journey (A3): the id goes only after the server commits; 
   await assert.rejects(service.deleteJourney(ids[2]), error => error.code === 'STORAGE_UNAVAILABLE');
   assert.deepEqual(stored(), ids, 'a failed delete keeps the journey');
   assert.equal(await service.deleteJourney(ids[0]), 2);
-  assert.equal(await service.deleteJourney(ids[1]), 1, 'already gone on the server');
-  assert.deepEqual(stored(), [ids[2]]);
-  assert.deepEqual(calls, [`DELETE ${ids[2]}`, `DELETE ${ids[0]}`, `DELETE ${ids[1]}`]);
+  await assert.rejects(service.deleteJourney(ids[1]), { code: 'JOURNEY_NOT_FOUND' });
+  assert.deepEqual(stored(), ids.slice(1));
+  replies[ids[1]] = replies[ids[0]];
+  await assert.rejects(service.deleteJourney(ids[1]), { code: 'AI_RESPONSE_INVALID' });
+  replies[ids[1]] = [200, { deleted: false, id: ids[1] }];
+  await assert.rejects(service.deleteJourney(ids[1]), { code: 'AI_RESPONSE_INVALID' });
+  assert.deepEqual(stored(), ids.slice(1));
+  assert.ok(calls.every(call => call.startsWith('DELETE ')));
 });

@@ -24,3 +24,12 @@ export function errorNotice(error, fallback = '目前暫時無法處理，請稍
   if (copy) return `${copy[0]}：${copy[1]}`;
   return error?.message && error?.code ? error.message : fallback;
 }
+
+
+export function journeyDeleteNotice(error) {
+  if (error?.code === 'JOURNEY_NOT_FOUND') return '找不到這件事，或目前身分無法存取。NAVI 未收到刪除成功的確認。';
+  if (error?.code === 'NETWORK_ERROR') return '刪除時連線中斷。請重新連線並查看歷程，確認結果後再操作。';
+  if (error?.code === 'AI_TIMEOUT' || error?.code === 'AI_RESPONSE_INVALID') return '目前無法確認刪除結果。請先重新載入歷程查看。';
+  if (error?.code === 'STORAGE_UNAVAILABLE') return 'NAVI 暫時無法存取保存的資料，尚未收到刪除確認。請先重新載入歷程查看。';
+  return 'NAVI 未收到刪除成功的確認。' + errorNotice(error);
+}

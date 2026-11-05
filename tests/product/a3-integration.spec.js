@@ -30,11 +30,11 @@ async function persistentBackend(page){
  const app=createApp(config,provider),server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
  const base=`http://127.0.0.1:${server.address().port}`;let cookie;
  await page.route('**/api/**',async route=>{
-  const req=route.request(),r=await fetch(base+new URL(req.url()).pathname+new URL(req.url()).search,{method:req.method(),headers:{Origin:origin,...(cookie?{Cookie:cookie}:{}),...(req.headers()['content-type']?{'Content-Type':req.headers()['content-type']}:{})},...(req.postDataBuffer()?{body:req.postDataBuffer()}:{})});
+  const req=route.request(),r=await fetch(base+new URL(req.url()).pathname+new URL(req.url()).search,{method:req.method(),signal:AbortSignal.timeout(8000),headers:{Origin:origin,...(cookie?{Cookie:cookie}:{}),...(req.headers()['content-type']?{'Content-Type':req.headers()['content-type']}:{})},...(req.postDataBuffer()?{body:req.postDataBuffer()}:{})});
   cookie=r.headers.get('set-cookie')?.split(';')[0]??cookie;
   await route.fulfill({status:r.status,headers:{'Content-Type':'application/json','X-NAVI-AI-Mode':r.headers.get('X-NAVI-AI-Mode')??'live'},body:await r.text()}).catch(()=>{});
  });
- const close=async()=>{await page.unrouteAll({behavior:'wait'}).catch(()=>{});server.closeAllConnections();await new Promise(r=>server.close(r));await config.store.db.dropDatabase();await app.locals.close();rmSync(dir,{recursive:true,force:true});};
+ const close=async()=>{await page.unrouteAll({behavior:'ignoreErrors'});await new Promise(r=>{server.close(r);server.closeAllConnections();});await config.store.db.dropDatabase();await app.locals.close();rmSync(dir,{recursive:true,force:true});};
  return {close,status:path=>fetch(base+'/api'+path,{headers:{Origin:origin,Cookie:cookie}}).then(r=>r.status)};
 }
 
@@ -85,10 +85,17 @@ for(const width of [390,1280])test(`刪除這件事 deletes it on the server; a 
   await page.route('**/api/journeys/'+id,route=>route.request().method()==='DELETE'?route.fulfill({status:503,headers:{'Content-Type':'application/json'},body:JSON.stringify({success:false,error:{code:'STORAGE_UNAVAILABLE',message:'storage',retryable:true}})}):route.fallback());
   await section.getByRole('button',{name:'刪除這件事'}).click();
   await section.getByRole('button',{name:'確定刪除'}).click();
-  await expect(page.getByText('沒有刪除這件事。NAVI 暫時無法存取保存的資料')).toBeVisible();
+  await expect(page.getByText('NAVI 暫時無法存取保存的資料，尚未收到刪除確認。請先重新載入歷程查看。')).toBeVisible();
   await expect(dialog).toBeVisible();
   expect(await backend.status('/journeys/'+id)).toBe(200);
 
+  await page.unroute('**/api/journeys/'+id);
+  await page.route('**/api/journeys/'+id,route=>route.request().method()==='DELETE'?route.fulfill({status:404,json:{success:false,error:{code:'JOURNEY_NOT_FOUND',message:'找不到',retryable:false}}}):route.fallback());
+  await section.getByRole('button',{name:'刪除這件事'}).click();
+  await section.getByRole('button',{name:'確定刪除'}).click();
+  await expect(page.getByText('找不到這件事，或目前身分無法存取。NAVI 未收到刪除成功的確認。')).toBeVisible();
+  await expect(page.getByText(/^已刪除這件事/)).toHaveCount(0);
+  expect(await backend.status('/journeys/'+id)).toBe(200);
   await page.unroute('**/api/journeys/'+id);
   await section.getByRole('button',{name:'刪除這件事'}).click();
   await section.getByRole('button',{name:'確定刪除'}).click();
