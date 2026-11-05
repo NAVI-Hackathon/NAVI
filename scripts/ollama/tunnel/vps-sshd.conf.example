@@ -1,0 +1,16 @@
+# VPS template. Append as the last Match block after reviewing sshd -T.
+Match User navi-ollama-tunnel
+    AuthenticationMethods publickey
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    MaxSessions 0
+    AllowTcpForwarding remote
+    PermitListen 127.0.0.1:21144
+    PermitOpen none
+    GatewayPorts no
+    AllowStreamLocalForwarding no
+    AllowAgentForwarding no
+    X11Forwarding no
+    PermitTTY no
+    PermitTunnel no
+    PermitUserRC no

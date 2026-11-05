@@ -46,6 +46,7 @@ export function createTestSessions(config, repository, { providerMode = config.a
   function documentUpload(req) {
     const session = sessions.get(current(req));
     const allowed = enabled && Boolean(session) && (config.publicSynthetic || session.operator === true);
+    if (config.aiProvider === 'ollama') return { builtInSynthetic: false, userProvidedSynthetic: allowed && Boolean(config.ollamaVisionModel && config.syntheticDocumentHashes.length), realPersonalDocuments: false };
     return { builtInSynthetic: allowed, userProvidedSynthetic: allowed, realPersonalDocuments: false };
   }
   return {
@@ -53,7 +54,7 @@ export function createTestSessions(config, repository, { providerMode = config.a
     bindProvider(provider) {
       if (!enabled) return provider;
       const bound = { ...provider };
-      for (const method of ['understandIntent', 'understandTasks', 'analyzeDocument', 'answerKnowledge', 'summarizeHandoff']) {
+      for (const method of ['understandIntent', 'understandTasks', 'converse', 'analyzeDocument', 'answerKnowledge', 'summarizeHandoff']) {
         if (!provider[method]) continue;
         bound[method] = (...args) => {
           const id = requestScope.getStore();
@@ -72,7 +73,7 @@ export function createTestSessions(config, repository, { providerMode = config.a
       const body = req.body;
       if (!config.origins.includes(req.headers.origin) || !body || Object.keys(body).sort().join(',') !== 'syntheticOnly,token' || body.syntheticOnly !== true || typeof body.token !== 'string' || !timingSafeEqual(hash(body.token), hash(config.sessionToken))) throw new ApiError('TEST_SESSION_DENIED', '無法啟用測試，請確認授權與合成資料聲明。', 403, false);
       issue(req, res, true);
-      res.set('Cache-Control', 'no-store').status(201).json({ syntheticOnly: true, documentUpload: documentUpload(req), expiresInSeconds: TTL / 1000, disclosure: '僅限合成資料。資料會送至 Google Gemini；免費服務資料可能用於改善產品。不可上傳真實醫療、銀行或個人資料。', documentRetention: '上傳檔案僅於記憶體中分析，不寫入磁碟；結構化測試案件最長保留一小時，重啟即清除。' });
+      res.set('Cache-Control', 'no-store').status(201).json({ syntheticOnly: true, documentUpload: documentUpload(req), expiresInSeconds: TTL / 1000, disclosure: config.aiProvider === 'ollama' ? '僅限合成資料。測試資料會由本地 Ollama 處理，請勿提供真實醫療、銀行或個人資料。' : '僅限合成資料。資料會送至 Google Gemini；免費服務資料可能用於改善產品。不可上傳真實醫療、銀行或個人資料。', documentRetention: '上傳檔案僅於記憶體中分析，不寫入磁碟；結構化測試案件最長保留一小時，重啟即清除。' });
     },
     guard(req, res, next) {
       try {
