@@ -108,6 +108,27 @@ test('with a journey open, every header button stays on screen from 320px to 128
   await expect(ring(page)).toHaveAttribute('aria-valuenow', '35');
 });
 
+test('formal mode: the header says AI analysis with synthetic data, and it stays on screen from 320px to 1280px (J-16)', async ({ page }) => {
+  await page.goto('/');
+  const badge = page.locator('.app-header .mode-badge-ai');
+  await expect(badge).toHaveAttribute('title', '會把你的描述送到 AI 分析；請只用合成資料');
+  for (const [width, text] of [[320, 'AI'], [375, 'AI'], [390, 'AI'], [430, 'AI'], [768, 'AI 分析・合成資料'], [1280, 'AI 分析・合成資料']]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect(badge, `${width}px`).toBeVisible();
+    const shown = await badge.evaluate(el => [...el.children].find(c => getComputedStyle(c).display !== 'none' && c.getBoundingClientRect().width > 1)?.textContent);
+    expect(shown, `${width}px`).toBe(text);
+    const boxes = await page.locator('.app-header-inner').evaluate(inner => [...inner.querySelectorAll('button, summary, .mode-badge')]
+      .filter(el => !el.closest('.menu-popover'))
+      .map(el => { const r = el.getBoundingClientRect(); return { name: el.getAttribute('aria-label') || el.textContent.trim(), left: r.left, right: r.right, top: r.top }; }));
+    for (const box of boxes) {
+      expect(box.left, `${box.name} at ${width}px`).toBeGreaterThanOrEqual(0);
+      expect(box.right, `${box.name} at ${width}px`).toBeLessThanOrEqual(width);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `width ${width}`).toBeLessThanOrEqual(0);
+  }
+  await expect(page.locator('.app-header .mode-badge', { hasText: '示範' })).toHaveCount(0);
+});
+
 test('desktop: explanations of mode, sources and limits are 13px; nothing is below 11px', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openWorkspace(page);

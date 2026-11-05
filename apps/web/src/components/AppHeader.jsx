@@ -24,6 +24,12 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
         </button>
         {mode === 'demo' && <span className="mode-badge" title="使用示範資料，不連線 AI">示範模式</span>}
         {mode !== 'demo' && demoData && <span className="mode-badge" title="NAVI 服務目前以示範資料回答，不是 AI 分析">示範資料</span>}
+        {/* J-16: the formal page says it is AI analysis, and that only synthetic data belongs in it. */}
+        {mode !== 'demo' && !demoData && (
+          <span className="mode-badge mode-badge-ai" title="會把你的描述送到 AI 分析；請只用合成資料">
+            <span className="mode-badge-long">AI 分析・合成資料</span><span className="mode-badge-short" aria-hidden="true">AI</span>
+          </span>
+        )}
 
         <div className="app-header-actions">
           {hasJourney && view === 'landing' && (
@@ -57,7 +63,7 @@ export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, on
     <header className="embed-header">
       <button type="button" className="brand" onClick={onHome} disabled={busy} aria-label="回到 NAVI 首頁">
         <Mark />
-        <span className="wordmark">NAVI<small>服務導航助手</small></span>
+        <span className="wordmark">NAVI<small>智慧保險導引</small></span>
       </button>
       {mode === 'demo' && <span className="mode-badge" title="使用示範資料，不連線 AI">示範</span>}
       <div className="embed-header-actions">
