@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 import { ConversationReplySchema } from '../../shared/product.js';
+import { judgeConversationFixtures } from '../fixtures/judge-conversation.js';
 
 // NAVI-001: formal mode must never go blank when the server answers from official sources only
 // (retrieval), including after an AI failure. The persistent service is stubbed at the network layer with
-// the shared fixture (tests/fixtures/conversation-replies.json, valid ConversationReplySchema replies), so
+// the shared fixtures (tests/fixtures/judge-conversation.js, valid ConversationReplySchema replies), so
 // no request reaches a backend or Gemini.
-const fixtures = JSON.parse(readFileSync(new URL('../fixtures/conversation-replies.json', import.meta.url), 'utf8'));
+const f = judgeConversationFixtures;
+const fixtures = { retrieval_answered: f.retrievalAnswered, provider_error: f.retrievalOnly, quota: f.quota, timeout: f.timeoutNoSource };
 const ASK = '我搬家了，保單地址要怎麼改？';
 
 async function persistentService(page, reply) {
@@ -43,7 +44,7 @@ async function stillUsable(page, errors) {
 }
 
 test('the shared fixture is a valid ConversationReplySchema reply in every case', () => {
-  for (const [name, reply] of Object.entries(fixtures)) if (!name.startsWith('_')) ConversationReplySchema.parse(reply);
+  for (const reply of Object.values(judgeConversationFixtures)) ConversationReplySchema.parse(reply);
 });
 
 for (const width of [390, 1280]) test(`E13: a retrieval-only reply shows its official source, no blank page — ${width}px`, async ({ page }) => {
@@ -60,7 +61,7 @@ for (const width of [390, 1280]) test(`E13: a retrieval-only reply shows its off
   await stillUsable(page, errors);
 });
 
-for (const [name, title] of [['provider_error', '分析服務暫時無法回應'], ['quota', '今日 AI 分析次數已用完']]) {
+for (const [name, title] of [['provider_error', '分析服務暫時無法回應']]) {
   test(`AI failure (${name}): the sources stay readable, the reason is named, retry is by hand`, async ({ page }) => {
     const errors = watchErrors(page);
     let next = fixtures[name];
@@ -80,6 +81,21 @@ for (const [name, title] of [['provider_error', '分析服務暫時無法回應'
     await stillUsable(page, errors);
   });
 }
+
+test('AI quota spent (not retryable): the sources stay readable, the reason is named, no 重新分析', async ({ page }) => {
+  const errors = watchErrors(page);
+  const sent = await persistentService(page, () => fixtures.quota);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await ask(page);
+  const log = page.getByRole('log');
+  await expect(log.getByRole('note').filter({ hasText: '今日 AI 分析次數已用完，以下是已核對來源的官網資料。' })).toBeVisible();
+  await expect(log.locator('.answer-card').last()).toBeVisible();
+  await expect(log.getByRole('button', { name: '重新分析' })).toHaveCount(0);
+  await expect(log.getByRole('link', { name: '改用示範模式' })).toBeVisible();
+  expect(sent).toHaveLength(1);
+  await stillUsable(page, errors);
+});
 
 test('AI timeout with no matching source: a readable note and a manual retry, not a demo answer', async ({ page }) => {
   const errors = watchErrors(page);
