@@ -27,7 +27,9 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
 
         <div className="app-header-actions">
           {hasJourney && view === 'landing' && (
-            <button type="button" className="button button-ghost button-small" disabled={busy} onClick={onResume}>回到我的旅程<Icon name="arrow" size={14} /></button>
+            <button type="button" className="button button-ghost button-small header-resume" disabled={busy} onClick={onResume}>
+              <Icon name="route" size={17} className="header-resume-icon" /><span className="header-resume-label">回到我的旅程</span><Icon name="arrow" size={14} className="header-resume-arrow" />
+            </button>
           )}
           <button type="button" className="icon-button" onClick={onSearch} aria-label="找服務"><Icon name="search" size={18} /></button>
           <details className="menu" ref={menu}>

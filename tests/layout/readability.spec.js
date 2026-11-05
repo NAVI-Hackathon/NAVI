@@ -86,6 +86,28 @@ test('the subtitle is the short Chinese one on a phone, on one line; the desktop
   }
 });
 
+test('with a journey open, every header button stays on screen from 320px to 1280px (J-04)', async ({ page }) => {
+  await openWorkspace(page);
+  await page.getByRole('button', { name: '回到 NAVI 首頁' }).click();
+  const resume = page.locator('.app-header').getByRole('button', { name: '回到我的旅程' });
+  for (const width of [320, 375, 390, 430, 768, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect(resume, `${width}px`).toBeVisible();
+    const boxes = await page.locator('.app-header-inner').evaluate(inner => [...inner.querySelectorAll('button, summary')]
+      .filter(el => !el.closest('.menu-popover'))
+      .map(el => { const r = el.getBoundingClientRect(); return { name: el.getAttribute('aria-label') || el.textContent.trim(), left: r.left, right: r.right }; }));
+    for (const box of boxes) {
+      expect(box.left, `${box.name} at ${width}px`).toBeGreaterThanOrEqual(0);
+      expect(box.right, `${box.name} at ${width}px`).toBeLessThanOrEqual(width);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.locator('.app-header summary[aria-label="更多選項"]').click();
+  await expect(page.locator('.menu-popover').getByRole('button', { name: '資料與隱私' })).toBeVisible();
+  await resume.click();
+  await expect(ring(page)).toHaveAttribute('aria-valuenow', '35');
+});
+
 test('desktop: explanations of mode, sources and limits are 13px; nothing is below 11px', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openWorkspace(page);
