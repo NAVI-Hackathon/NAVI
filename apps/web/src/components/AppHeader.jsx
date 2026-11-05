@@ -20,7 +20,7 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
       <div className="app-header-inner">
         <button type="button" className="brand" onClick={onHome} disabled={busy} aria-label="回到 NAVI 首頁">
           <Mark />
-          <span className="wordmark">NAVI<small>AI Service Journey Navigator</small></span>
+          <span className="wordmark">NAVI<small className="wordmark-en">AI Service Journey Navigator</small><small className="wordmark-zh">智慧保險導引</small></span>
         </button>
         {mode === 'demo' && <span className="mode-badge" title="使用示範資料，不連線 AI">示範模式</span>}
         {mode !== 'demo' && demoData && <span className="mode-badge" title="NAVI 服務目前以示範資料回答，不是 AI 分析">示範資料</span>}
