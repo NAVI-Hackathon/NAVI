@@ -1,3 +1,4 @@
+import {acceptsJudgeContract,legacyConversation} from './contract.js';
 import express from 'express';
 import {z} from 'zod';
 import {createHash,timingSafeEqual} from 'node:crypto';
@@ -42,7 +43,7 @@ export function createProductRouter({config,provider,sessions,repository,service
  router.get('/account/export',authenticated,async(req,res)=>res.set('Content-Disposition','attachment; filename="navi-data.json"').json(await sessions.export(req)));
  router.delete('/account/data',authenticated,async(req,res)=>{validate(z.object({confirmed:z.literal(true)}).strict(),req.body);res.json(await sessions.erase(req,res));});
  router.get('/conversations/:id',authenticated,async(req,res)=>res.json((await conversations.get(req.params.id,await sessions.owner(req))).value));
- router.post('/conversations/messages',authenticated,async(req,res)=>{const input=validate(ConversationRequestSchema,req.body),controller=new AbortController();res.on('close',()=>{if(!res.writableEnded)controller.abort();});const owner=await sessions.owner(req);res.json(await sessions.run(req,()=>conversations.send(input,owner,sessions,req,controller.signal)));});
+ router.post('/conversations/messages',authenticated,async(req,res)=>{const input=validate(ConversationRequestSchema,req.body),controller=new AbortController();res.on('close',()=>{if(!res.writableEnded)controller.abort();});const owner=await sessions.owner(req);const reply=await sessions.run(req,()=>conversations.send(input,owner,sessions,req,controller.signal));res.json(acceptsJudgeContract(req,res)?reply:legacyConversation(reply));});
  router.get('/service-workflows/:id',(req,res)=>{const f=serviceWorkflow(req.params.id);if(!f)throw new ApiError('SERVICE_NOT_SUPPORTED','目前來源沒有這項服務的可靠說明。',404,false);res.json(f);});
  router.post('/journeys/:id/checklist',async(req,res)=>res.json(await service.updateWorkflow(req.params.id,validate(WorkflowProgressSchema,req.body))));
  router.delete('/journeys/:id',async(req,res)=>{await sessions.authorize(req,req.params.id);res.json(await repository.deleteOwned(req.params.id,await sessions.owner(req)));});

@@ -13,7 +13,7 @@ async function setup(t,converse){
  const f=fixture(t),c=config(f);c.store=await store(f);let calls=0;
  const app=createApp(c,{...createDemoProvider(),mode:'live',converse:async(...args)=>{calls++;return converse(...args);}}),server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
  t.after(async()=>{server.closeAllConnections();await new Promise(r=>server.close(r));await app.locals.close();});let cookie='';
- async function call(path,body,method=body?'POST':'GET'){const r=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{Origin:origin,Cookie:cookie,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});cookie=r.headers.get('set-cookie')?.split(';')[0]??cookie;return {status:r.status,body:await r.json(),mode:r.headers.get('X-NAVI-AI-Mode')};}
+ async function call(path,body,method=body?'POST':'GET',contract='judge-v1'){const r=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{Origin:origin,Cookie:cookie,...(contract?{'X-NAVI-Contract':contract}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});cookie=r.headers.get('set-cookie')?.split(';')[0]??cookie;return {status:r.status,body:await r.json(),mode:r.headers.get('X-NAVI-AI-Mode'),vary:r.headers.get('Vary')};}
  await call('/session');await call('/session/consent',{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'});
  return {fixture:f,async upload(id,type,bytes=samplePdf(type)){const form=new FormData();form.set('file',new Blob([bytes],{type:'application/pdf'}),'synthetic.pdf');form.set('documentType',type);const r=await fetch(`http://127.0.0.1:${server.address().port}/api/journeys/${id}/documents`,{method:'POST',headers:{Origin:origin,Cookie:cookie},body:form});return {status:r.status,body:await r.json()};},call,store:c.store,get calls(){return calls;},send:async message=>call('/conversations/messages',{message,requestId:randomUUID()})};
 }
@@ -55,4 +55,21 @@ test('hospital fields, channels and readiness stay server-owned across upload, r
  r=await a.upload(j.id,'diagnosis_certificate',Buffer.concat([samplePdf('diagnosis_certificate'),Buffer.from('\n% SYNTHETIC REPLACEMENT TEST ONLY\n')]));assert.equal(r.status,200);j=r.body.journey;assert.equal(j.readiness,70);assert.ok(!j.documents.some(d=>d.id===firstDiagnosis));
  const reloaded=(await a.call('/journeys/'+j.id)).body;assert.deepEqual(reloaded,j);
  const dest=await new MongoStore({...fixture(t),key:a.fixture.key}).connect();t.after(()=>dest.close());await dest.restore(join(a.fixture.dir,'backups',snapshot.filename),{erasurePlan:await a.store.exportErasurePlan()});assert.equal(await dest.get('journeys',j.id),null);assert.equal((await dest.list('documents')).length,0);
+});
+test('HTTP contract keeps an old strict tab readable and opts into Judge additions without replaying generation',async t=>{
+ const a=await setup(t,()=>{throw Object.assign(new Error('PRIVATE'),{code:'AI_TIMEOUT'});});
+ const input={message:'我要變更保費付款方式。',requestId:randomUUID()};
+ const current=await a.call('/conversations/messages',input,'POST','judge-v1');
+ const legacy=await a.call('/conversations/messages',input,'POST',null);
+ assert.equal(current.status,200);assert.equal(legacy.status,200);assert.equal(current.body.failure.code,'AI_TIMEOUT');
+ assert.equal(legacy.body.errorCode,'AI_TIMEOUT');assert.equal(legacy.body.understanding,null);
+ assert.equal(Object.hasOwn(legacy.body,'failure'),false);assert.equal(Object.hasOwn(legacy.body,'clarification'),false);assert.equal(Object.hasOwn(legacy.body.evidence,'clarification'),false);
+ assert.match(legacy.vary,/X-NAVI-Contract/i);assert.equal(a.calls,1);
+ for(const endpoint of ['/knowledge/evidence','/knowledge/versioned-evidence']){
+  const path=endpoint+'?query='+encodeURIComponent('我要改地址');
+  const current=await a.call(path,undefined,'GET','judge-v1'),legacy=await a.call(path,undefined,'GET',null);
+  assert.equal(current.status,200);assert.equal(legacy.status,200);
+  assert.ok((current.body.evidence??current.body).clarification);
+  assert.equal(Object.hasOwn(legacy.body.evidence??legacy.body,'clarification'),false);
+ }
 });

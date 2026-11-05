@@ -38,7 +38,7 @@ export function createApp(config, provider = null, repository = null) {
   app.use(cors({
     credentials: true,
     origin(origin, callback) { callback(config.origins.includes(origin) || !origin ? null : new ApiError('ORIGIN_NOT_ALLOWED', '此來源無法存取服務。', 403), true); },
-    methods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type','If-Match'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,
+    methods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type','If-Match','X-NAVI-Contract'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,
   }));
   app.use('/api', async (req, res, next) => { res.set({ 'Referrer-Policy':'no-referrer', 'Cross-Origin-Resource-Policy':'same-site', 'X-NAVI-AI-Mode': provider.mode === 'demo' ? 'demo' : provider.mode === 'unavailable' ? 'unavailable' : 'live', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); next(); });
   app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey) }));

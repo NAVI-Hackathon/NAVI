@@ -1,3 +1,4 @@
+import { acceptsJudgeContract, legacyEvidence } from './contract.js';
 import { createPersistentHandoffService } from '../services/persistentHandoffService.js';
 import { validateMedia } from '../services/mediaValidationService.js';
 import express from 'express';
@@ -36,8 +37,12 @@ export function createJourneyRouter({ config, provider, repository, sessions, se
   const handoff = config.store ? createPersistentHandoffService({getJourney:service.get,store:config.store}) : createHandoffConfirmationService({getJourney:id=>repository.get(id)});
   router.post('/navigation/plans', (req, res) => res.json(navigation(validate(NavigationPlanRequestSchema, req.body))));
   router.get('/knowledge/version', (req, res) => res.json(getKnowledgeVersion({ allowSynthetic: !config.production })));
-  router.get('/knowledge/versioned-evidence', (req, res) => res.json({ knowledgeVersion: getKnowledgeVersion({ allowSynthetic: !config.production }).knowledgeVersion, evidence: searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query)) }));
-  router.get('/knowledge/evidence', (req, res) => res.json(searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
+  function evidence(req, res) {
+    const result = searchVerifiedKnowledge(validate(z.string().trim().min(1).max(500), req.query.query));
+    return acceptsJudgeContract(req, res) ? result : legacyEvidence(result);
+  }
+  router.get('/knowledge/versioned-evidence', (req, res) => res.json({ knowledgeVersion: getKnowledgeVersion({ allowSynthetic: !config.production }).knowledgeVersion, evidence: evidence(req, res) }));
+  router.get('/knowledge/evidence', (req, res) => res.json(evidence(req, res)));
   router.get('/journeys/:id/explanation', async (req, res) => res.json(explainJourney(await service.get(req.params.id))));
   router.post('/journeys/:id/handoff/preview', async (req, res) => {
     validate(z.object({}).strict(), req.body);
@@ -98,9 +103,13 @@ export function createJourneyRouter({ config, provider, repository, sessions, se
   });
   router.post('/knowledge/answer', async (req, res) => {
     const { question } = validate(z.object({ question: z.string().trim().min(1).max(500) }).strict(), req.body);
-    res.json(await answerKnowledge(question, { provider, config, signal: requestSignal(res) }));
+    const result = await answerKnowledge(question, { provider, config, signal: requestSignal(res) });
+    res.json(acceptsJudgeContract(req, res) ? result : legacyEvidence(result));
   });
   router.get('/knowledge', (req, res) => res.json(retrieveKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
-  router.get('/knowledge/search', (req, res) => res.json(searchPublicKnowledge(validate(z.string().trim().min(1).max(500), req.query.query))));
+  router.get('/knowledge/search', (req, res) => {
+    const result = searchPublicKnowledge(validate(z.string().trim().min(1).max(500), req.query.query));
+    res.json(acceptsJudgeContract(req, res) ? result : legacyEvidence(result));
+  });
   return router;
 }

@@ -11,6 +11,6 @@ export function verifyErasurePlan(key,plan,now,createdAt){
  if(!plan?.payload||!/^[a-f0-9]{64}$/.test(plan.signature??''))invalid();
  if(!timingSafeEqual(Buffer.from(plan.signature,'hex'),Buffer.from(erasureTag(key,plan.payload),'hex')))invalid();
  const p=plan.payload,asOf=Date.parse(p.asOf),backupAt=Date.parse(createdAt);
- if(p.kind!=='navi-erasure-plan'||p.version!==1||!/^navi(?:_|$)/.test(p.database)||!Array.isArray(p.records)||!Array.isArray(p.budgets)||!Number.isFinite(Date.parse(p.coverageSince))||Date.parse(p.coverageSince)>backupAt||!Number.isFinite(asOf)||!Number.isFinite(backupAt)||asOf>now||now-asOf>300000||asOf<backupAt||now-backupAt>BACKUP_RETENTION_MS)invalid();
+ if(p.kind!=='navi-erasure-plan'||p.version!==2||!/^[a-f0-9]{32}$/.test(p.epoch??'')||!/^navi(?:_|$)/.test(p.database)||!Array.isArray(p.records)||!Array.isArray(p.budgets)||!Number.isFinite(Date.parse(p.coverageSince))||Date.parse(p.coverageSince)>backupAt||!Number.isFinite(asOf)||!Number.isFinite(backupAt)||asOf>now||now-asOf>300000||asOf<backupAt||now-backupAt>BACKUP_RETENTION_MS)invalid();
  return p;
 }
