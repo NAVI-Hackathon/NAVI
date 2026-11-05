@@ -25,7 +25,7 @@ export async function withProviderDeadline(task, { config, signal }) {
 // One shared deadline covers both attempts; no nested retries or hidden demo substitution.
 export function requestValidatedAI(task, options) {
   return withProviderDeadline(async signal => {
-    const attempts = options.config.productMode ? 1 : options.config.aiMaxAttempts ?? 2;
+    const attempts = options.config.productMode || options.config.aiProvider === 'ollama' ? 1 : options.config.aiMaxAttempts ?? 2;
     for (let attempt = 0; attempt < attempts; attempt++) {
       try { return await task(signal); }
       catch (error) {

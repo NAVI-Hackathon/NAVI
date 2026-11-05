@@ -41,11 +41,11 @@ export function createApp(config, provider = null, repository = null) {
     methods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type','If-Match'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,
   }));
   app.use('/api', async (req, res, next) => { res.set({ 'Referrer-Policy':'no-referrer', 'Cross-Origin-Resource-Policy':'same-site', 'X-NAVI-AI-Mode': provider.mode === 'demo' ? 'demo' : provider.mode === 'unavailable' ? 'unavailable' : 'live', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); next(); });
-  app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey) }));
+  app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey || provider.backend === 'ollama') }));
   // ponytail: in-memory limit is per process; use a shared store only when deploying multiple instances.
   const limiter = rateLimit({ windowMs: 60000, limit: config.rateLimit, standardHeaders: 'draft-8', legacyHeaders: false, handler: (req, res) => res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: '操作次數較多，請稍後再試。', retryable: true } }) });
   app.use('/api', limiter, express.json({ limit: '16kb' }));
-  app.get('/api/ai/status', async (req, res) => res.json({ mode: provider.mode ?? 'unavailable', available: provider.mode === 'live', syntheticOnly: Boolean(config.restrictedLive), access: config.publicSynthetic ? 'public_synthetic' : 'operator_synthetic', demo: 'frontend_local_only', documentUpload: await sessions.documentUpload(req), product: { enabled: Boolean(config.productMode), persistence: Boolean(config.store), conversation: Boolean(config.productMode), retentionDays: config.productMode ? config.dataRetentionMs/86400000 : null }, privacy: '黑客松原型，非正式理賠入口。請勿提供真實醫療、銀行或個人資料。' }));
+  app.get('/api/ai/status', async (req, res) => res.json({ mode: provider.mode ?? 'unavailable', available: provider.mode === 'live', ...(provider.backend === 'ollama' ? { backend: 'ollama' } : {}), syntheticOnly: Boolean(config.restrictedLive), access: config.publicSynthetic ? 'public_synthetic' : 'operator_synthetic', demo: 'frontend_local_only', documentUpload: await sessions.documentUpload(req), product: { enabled: Boolean(config.productMode), persistence: Boolean(config.store), conversation: Boolean(config.productMode), retentionDays: config.productMode ? config.dataRetentionMs/86400000 : null }, privacy: '黑客松原型，非正式理賠入口。請勿提供真實醫療、銀行或個人資料。' }));
   app.post('/api/test-sessions', sessions.activate);
   app.use('/api', async (req, res, next) => {
     const path = req.path.toLowerCase().replace(/\/+$/, '');
@@ -64,6 +64,8 @@ export function createApp(config, provider = null, repository = null) {
   });
   if (config.productMode) app.use('/api', createProductRouter({ config, provider, sessions, repository, service }));
   app.post('/api/intelligence/understand', async (req, res) => {
+    // The legacy response schema has no Ollama provenance. The sandbox uses /analyze-intent.
+    if (provider.backend === 'ollama') throw new ApiError('AI_UNAVAILABLE', '本地 Ollama 沙箱請使用獨立意圖測試介面。', 503, false);
     const request = RequestSchema.safeParse(req.body);
     if (!request.success) throw new ApiError('INVALID_INPUT', '請描述你的情況，最多 2,000 字。', 400);
     const controller = new AbortController();

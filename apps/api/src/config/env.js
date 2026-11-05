@@ -1,3 +1,4 @@
+import { ollamaConfig } from './ollama.js';
 import { productConfig } from './product.js';
 import { FREE_TIER_MODEL, DEFAULT_LIVE_REQUEST_LIMIT } from '../ai/costGuard.js';
 import { DEFAULT_CONFIDENCE_THRESHOLD } from '../../../../shared/intelligence.js';
@@ -14,14 +15,18 @@ export function loadConfig(env = process.env) {
   const aiMode = env.AI_MODE?.trim() || 'demo';
   if (!['demo', 'live', 'unavailable'].includes(aiMode)) throw new Error('Invalid AI_MODE configuration');
   if (env.NODE_ENV === 'production' && (!env.AI_MODE?.trim() || aiMode === 'demo')) throw new Error('Production requires explicit AI_MODE=live or unavailable');
-  const model = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+  const aiProvider = env.AI_PROVIDER?.trim() || 'gemini';
+  if (!['gemini', 'ollama'].includes(aiProvider)) throw new Error('Invalid AI_PROVIDER configuration');
+  const local = aiProvider === 'ollama' && aiMode === 'live';
+  const ollama = local ? ollamaConfig(env) : {};
+  const model = (local ? undefined : env.GEMINI_MODEL?.trim()) || DEFAULT_GEMINI_MODEL;
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid GEMINI_MODEL configuration');
-  const product = productConfig(env, model, env.GEMINI_FREE_TIER_CONFIRMED === 'true');
+  const product = productConfig(local ? { ...env, AI_MODELS_JSON: undefined } : env, model, !local && env.GEMINI_FREE_TIER_CONFIRMED === 'true');
   if (!product.productMode && env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || env.GEMINI_FREE_TIER_CONFIRMED !== 'true' || model !== FREE_TIER_MODEL || !env.AI_USAGE_FILE?.startsWith('/') || (env.AI_PUBLIC_SYNTHETIC !== 'true' && (env.NAVI_TEST_SESSION_TOKEN?.trim().length ?? 0) < 32))) throw new Error('Production Live configuration is incomplete or unapproved');
   if (product.productMode && env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || !product.modelPolicies.some(p => p.id === model && p.confirmed && (p.tier === 'free' ? env.GEMINI_FREE_TIER_CONFIRMED === 'true' : env.ALLOW_PAID_AI === 'true' && product.billingConfirmed && product.paidAuthorization.length >= 32 && product.paidBudgetCents > 0)))) throw new Error('Production Live configuration is incomplete or unapproved');
   const requestLimit = numeric(env, 'LIVE_AI_REQUEST_LIMIT', env.MAX_LIVE_EVAL_REQUESTS_PER_RUN ? Number(env.MAX_LIVE_EVAL_REQUESTS_PER_RUN) : DEFAULT_LIVE_REQUEST_LIMIT, 1, 1000);
   const publicSynthetic = env.AI_PUBLIC_SYNTHETIC === 'true';
-  const restrictedLive = env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true';
+  const restrictedLive = local || env.NODE_ENV === 'production' || env.AI_SYNTHETIC_TEST_ONLY === 'true';
   const aiMaxAttempts = numeric(env, 'AI_MAX_ATTEMPTS', restrictedLive ? 1 : 2, 1, 2);
   if (restrictedLive && aiMaxAttempts !== 1 && !product.productMode) throw new Error('Restricted Live requests cannot automatically retry');
   const syntheticDocumentHashes = (env.AI_SYNTHETIC_DOCUMENT_SHA256 || '').split(',').map(value => value.trim()).filter(Boolean);
@@ -30,7 +35,7 @@ export function loadConfig(env = process.env) {
   if (!Number.isSafeInteger(requestLimit)) throw new Error('Invalid live AI request limit');
   for (const name of ['AI_DAILY_REQUEST_LIMIT', 'AI_MAX_CONCURRENT', 'AI_MAX_ATTEMPTS', 'AI_SESSION_REQUEST_LIMIT']) if (env[name] && !Number.isSafeInteger(Number(env[name]))) throw new Error(`Invalid ${name} configuration`);
   return {
-    ...product, aiMode,
+    ...product, ...ollama, aiMode, aiProvider,
     production: env.NODE_ENV === 'production',
     restrictedLive,
     publicSynthetic, syntheticDocumentHashes,
@@ -40,7 +45,7 @@ export function loadConfig(env = process.env) {
     sessionRequestLimit: numeric(env, 'AI_SESSION_REQUEST_LIMIT', product.productMode ? 0 : 6, product.productMode ? 0 : 1, product.productMode ? 10000 : 20),
     maxConcurrent: numeric(env, 'AI_MAX_CONCURRENT', product.productMode ? 3 : 1, 1, product.productMode ? 8 : 2),
     aiMaxAttempts,
-    apiKey: env.GEMINI_API_KEY?.trim() || '', model,
+    apiKey: local ? '' : env.GEMINI_API_KEY?.trim() || '', model,
     thinkingLevel: model === FREE_TIER_MODEL ? 'MINIMAL' : undefined,
     allowPaidAI: product.productMode && env.ALLOW_PAID_AI === 'true', freeTierConfirmed: env.GEMINI_FREE_TIER_CONFIRMED === 'true',
     ci: Boolean(env.CI && !['false', '0'].includes(env.CI.toLowerCase())),
@@ -52,7 +57,7 @@ export function loadConfig(env = process.env) {
     confidenceThreshold: numeric(env, 'INTENT_CONFIDENCE_THRESHOLD', DEFAULT_CONFIDENCE_THRESHOLD, 0, 1),
     journeyConfidenceThreshold: numeric(env, 'JOURNEY_CONFIDENCE_THRESHOLD', 0.75, 0.55, 1),
     humanReviewThreshold: numeric(env, 'HUMAN_REVIEW_THRESHOLD', 0.55, 0, 0.55),
-    timeoutMs: numeric(env, 'AI_TIMEOUT_MS', 10000, 1000, 12000),
+    timeoutMs: local ? numeric(env, 'OLLAMA_TIMEOUT_MS', 45000, 1000, 80000) : numeric(env, 'AI_TIMEOUT_MS', 10000, 1000, 12000),
     debugAi: env.AI_DEBUG_METADATA === 'true',
     rateLimit: numeric(env, 'API_RATE_LIMIT', product.productMode ? 90 : 30, 10, 1000),
   };

@@ -1,0 +1,1 @@
+restrict,port-forwarding,permitlisten="127.0.0.1:21144" ssh-ed25519 REPLACE_WITH_DEDICATED_TUNNEL_PUBLIC_KEY navi-ollama-tunnel

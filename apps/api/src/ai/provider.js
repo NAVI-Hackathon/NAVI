@@ -1,3 +1,4 @@
+import { createOllamaProvider } from './ollamaProvider.js';
 import { assertFreeProvider, assertLiveAllowed } from './costGuard.js';
 import { createDemoProvider } from './demoProvider.js';
 import { createGeminiProvider } from '../services/gemini.service.js';
@@ -11,6 +12,7 @@ export function createAIProvider(config) {
   // Public production never serves fixtures, even if a legacy --demo flag is still present.
   if (config.aiMode === 'unavailable' || (config.production && config.aiMode === 'demo')) return createUnavailableProvider();
   if (config.aiMode === 'demo') return assertFreeProvider(createDemoProvider());
+  if (config.aiProvider === 'ollama') return config.ci ? createUnavailableProvider() : createOllamaProvider(config);
   if (config.restrictedLive) {
     try { assertLiveAllowed(config); } catch { return createUnavailableProvider(); }
     if (!config.apiKey || (!config.productMode && !config.usageFile) || (!config.publicSynthetic && config.sessionToken.length < 32)) return createUnavailableProvider();
