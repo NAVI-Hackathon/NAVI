@@ -74,6 +74,18 @@ test('the mode badge stays on one line and nothing scrolls sideways, down to 320
   }
 });
 
+test('the subtitle is the short Chinese one on a phone, on one line; the desktop keeps the English one', async ({ page }) => {
+  for (const [width, text] of [[320, '智慧保險導引'], [390, '智慧保險導引'], [1280, 'AI Service Journey Navigator']]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/demo');
+    const subtitle = page.locator('.app-header .wordmark small:visible');
+    await expect(subtitle, `${width}px`).toHaveCount(1);
+    await expect(subtitle).toHaveText(text);
+    const { height, line } = await subtitle.evaluate(el => ({ height: el.getBoundingClientRect().height, line: parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.4 }));
+    expect(height, `subtitle at ${width}px`).toBeLessThan(line * 1.9);
+  }
+});
+
 test('desktop: explanations of mode, sources and limits are 13px; nothing is below 11px', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openWorkspace(page);

@@ -68,6 +68,8 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .brand-mark path { stroke: var(--color-canvas); }
 .wordmark { font-size: 23px; font-weight: 550; letter-spacing: 1.6px; text-align: left; line-height: 1.25; }
 .wordmark small { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; letter-spacing: 0.04em; color: var(--color-text-muted); }
+/* Narrow screens show the short Chinese subtitle: the English one wraps to two lines at 12px (B, 11/05). */
+.wordmark .wordmark-zh { display: none; }
 .mode-badge { padding: 1px 9px; white-space: nowrap; border: 1px solid rgba(216, 193, 143, 0.22); border-radius: 6px; font-size: 11px; letter-spacing: 0.04em; color: var(--color-warning); }
 .app-header-actions { display: flex; align-items: center; gap: var(--space-5); margin-left: auto; }
 .menu { position: relative; }
@@ -460,6 +462,8 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .brand-mark { width: 28px; height: 28px; }
   .wordmark { font-size: 21px; }
   .wordmark small { font-size: 11px; letter-spacing: 0.01em; }
+  .wordmark .wordmark-en { display: none; }
+  .wordmark .wordmark-zh { display: block; letter-spacing: 0; white-space: nowrap; }
   .app-header-actions { gap: 10px; }
   .demo-banner { padding: 7px 20px; font-size: 13px; }
   .analysis-steps { flex-direction: column; gap: 10px; }
@@ -482,6 +486,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .modal-actions .button { width: 100%; }
   .review-list > div { grid-template-columns: 95px 1fr; gap: 13px; font-size: 12px; }
 }
+@media (max-width: 359.98px) { .app-header-inner { padding: 0 12px; } } /* room for the one-line subtitle at 320px */
 
 /* ───────── Reduced motion ───────── */
 [data-reduced-motion="true"] *, [data-reduced-motion="true"] *::before, [data-reduced-motion="true"] *::after {
