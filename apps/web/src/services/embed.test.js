@@ -47,6 +47,16 @@ test('navigate messages carry only internal mock-site paths and kebab-case ancho
   assert.equal(read({ ...valid, source: { ...valid.source, url: 'https://evil.example/zh/a314' } }), null);
 });
 
+test('mode messages carry only demo or live, nothing else', () => {
+  const read = data => readMessage(event('http://127.0.0.1:3000', data), { allowedOrigins, expectedSource: parent, schema: NaviMessageSchema });
+  for (const mode of ['demo', 'live']) assert.deepEqual(read(naviMessage('navi:mode', { mode })), naviMessage('navi:mode', { mode }));
+  for (const mode of ['off', 'Demo', '', null, undefined, 1]) assert.equal(read(naviMessage('navi:mode', { mode })), null, String(mode));
+  assert.equal(read({ ...naviMessage('navi:mode', { mode: 'demo' }), url: 'https://evil.example' }), null);
+  assert.equal(read(naviMessage('navi:mode')), null);
+  assert.equal(readMessage(event('https://evil.example', naviMessage('navi:mode', { mode: 'demo' })), { allowedOrigins, expectedSource: parent, schema: NaviMessageSchema }), null);
+  assert.equal(readMessage(event('http://127.0.0.1:3000', naviMessage('navi:mode', { mode: 'demo' }), stranger), { allowedOrigins, expectedSource: parent, schema: NaviMessageSchema }), null);
+});
+
 test('messages are rejected before the expected window exists, even from an allowed origin', () => {
   for (const [schema, data] of [[HostMessageSchema, hostMessage('host:hello')], [NaviMessageSchema, naviMessage('navi:ready')], [NaviMessageSchema, naviMessage('navi:navigate', { destination: claimDestinations.form })]]) {
     for (const expectedSource of [null, undefined]) {

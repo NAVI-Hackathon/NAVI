@@ -47,12 +47,12 @@ function TaskOptions({ split, tasks, disabled, onPickTask, first }) {
 }
 
 /** After a failed analysis: try again by hand (never automatically), or continue with the demo. */
-function RetryOptions({ retry, busy, mode, onSend }) {
+function RetryOptions({ retry, busy, mode, onSend, onDemo }) {
   return (
     <div className="chat-option-list">
       <button type="button" className="chat-option" disabled={busy} onClick={() => onSend(retry.text, retry.label)}>重新分析</button>
       {/* Embedded NAVI stays in its panel: the demo entry is /embed?mode=demo, not the full-page /demo. */}
-      {mode !== 'demo' && <a className="chat-option" href={embedded ? '/embed?mode=demo' : '/demo'}>改用示範模式</a>}
+      {mode !== 'demo' && <a className="chat-option" href={embedded ? '/embed?mode=demo' : '/demo'} onClick={onDemo}>改用示範模式</a>}
     </div>
   );
 }
@@ -106,7 +106,7 @@ function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   );
 }
 
-function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journeysSlot, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney }) {
+function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journeysSlot, onSend, onDemo, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney }) {
   const followUp = latest ? message.followUp : null;
   let body = null;
   if (message.kind === 'welcome') {
@@ -124,7 +124,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
     body = (
       <>
         {message.notice && <p className="chat-notice" role="note">{message.notice}</p>}
-        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
+        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} onDemo={onDemo} />}
         {latest && message.reload && <ReloadOption />}
         {!first
           ? <p className="chat-text">官網資料中沒有找到可以直接引用的說明{hotline ? `，可以換個說法再問，或洽客服專線 ${hotline}` : '，可以換個說法再問'}。</p>
@@ -148,7 +148,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
       <>
         <p className={`chat-title tone-${message.tone}`}>{message.tone === 'error' && <Icon name="alert" size={15} />}{message.title}</p>
         <p className="chat-text">{message.body}</p>
-        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
+        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} onDemo={onDemo} />}
         {latest && message.reload && <ReloadOption />}
       </>
     );
@@ -174,7 +174,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
  * NAVI landing as a chat: the conversation scrolls above, the input stays at the bottom.
  * Replies come from the official-site search and the backend; option buttons only send text back.
  */
-export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, offline = false, ref }) {
+export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onDemo, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, offline = false, ref }) {
   const [text, setText] = useState('');
   const textarea = useRef(null);
   const dockRef = useRef(null);
@@ -249,7 +249,7 @@ export default function Landing({ messages, analysisPhase, snapshot, openTasks =
                 ? <div className="msg msg-user"><p className="msg-bubble">{message.text}</p></div>
                 : <ErrorBoundary name="chat message" fallback={() => <BrokenMessage />}>
                   <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot} openTasks={openTasks} journeysSlot={journeysSlot}
-                    onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />
+                    onSend={onSend} onDemo={onDemo} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />
                 </ErrorBoundary>}
             </motion.div>
           ))}

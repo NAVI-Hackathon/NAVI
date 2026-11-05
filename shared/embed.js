@@ -19,6 +19,9 @@ export const NaviMessageSchema = z.discriminatedUnion('type', [
   z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:ready') }).strict(),
   z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:close') }).strict(),
   z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:navigate'), destination: NavigationTargetSchema, id: NavigationId.optional() }).strict(),
+  // The user chose a mode inside NAVI; the host remembers it for this tab and reloads NAVI in that mode.
+  // Sent only on a user's click, never on load, so the reload cannot answer with another switch.
+  z.object({ source: z.literal('navi'), version: z.literal(EMBED_PROTOCOL_VERSION), type: z.literal('navi:mode'), mode: z.enum(['demo', 'live']) }).strict(),
 ]);
 
 /** "https://a.example, http://127.0.0.1:3000" → normalised origins; invalid entries are dropped. */
