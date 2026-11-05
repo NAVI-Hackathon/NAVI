@@ -46,11 +46,12 @@ function TaskOptions({ split, tasks, disabled, onPickTask, first }) {
   );
 }
 
-/** After a failed analysis: try again by hand (never automatically), or continue with the demo. */
+/** After a failed analysis: try again by hand (never automatically, and not when the server says the same
+ *  request cannot be retried), or continue with the demo. */
 function RetryOptions({ retry, busy, mode, onSend, onDemo }) {
   return (
     <div className="chat-option-list">
-      <button type="button" className="chat-option" disabled={busy} onClick={() => onSend(retry.text, retry.label)}>重新分析</button>
+      {retry.retryable !== false && <button type="button" className="chat-option" disabled={busy} onClick={() => onSend(retry.text, retry.label)}>重新分析</button>}
       {/* Embedded NAVI stays in its panel: the demo entry is /embed?mode=demo, not the full-page /demo. */}
       {mode !== 'demo' && <a className="chat-option" href={embedded ? '/embed?mode=demo' : '/demo'} onClick={onDemo}>改用示範模式</a>}
     </div>
@@ -148,6 +149,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
       <>
         <p className={`chat-title tone-${message.tone}`}>{message.tone === 'error' && <Icon name="alert" size={15} />}{message.title}</p>
         <p className="chat-text">{message.body}</p>
+        {message.detail && <p className="chat-text">{message.detail}</p>}
         {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} onDemo={onDemo} />}
         {latest && message.reload && <ReloadOption />}
       </>

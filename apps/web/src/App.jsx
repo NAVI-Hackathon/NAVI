@@ -15,6 +15,7 @@ import { applyNavigationReply, newNavigationId, naviMessage, originOf } from '..
 import { analysisErrors } from './services/intelligence.js';
 import { errorNotice, journeyDeleteNotice, productErrors, reloadCodes } from './domain/productErrors.js';
 import { answersMessage } from './domain/chatAnswers.js';
+import { clarificationReply } from './domain/clarification.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
 import { followUpForClarification, followUpForRefusal } from './domain/followUps.js';
@@ -316,10 +317,22 @@ export default function App() {
     const ctl = new AbortController();
     analysisCtl.current = ctl;
     say({ role: 'user', text: label });
-    const reply = next => { setAnalysisPhase(null); say(next); };
-    // Official-site answers are searched locally; refused questions never reach the AI.
+    // Official-site answers are searched locally (shared rules, the same as the server's); refused questions
+    // never reach the AI.
     const knowledge = searchKnowledge(text);
-    if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return true; }
+    // A clarification that does not block (which address, which beneficiary…) follows the reply; the
+    // server's own, when it sends one, replaces the local one.
+    let asksAlso = knowledge.clarification?.blocking === false ? knowledge.clarification : null;
+    const reply = next => {
+      setAnalysisPhase(null);
+      say(next);
+      // Not after a failure: the reply's 重新分析／重新載入 must stay the latest choice.
+      if (asksAlso && ['answers', 'journey'].includes(next.kind) && !next.retry && !next.reload) say(clarificationReply(asksAlso));
+      asksAlso = null;
+    };
+    if (knowledge.status === 'out_of_scope') { reply(clarificationReply(knowledge.clarification) ?? guardReply(knowledge.hotline)); return true; }
+    // /demo: no service can be chosen yet — ask (as the server would, without calling the AI).
+    if (mode === 'demo' && knowledge.clarification?.blocking) { reply(clarificationReply(knowledge.clarification)); return true; }
     const answered = knowledge.status === 'answered';
     const answers = notice => answersMessage(knowledge, text, { notice });
     setAnalysisPhase(0);
@@ -338,11 +351,17 @@ export default function App() {
           // The server answered from official sources only (retrieval), e.g. because the AI failed: show the
           // sources and say why; the request is retried only by hand, and never replaced by demo results.
           const p=split.productReply;
-          const failed=p.errorCode?(errorCopy[p.errorCode]??['AI 分析暫時無法使用', '請稍後再按「重新分析」。']):null;
-          const again=failed?{retry:{text,label}}:{};
+          asksAlso=p.clarification&&!p.clarification.blocking?p.clarification:null;
+          // No service chosen yet, or a promise NAVI cannot make: the server's question and options.
+          if(!p.failure&&!p.errorCode&&p.clarification?.blocking){reply(clarificationReply(p.clarification));return;}
+          const fail=p.failure??(p.errorCode?{code:p.errorCode,retryable:true}:null);
+          const failed=fail?(errorCopy[fail.code]??['AI 分析暫時無法使用', userMessage(p.failure?.message,'請稍後再按「重新分析」。')]):null;
+          // retryable=false (quota spent, consent missing…): no 重新分析 for the same request.
+          const again=failed?{retry:{text,label,retryable:fail.retryable!==false}}:{};
           if(p.evidence.status==='answered')reply(answersMessage(service.knowledgeResult(p),text,{notice:failed?`${failed[0]}，以下是已核對來源的官網資料。`:undefined,...again}));
-          else reply({kind:'note',tone:failed?'error':'info',title:failed?failed[0]:'下一步',body:failed?`${failed[1]}${p.answer?` ${p.answer}`:''}`:p.answer,...again});
+          else reply({kind:'note',tone:failed?'error':'info',title:failed?failed[0]:'下一步',body:failed?failed[1]:p.answer,...(failed&&p.answer?{detail:p.answer}:{}),...again});
           return;}
+        if(split?.productReply?.clarification&&!split.productReply.clarification.blocking)asksAlso=split.productReply.clarification;
         if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
