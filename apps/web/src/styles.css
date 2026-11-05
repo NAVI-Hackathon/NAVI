@@ -151,8 +151,10 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .story-card { position: relative; isolation: isolate; }
 .story-surface { position: absolute; inset: -12px -14px 10px; z-index: -1; border-radius: var(--radius); background: transparent; }
 .story-text { margin-top: 9px; font-size: 13px; line-height: 1.9; color: var(--color-text-secondary); }
-.insight-summary { font-size: 12px; line-height: 1.9; color: var(--color-text-secondary); }
-.insight-facts { display: grid; gap: 8px; margin-top: 16px; }
+.insight-origin { font-size: 13px; line-height: 1.8; color: var(--color-text-secondary); }
+.insight-now { margin-top: 14px; }
+.insight-facts dd { overflow-wrap: anywhere; }
+.insight-facts { display: grid; gap: 8px; margin-top: 8px; }
 .insight-facts div { display: flex; justify-content: space-between; gap: 12px; }
 .insight-facts dt { font-size: 10px; color: var(--color-text-muted); }
 .insight-facts dd { font-size: 12px; text-align: right; }
@@ -761,6 +763,8 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .task-chip.is-current { border-color: var(--color-accent-line); background: var(--color-accent-soft); }
 .task-chip.is-current svg { color: var(--color-accent); }
 .task-chip.is-open { border-style: dashed; }
+.task-chip.is-answered svg { color: var(--color-accent); }
+.task-bar-note { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--color-text-muted); }
 .task-chip:disabled { opacity: 0.55; }
 .task-bar-chat { margin: 14px 0 0; }
 .chat-composer { margin: 0; }
@@ -820,3 +824,6 @@ button:active:not(:disabled) { transform: scale(0.98); }
 .product-panel{width:min(100%,800px);margin-inline:auto;padding:clamp(20px,4vw,48px);box-sizing:border-box}.product-panel li{margin-block:12px}.modal-body input:not([type=checkbox]){display:block;width:100%;min-height:44px;margin-block:8px 16px;background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:8px;padding:10px;color:inherit}.modal-body .field-label{display:block;margin-top:12px}
 
 .modal-body input:not([type=checkbox]):focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}.product-panel .button{min-height:44px}.product-panel h1{margin-block:16px}.product-panel h2{margin-block:24px 12px}
+
+/* Whole-app fallback (main.jsx): never a blank page. */
+.app-failed { max-width: 420px; margin: 18vh auto 0; padding: 0 16px; display: grid; gap: 10px; justify-items: start; }
