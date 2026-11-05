@@ -59,3 +59,5 @@ E13 初次實測：6 個 fixtures，3 passed（無結果、澄清、拒答），
 沿用 ServiceJourney，不建立新模型：extractedData 是使用者／已抽取事件資料；documents[].fields 是文件抽取；claimContext.hospital 是院所快照比對、claimContext.inpatient 是後端日期／天數；claimContext.channels[].eligibility 是資格待確認狀態；currentStage/readiness/consistencyIssues/nextAction 全由後端推導。
 
 院所名稱已取得、入口可導航與 eligibility 是不同事。文件 verified 只指欄位一致性檢查；verification.authenticity / eligibility 均為 not_assessed。100% 不代表核賠、送件或正式客服收件。刪除／替換／重複上傳沿用後端規則；同一 bytes 的重複上傳應冪等，不強迫產生另一個文件ID。
+
+舊客戶端預設收到原有欄位。支援本版的瀏覽器以 `X-NAVI-Contract: judge-v1` opt-in，才收到新增的 `failure`／`clarification`。重送同一 request ID 仍讀取已保存回覆，不會重送 AI。

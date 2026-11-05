@@ -54,6 +54,8 @@ def build(revision, output, web_origin='http://127.0.0.1:18171', mock_origin='ht
         'staticArtifacts':'HTML/CSS/browser JS; no native runtime modules', 'apiDependencies':'Installed on Ubuntu from root lockfile, API workspace only',
         'origins':{'web':web_origin,'mock':mock_origin},
         'toolHashes':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in HERE.iterdir() if p.is_file() and p.suffix in ['.py','.mjs','.sh']}}
+    storage_schema = source/'apps/api/src/storage/schema-version.json'
+    metadata['storageSchema'] = json.loads(storage_schema.read_text())['version'] if storage_schema.is_file() else 1
     (payload/'release.json').write_text(json.dumps(metadata,indent=2)+'\n')
     assert not list(payload.rglob('node_modules')), 'Never ship macOS node_modules'
     artifact=output/f'navi-{sha[:12]}.tar.gz'
