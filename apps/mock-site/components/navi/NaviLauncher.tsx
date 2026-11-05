@@ -65,6 +65,21 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     if (NAVI_ORIGIN) frame.current?.contentWindow?.postMessage(hostMessage("host:hello"), NAVI_ORIGIN);
   }, []);
 
+  const reconnect = useCallback((useDemo: boolean) => {
+    if (useDemo) rememberDemo(true);
+    setConnected(false);
+    setTimedOut(false);
+    setDemo(useDemo);
+    setAttempt(n => n + 1); // remounts the iframe
+  }, []);
+  const demoRef = useRef(demo);
+  useEffect(() => { demoRef.current = demo; }, [demo]);
+  const switchMode = useCallback((useDemo: boolean) => {
+    if (useDemo === demoRef.current || (useDemo && !DEMO_URL)) return;
+    rememberDemo(useDemo);
+    reconnect(useDemo);
+  }, [reconnect]);
+
   useEffect(() => {
     if (!NAVI_ORIGIN) return;
     const allowedOrigins = [NAVI_ORIGIN];
@@ -74,6 +89,9 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
       if (!message) return;
       if (message.type === "navi:ready") { setConnected(true); sayHello(); }
       if (message.type === "navi:close") { setOpen(false); launcher.current?.focus(); }
+      // 使用者在 NAVI 裡選了模式：記在這個分頁並用該模式重新載入 NAVI。已經是該模式就不動作，
+      // 重新載入的 NAVI 也不會再送 navi:mode，所以不會來回切換。
+      if (message.type === "navi:mode") switchMode(message.mode === "demo");
       if (message.type === "navi:navigate") {
         const { id } = message;
         // Tell NAVI whether the place was really found, so it never says "已帶到" for a missing target.
@@ -89,7 +107,7 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [onNavigate, sayHello]);
+  }, [onNavigate, sayHello, switchMode]);
 
   useEffect(() => {
     if (!mounted || connected) return;
@@ -100,14 +118,6 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
   // Record the mode in the address when the site loads, before in-site navigation drops the query;
   // the launcher reads it when NAVI is opened.
   useEffect(() => { chosenDemo(); }, []);
-
-  const reconnect = (useDemo: boolean) => {
-    if (useDemo) rememberDemo(true);
-    setConnected(false);
-    setTimedOut(false);
-    setDemo(useDemo);
-    setAttempt(n => n + 1); // remounts the iframe
-  };
 
   // Wide screens: the open panel docks at the right and the page makes room for it, so the place NAVI
   // outlines (and its buttons, e.g. 下載) is never hidden under the panel. Phones use a full-screen panel.
