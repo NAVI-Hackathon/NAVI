@@ -386,3 +386,11 @@ test('deleting a whole journey (A3): the id goes only after an explicit matching
   assert.deepEqual(stored(), ids.slice(1));
   assert.ok(calls.every(call => call.startsWith('DELETE ')));
 });
+
+test('Ollama mode does not offer the built-in Gemini sample upload', async () => {
+  const service = createApiJourneyService({ storage: memoryStorage(), fetchImpl: async () =>
+    Response.json({ mode: 'live', available: true, backend: 'ollama' }, { headers: { 'X-NAVI-AI-Mode': 'live' } }) });
+  assert.equal(service.capabilities.samples, 'ai');
+  assert.equal(await service.checkAiMode(), 'live');
+  assert.equal(service.capabilities.samples, false);
+});

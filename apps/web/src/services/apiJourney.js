@@ -195,7 +195,7 @@ export function createApiJourneyService({
     // evidence, adds no readiness and cannot unlock review (POST /manual-document-information).
     // Formal mode is real use: its sample is the synthetic PDF, sent to the server and read by the
     // AI like any upload (Live accepts only approved synthetic files). /demo samples never leave the browser.
-    capabilities: { manualEntry: false, manualInformation: true, samples: 'ai', tasks: true, correction: true, journeys: true, uploadProgress: true },
+    capabilities: { manualEntry: false, manualInformation: true, get samples() { return aiBackend === 'ollama' ? false : 'ai'; }, tasks: true, correction: true, journeys: true, uploadProgress: true },
     documentTimeoutMs,
     /**
      * What answers on the server: 'live' (Gemini), 'demo' (fixed synthetic results) or 'unavailable'.

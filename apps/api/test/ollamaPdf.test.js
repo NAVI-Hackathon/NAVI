@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prepareOllamaDocument } from '../src/ai/ollamaDocumentInput.js';
+import { validateMedia } from '../src/services/mediaValidationService.js';
 import { isOllamaImage } from '../src/ai/ollamaImages.js';
 
 const toolsAvailable = ['pdfinfo', 'pdftotext', 'pdftoppm'].every(command =>
@@ -56,4 +57,13 @@ test('oversized, malformed, excessive-page and cancelled PDFs fail before infere
   await assert.rejects(prepare(syntheticScan(2), AbortSignal.timeout(5)), { code: 'DOCUMENT_INTELLIGENCE_NOT_AVAILABLE' });
   await assert.rejects(prepareOllamaDocument({ bytes: diagnosis, mimeType: 'application/pdf' }, new Set()),
     { code: 'DOCUMENT_NOT_SYNTHETIC' });
+});
+
+test('unapproved Ollama uploads are rejected before qpdf or decoding', async () => {
+  const bytes = Buffer.from(diagnosis);
+  const upload = { bytes, mimeType: 'application/pdf', sha256: hash(bytes) };
+  let parserCalls = 0;
+  await assert.rejects(validateMedia(upload, { aiProvider: 'ollama', productMode: true, production: true,
+    syntheticDocumentHashes: [] }, undefined, async () => { parserCalls++; }), { code: 'DOCUMENT_NOT_SYNTHETIC' });
+  assert.equal(parserCalls, 0);
 });

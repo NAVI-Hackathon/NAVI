@@ -49,6 +49,8 @@ test('Ollama product uses versioned consent and durable quota, preserves provena
   }
   const profile = (await request('/session')).body;
   assert.equal(profile.disclosureVersion, 'ollama-local-synthetic-2026-11');
+  assert.deepEqual(profile.documentUpload, { builtInSynthetic: false, userProvidedSynthetic: false, realPersonalDocuments: false });
+  assert.deepEqual((await request('/ai/status')).body.documentUpload, profile.documentUpload);
   assert.equal((await request('/session/consent', { syntheticOnly: true, disclosureVersion: 'gemini-unpaid-2026-10' })).status, 400);
   assert.equal((await request('/session/consent', { syntheticOnly: true, disclosureVersion: profile.disclosureVersion })).status, 200);
   const message = '我要變更保單通訊地址。';
