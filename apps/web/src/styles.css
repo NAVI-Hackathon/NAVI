@@ -487,6 +487,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .panel-header { margin-bottom: 18px; }
   .ring-value strong { font-size: 76px; }
   .doc-list { margin-left: -13px; margin-right: -13px; padding: 0 13px; }
+  .doc-header .icon-button { width: 44px; height: 44px; flex-shrink: 0; }
   .service-entry { flex-direction: column; align-items: stretch; }
   .workspace-footer { flex-direction: column; align-items: flex-start; justify-content: center; gap: 10px; padding: 20px 0; font-size: 12px; }
   .modal-layer { padding: 12px; }
