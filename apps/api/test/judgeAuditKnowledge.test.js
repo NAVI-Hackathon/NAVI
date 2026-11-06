@@ -61,5 +61,12 @@ test('knowledge answer endpoint services refuse guarantees and clarify without A
 test('generic benefit-method changes do not guess payment or dividend',()=>{const r=searchKnowledge('我要變更給付方式');assert.equal(r.status,'not_found');assert.equal(r.clarification.reason,'payment_or_dividend');});
 
 test('normal claim document requirements are not classified as demands for guaranteed payout',()=>{for(const q of ['理賠一定要正本嗎','理賠一定要準備哪些文件'])assert.equal(searchKnowledge(q).status,'answered');});
+test('a hospitalization document question cites the inpatient checklist, not the household-registration claim channel',()=>{
+  const result=searchVerifiedKnowledge('我想知道住院理賠需要什麼資料。');
+  assert.equal(result.results[0].source.id,'claim-doc:2');
+  assert.ok(result.results[0].excerpts.includes('診斷書或住院證明'));
+  assert.ok(result.results[0].excerpts.includes('保險金申請書'));
+  assert.ok(!result.results.some(entry=>entry.source.id==='service:claim_household_registration'));
+});
 
 test('negating a request for a payout decision does not erase a separate positive request',()=>{for(const q of ['不要保證一定核賠，我只想看申請流程','不用你判斷是否給付，請提供應備文件','我沒有要你幫我推算金額，只問理賠說明'])assert.equal(isDecisionQuestion(q),false,q);assert.equal(isDecisionQuestion('不要判斷資格，請保證一定理賠'),true);});
