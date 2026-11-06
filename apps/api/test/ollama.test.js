@@ -63,7 +63,9 @@ test('provider selection is opt-in, restricted, and leaves Demo and production d
     { HOST: '0.0.0.0' }, { TRUST_PROXY_LOOPBACK: 'true' }, { ALLOW_PAID_AI: 'true' }, { NAVI_TEST_SESSION_TOKEN: 'short' }, { OLLAMA_TEXT_MODEL: 'unapproved' }]) {
     assert.throws(() => loadConfig({ ...env, ...overrides }));
   }
-  for (const url of ['http://localhost:11434', 'http://127.1:11434', 'https://127.0.0.1:11434', 'http://127.0.0.1:11434/api', 'http://127.0.0.1:11434@other.test', 'http://127.0.0.1:99999']) assert.throws(() => ollamaOrigin(url));
+  assert.equal(ollamaOrigin('https://127.0.0.1:11434', { requireTLS: true }), 'https://127.0.0.1:11434');
+  assert.throws(() => ollamaOrigin('http://127.0.0.1:11434', { requireTLS: true }));
+  for (const url of ['http://localhost:11434', 'http://127.1:11434', 'http://127.0.0.1:11434/api', 'http://127.0.0.1:11434@other.test', 'http://127.0.0.1:99999']) assert.throws(() => ollamaOrigin(url));
 });
 
 test('real loopback HTTP sends a structured chat payload and validates intent and model metadata', async t => {
