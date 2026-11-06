@@ -14,9 +14,11 @@ function journey(overrides = {}) {
 }
 const snapshot = (kind, overrides) => ({ journey: journey(overrides), context: { kind } });
 
-test('the document workflow gets the full workspace; other services and specialist review get the compact one', () => {
+test('the document workflow gets the full workspace; specialist review keeps uploaded hospital documents accessible', () => {
   assert.equal(workspaceProfile(snapshot('hospital')), 'full');
   assert.equal(workspaceProfile(snapshot('hospital', { currentStage: 'HUMAN_REVIEW' })), 'compact');
+  const documents = [{ id: uuid(2), documentType: 'bank_passbook', status: 'needs_review', requiresRevalidation: true }];
+  assert.equal(workspaceProfile(snapshot('hospital', { currentStage: 'HUMAN_REVIEW', documents })), 'full');
   assert.equal(workspaceProfile(snapshot('payment_method_change', { supported: false, currentStage: 'SERVICE_IDENTIFIED' })), 'compact');
   assert.equal(workspaceProfile(snapshot('unknown')), 'compact');
 });
@@ -34,7 +36,7 @@ test('open conditions quote the server state: conflicts, documents to re-check a
   ];
   const conditions = openConditions(journey({ documents, consistencyIssues: [{ type: 'HOSPITAL_NAME_MISMATCH', severity: 'high', message: '兩份文件的醫院名稱不一致。', documentIds: [uuid(2)] }] }));
   assert.deepEqual(conditions.map(c => c.id), ['issue-HOSPITAL_NAME_MISMATCH', `revalidate-${uuid(2)}`, `review-${uuid(3)}`]);
-  assert.match(conditions[1].text, /重新上傳確認/);
+  assert.match(conditions[1].text, /需要確認欄位，目前不計入準備度/);
   assert.deepEqual(openConditions(journey()), []);
 });
 
