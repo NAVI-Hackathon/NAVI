@@ -116,7 +116,7 @@ const SCENES = [
   { bars: 2, section: '05　檢核', caption: '確認資料，才算準備完成', icon: 'source', shots: [['desktop/review-dialog']], click: true },
   { bars: 3, section: '05　檢核', caption: '已完成 NAVI 初步資料準備', icon: 'badge', shots: [['desktop/workspace-100']], enter: 'zoom', drop: true, vo: '百分之百只代表資料備齊，不代表理賠核准。' },
   { bars: 3, section: '06　可信', caption: 'AI 理解，系統決定', icon: 'spark', card: 'flow', flow: 'principle', vo: 'AI 只負責理解，計分、答案和導覽都由規則與官網資料決定。' },
-  { bars: 2, section: '06　可信', caption: '不給投保建議，不判斷能否理賠', icon: 'shield', shots: [['desktop/navi-guardrail']], vo: 'NAVI 不給投保建議，也不判斷能否理賠。' },
+  { bars: 2, section: '06　可信', caption: '不保證核賠，不判斷保障與給付', icon: 'shield', shots: [['desktop/navi-guardrail']], vo: 'NAVI 不保證核賠，也不判斷保障與給付。' },
   { bars: 2, section: '06　可信', caption: '需要真人時，確認後才取得摘要', icon: 'headset', shots: [['mobile/handoff']], vo: '需要真人時，確認後才取得交接摘要。' },
   { bars: 6, card: 'logo', vo: 'NAVI 智慧服務導航助手。理解、檢核、帶你去。' },
 ];
@@ -276,7 +276,7 @@ function cardHtml(scene) {
     return `<div class="card"><div class="mark-logo">${LOGO}</div><div class="name">${[...'NAVI'].map(c => `<span>${c}</span>`).join('')}</div>
       <div class="tag">${logo ? '智慧服務導航助手' : '理解・檢核・帶你去'}</div>
       <div class="sub">${logo ? '從問題，走到正確的下一步　｜　AfterZero・靜宜大學 資訊管理學系' : '像聊天一樣說出你的情況，NAVI 先問清楚、找到官網依據，再帶你到正確的地方'}</div>
-      ${logo ? '<div class="release">畫面來源：https://navitw.com 正式站・Release 13d7fcb・示範模式（合成資料）</div>' : ''}</div>`;
+      ${logo ? '<div class="release">畫面來源：https://navitw.com 正式站・Release a1f1c8d・示範模式（合成資料）</div>' : ''}</div>`;
   }
   const tiles = [['mobile/navi-welcome', '聊天室', '說出情況、點選項', 'chat'], ['mobile/journey-card', '旅程卡', '一句話建立服務旅程', 'hospital'], ['mobile/workspace-70', '工作區', '準備度與文件健檢', 'badge'], ['mobile/guide-step-1-card', '導覽卡', '一步一步帶你去', 'stairs'], ['mobile/guide-step-2', '官網高亮', '框出正確位置', 'target']];
   return `<div class="card"><div class="tiles">${tiles.map(([key, title, sub, ic]) => `<div class="tile"><div class="pic"><img src="${shotOf(key).url}"></div><b>${icon(ic, '#00B26E', 1.8)}${title}</b><small>${sub}</small></div>`).join('')}</div></div>`;

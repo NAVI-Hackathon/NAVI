@@ -27,7 +27,7 @@ const SCENES = [
   { time: '1:20', section: '05　檢核', caption: '上傳診斷書，準備度 70%', shots: [['mobile', 'workspace-70']] },
   { time: '1:25', section: '05　檢核', caption: '缺什麼、為什麼、怎麼補', shots: [['mobile', 'workspace-preflight']] },
   { time: '1:31', section: '05　檢核', caption: '資料準備完成 100%', shots: [['desktop', 'workspace-100']] },
-  { time: '1:36', section: '06　可信', caption: '不給投保建議，不判斷能否理賠', shots: [['desktop', 'navi-guardrail']] },
+  { time: '1:36', section: '06　可信', caption: '不保證核賠，不判斷保障與給付', shots: [['desktop', 'navi-guardrail']] },
   { time: '1:41', section: '06　可信', caption: '需要真人時，確認後才取得摘要', shots: [['mobile', 'handoff']] },
   { time: '1:46', section: '', card: 'logo' },
 ];

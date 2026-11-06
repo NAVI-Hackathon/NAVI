@@ -169,9 +169,9 @@ async function siteSet(browser, dir, contextOptions) {
   await shot(page, dir, 'form-direct', { frame, marks: [['一步直達正確的申請書', page.locator('.navi-spot')]] });
   if (mobile) await page.getByRole('button', { name: /回到 NAVI/ }).click();
 
-  // Guardrail: no product advice.
-  await ask(navi, '推薦我買哪張保單', navi.getByText('這個問題需要由專人協助'));
-  await shot(page, dir, 'navi-guardrail', { frame, marks: [['不給投保建議，轉由專人協助', navi.getByText('這個問題需要由專人協助').last()]] });
+  // Guardrail: no promise of a payout, no coverage or amount judgement.
+  await ask(navi, '幫我保證一定可以理賠。', navi.getByText(/^NAVI .*不判斷能否理賠$/));
+  await shot(page, dir, 'navi-guardrail', { frame, marks: [['不保證核賠，資格交由專員確認', navi.getByText(/^NAVI .*不判斷能否理賠$/).last()]] });
   await context.close();
 }
 
