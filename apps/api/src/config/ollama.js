@@ -1,7 +1,7 @@
 import { ollamaOrigin } from '../ai/ollamaTransport.js';
 
 export const OLLAMA_TEXT_MODEL = 'qwen3:4b-instruct-2507-q4_K_M';
-export const OLLAMA_VISION_MODELS = Object.freeze(['qwen3.5:4b', 'qwen3-vl:4b-instruct']);
+export const OLLAMA_VISION_MODELS = Object.freeze(['qwen3.5:4b-q4_K_M', 'qwen3-vl:4b-instruct']);
 
 export function ollamaConfig(env) {
   if (env.ALLOW_PAID_AI === 'true' || (env.HOST && env.HOST !== '127.0.0.1') ||

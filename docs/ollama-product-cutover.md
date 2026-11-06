@@ -6,7 +6,7 @@
 
 - 顯式選擇 `AI_MODE=live`、`AI_PROVIDER=ollama`，`NAVI_PRODUCT_MODE=true`，後端不再要求或呼叫 Gemini API Key。只載入 `createOllamaProvider`；模型失敗後不得回退 Gemini／付費 AI／假 Demo 回應。
 - 保留現有 Knowledge/Evidence、Navigation 白名單、Workflow／NBA、MongoDB 旅程與帳號、既有 Zod 契約和前端 `/demo`（明確標示本機合成資料）。
-- Text：`qwen3:4b-instruct-2507-q4_K_M`；Vision：`qwen3.5:4b` 優先驗證，`qwen3-vl:4b-instruct` 作對照。只允許程式中的已審核型號。
+- Text：`qwen3:4b-instruct-2507-q4_K_M`；Vision：`qwen3.5:4b-q4_K_M` 優先驗證，`qwen3-vl:4b-instruct` 作對照。只允許程式中的已審核型號。
 - 六項 provider 操作沿用原介面：understandIntent、understandTasks、converse、answerKnowledge、summarizeHandoff、analyzeDocument。輸出仍走既有 schema、Evidence、業務與資格護欄。
 - `UnderstandingSchema.meta.source` 新增 `ollama`，前端保存該來源，不再把自架模型標成 Google。這是共用契約與 A 負責 UI 的改動，需由 A Review 並在同一 Release 整合。
 - `/api/ai/status` 的 Ollama 欄位在可用時呈 `backend: ollama`；健康探測使用 `/api/version`、2.5 秒內、零推論。離線時回報 unavailable。API/DB Health 不因模型不在線就冒充失敗或生成成功。正式對話的單則回答仍以 `mode: retrieval` 區分可靠來源備援。
@@ -32,7 +32,7 @@ OLLAMA_TLS_CERT_FILE=/etc/navi-private/ollama/client.pem
 OLLAMA_TLS_KEY_FILE=/etc/navi-private/ollama/client.key
 OLLAMA_TLS_SERVER_NAME=navi-inference.internal
 OLLAMA_TEXT_MODEL=qwen3:4b-instruct-2507-q4_K_M
-OLLAMA_VISION_MODEL=qwen3.5:4b
+OLLAMA_VISION_MODEL=qwen3.5:4b-q4_K_M
 AI_MAX_CONCURRENT=1
 AI_REQUEST_TIMEOUT_MS=65000
 ```
@@ -65,7 +65,7 @@ AI_REQUEST_TIMEOUT_MS=65000
 node scripts/ollama/vision40.mjs --dry-run
 
 # 待 Ubuntu 啟動、確認沒有 Adrift 工作量、獲取批准後才跑
-node scripts/ollama/vision40.mjs --run --model qwen3.5:4b --limit 4 --confirm-synthetic
+node scripts/ollama/vision40.mjs --run --model qwen3.5:4b-q4_K_M --limit 4 --confirm-synthetic
 # 若模型已安裝且通過模型能力核對，再跑比較：
 node scripts/ollama/vision40.mjs --run --model qwen3-vl:4b-instruct --limit 4 --confirm-synthetic
 ```

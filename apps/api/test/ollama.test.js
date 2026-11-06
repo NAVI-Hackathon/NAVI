@@ -22,7 +22,7 @@ const image = readFileSync(new URL('../eval/holdout/v2/fixtures/bank.png', impor
 const sha = createHash('sha256').update(image).digest('hex');
 const env = {
   AI_MODE: 'live', AI_PROVIDER: 'ollama', NAVI_TEST_SESSION_TOKEN: 'offline-test-token'.repeat(3),
-  OLLAMA_VISION_MODEL: 'qwen3.5:4b', AI_SYNTHETIC_DOCUMENT_SHA256: sha,
+  OLLAMA_VISION_MODEL: 'qwen3.5:4b-q4_K_M', AI_SYNTHETIC_DOCUMENT_SHA256: sha,
 };
 const config = loadConfig(env);
 const upload = { mimeType: 'image/png', bytes: image, size: image.length, filename: 'synthetic.png', documentType: 'bank_passbook' };
@@ -268,7 +268,7 @@ test('evaluation is offline by default, checks vision capabilities and preserves
   let chatCount = 0;
   let visionAvailable = false;
   let offline = false;
-  const tags = [config.ollamaModel, 'qwen3.5:4b', 'qwen3-vl:4b-instruct'];
+  const tags = [config.ollamaModel, 'qwen3.5:4b-q4_K_M', 'qwen3-vl:4b-instruct'];
   const base = await loopback(t, createServer(async (req, res) => {
     if (req.url === '/api/version') return res.end(JSON.stringify({ version: '0.0.0-mock' }));
     if (req.url === '/api/tags') return res.end(JSON.stringify({ models: tags.map(name => ({ name, digest: 'a'.repeat(64) })) }));
