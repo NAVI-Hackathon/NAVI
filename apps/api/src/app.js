@@ -1,3 +1,4 @@
+import { acceptsJudgeContract } from './routes/contract.js';
 import {mkdirSync,lstatSync} from 'node:fs';
 import {isAbsolute} from 'node:path';
 import { startMaintenance } from './storage/maintenance.js';
@@ -64,8 +65,8 @@ export function createApp(config, provider = null, repository = null) {
   });
   if (config.productMode) app.use('/api', createProductRouter({ config, provider, sessions, repository, service }));
   app.post('/api/intelligence/understand', async (req, res) => {
-    // The legacy response schema has no Ollama provenance. The sandbox uses /analyze-intent.
-    if (provider.backend === 'ollama') throw new ApiError('AI_UNAVAILABLE', '本地 Ollama 沙箱請使用獨立意圖測試介面。', 503, false);
+    // An already-open tab may still validate the old, strict provenance enum.
+    if (provider.backend === 'ollama' && (!config.productMode || !acceptsJudgeContract(req, res))) throw new ApiError('AI_UNAVAILABLE', '本地 Ollama 沙箱請使用獨立意圖測試介面。', 503, false);
     const request = RequestSchema.safeParse(req.body);
     if (!request.success) throw new ApiError('INVALID_INPUT', '請描述你的情況，最多 2,000 字。', 400);
     const controller = new AbortController();

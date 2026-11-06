@@ -30,7 +30,7 @@ for(const width of [390,1280])test(`persistent formal conversation, consent and 
   await expect(page.getByRole('button',{name:'資料與隱私',exact:true})).toBeVisible();
   await page.locator('#story-input').fill('我搬家了，要變更保單地址');await page.locator('#story-input').press('Enter');
   const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();expect(calls).toBe(0);
-  await dialog.getByRole('checkbox').check();await dialog.getByRole('button',{name:'確認並繼續'}).click();
+  await dialog.getByRole('checkbox').check();await dialog.getByRole('button',{name:'確認並繼續'}).click();await expect(dialog).toHaveCount(0);
   await page.locator('#story-input').fill('我搬家了，要變更保單地址');await page.locator('#story-input').press('Enter');
   await expect(page.getByRole('button',{name:'開啟工作區'})).toBeVisible();expect(calls).toBe(1);
   await page.getByRole('button',{name:'開啟工作區'}).click();await expect(page.getByRole('heading',{name:'地址變更',exact:true,level:1})).toBeVisible();

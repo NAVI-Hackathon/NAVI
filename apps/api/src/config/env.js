@@ -45,7 +45,7 @@ export function loadConfig(env = process.env) {
     usageFile: env.AI_USAGE_FILE?.trim() || '',
     dailyLimit: numeric(env, 'AI_DAILY_REQUEST_LIMIT', product.productMode ? 400 : 12, 1, product.productMode ? 100000 : 100),
     sessionRequestLimit: numeric(env, 'AI_SESSION_REQUEST_LIMIT', product.productMode ? 0 : 6, product.productMode ? 0 : 1, product.productMode ? 10000 : 20),
-    maxConcurrent: numeric(env, 'AI_MAX_CONCURRENT', product.productMode ? 3 : 1, 1, product.productMode ? 8 : 2),
+    maxConcurrent: numeric(env, 'AI_MAX_CONCURRENT', local ? 1 : product.productMode ? 3 : 1, 1, product.productMode ? 8 : 2),
     aiMaxAttempts,
     apiKey: local ? '' : env.GEMINI_API_KEY?.trim() || '', model,
     thinkingLevel: !local && model === FREE_TIER_MODEL ? 'MINIMAL' : undefined,

@@ -18,6 +18,7 @@ import { prepareOllamaDocument } from './ollamaDocumentInput.js';
 import { OLLAMA_TEXT_MODEL, OLLAMA_VISION_MODELS } from '../config/ollama.js';
 
 const MAX_TEXT_BYTES = 24 * 1024;
+const quotaDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
 const intentSchema = IntentDataSchema.extend({ missingInformation: z.array(z.string().max(120)).max(20).optional() });
 const documentSchema = GeminiDocumentSchema.extend({ confidence: z.number().min(0).max(1) });
 const envelopeSchema = z.object({
@@ -41,7 +42,7 @@ export function createOllamaProvider(config, transport) {
   }
   if (!transport && config.ci) throw new Error('Ollama model requests are disabled in CI');
   const send = transport ?? createOllamaTransport(config.ollamaBaseUrl, config.ollamaTls);
-  const budget = createAIRequestBudget(config.liveRequestLimit);
+  const budget = config.productMode ? null : createAIRequestBudget(config.liveRequestLimit);
   const queue = createResourceQueue({ concurrency: 1, capacity: 1, limit: config.queueLimit, waitMs: config.queueWaitMs, rpm: config.requestsPerMinute });
   const approved = new Set(config.syntheticDocumentHashes);
   const metadata = new Map();
@@ -56,7 +57,12 @@ export function createOllamaProvider(config, transport) {
     try {
       return await withProviderDeadline(combined => queue.run(async () => {
         combined.throwIfAborted();
-        budget.consume();
+        if (budget) budget.consume();
+        else {
+          if (!config.store) throw new ApiError('AI_USAGE_UNAVAILABLE', '目前無法安全記錄本地分析用量。', 503, false);
+          await config.store.charge(quotaDay.format(new Date()), 'requests', config.dailyLimit);
+        }
+        combined.throwIfAborted();
         const { status, body } = await send('/api/chat', { signal: combined, payload: {
           model, stream: false, think: false, keep_alive: 0, format,
           options: { temperature: 0, num_ctx: 4096, num_predict: 1536 },
@@ -86,7 +92,7 @@ export function createOllamaProvider(config, transport) {
 
   return {
     mode: 'live', backend: 'ollama', requiresPaidTier: false,
-    getRequestBudget: budget.status,
+    ...(budget ? { getRequestBudget: budget.status } : {}),
     getDebugMetadata: () => structuredClone(Object.fromEntries(metadata)),
     recordFallback(operation) { if (metadata.has(operation)) metadata.get(operation).fallbackUsed = true; },
     async checkHealth() {

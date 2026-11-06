@@ -176,7 +176,7 @@ export function createApiJourneyService({
     init:async()=>{const result=await product.init();rememberDisclosure(result?.session);return result;},
     productInfo:async()=>{const session=await request('/session',{schema:null});rememberDisclosure(session);if(session.authRequired&&!session.authenticated)return {session,history:{journeys:[],conversations:[]},tasks:[]};const history=session.authenticated?await request('/journeys',{schema:null}):null;return {session,history:history?{journeys:history.items,nextCursor:history.nextCursor}:await request('/history',{schema:null}),tasks:session.authenticated?(await request('/tasks',{schema:null})).tasks:[]};},
     historyPage:cursor=>request('/journeys?limit=20'+(cursor?'&cursor='+encodeURIComponent(cursor):''),{schema:null}),
-    acceptConsent:async()=>{rememberDisclosure(await request('/session',{schema:null}));return request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion},schema:null});},
+    acceptConsent:()=>request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion},schema:null}),
     register:async(username,password)=>{const result=await request('/auth/register',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
     login:async(username,password)=>{const result=await request('/auth/login',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
     logout:async()=>{await request('/session/logout',{method:'POST',json:{},schema:null});identityChanged();},
@@ -399,7 +399,7 @@ export function createApiJourneyService({
       return request(`/journeys/${journey.id}/explanation`, { signal, schema: JourneyExplanationSchema });
     },
     /** Consent-based handoff: a redacted preview bound to this journey version, then the user's confirmation. Nothing is sent. */
-    handoffDraft:({signal}={})=>request('/journeys/'+requireState().journey.id+'/handoff/draft',{signal,schema:HandoffDraftResponseSchema}),
+    handoffDraft:async({signal,journeyId}={})=>request('/journeys/'+(journeyId??requireState().journey.id)+'/handoff/draft',{signal,schema:HandoffDraftResponseSchema}),
     saveHandoffDraft:(text,version)=>request('/journeys/'+requireState().journey.id+'/handoff/draft',{method:'PUT',json:{text,version,journeyVersion:requireState().journey.revision},schema:HandoffDraftResponseSchema}),
     async handoffPreview({ signal } = {}) {
       const { journey } = requireState();

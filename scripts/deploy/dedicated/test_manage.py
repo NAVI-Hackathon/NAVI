@@ -102,3 +102,28 @@ class ErasureCutoverTests(unittest.TestCase):
     run.reset_mock()
     with self.assertRaisesRegex(RuntimeError,'interrupt the erasure ledger'):m.activate(old)
     run.assert_not_called()
+
+class OllamaCutoverTests(unittest.TestCase):
+ def test_failed_cutover_and_legacy_rollback_never_restart_gemini(self):
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   config=m.ROOT/'config';config.mkdir()
+   active=config/'api.env';candidate=config/'candidate.env'
+   active.write_bytes(b'AI_MODE=live\nGEMINI_API_KEY=fixture-not-a-key\nDB_CONFIG=test\n')
+   candidate.write_bytes(b'AI_MODE=live\nAI_PROVIDER=ollama\nGEMINI_API_KEY=fixture-not-a-key\nDB_CONFIG=test\n')
+   for path in (active,candidate):path.chmod(0o600)
+   old,new=[m.ROOT/'releases'/(ch*12+'-1') for ch in 'ab']
+   for path in (old,new):
+    path.mkdir(parents=True);(path/'ready.json').write_text('{"providerIsolation":true,"storageSchema":2}')
+   provider=new/'apps/api/src/ai/ollamaProvider.js';provider.parent.mkdir(parents=True);provider.touch()
+   (m.ROOT/'current').symlink_to(old)
+   environments=[]
+   def run(args,**_):
+    if args==['systemctl','restart',m.UNIT]:environments.append(active.read_bytes())
+   with patch.object(m,'owned_service'),patch.object(m,'run',side_effect=run),patch.object(m,'wait_healthy',side_effect=[RuntimeError('synthetic outage'),None]):
+    with self.assertRaisesRegex(RuntimeError,'synthetic outage'):m.activate(new,candidate,ollama_only=True)
+    m.activate(old)
+   self.assertEqual(len(environments),3)
+   self.assertIn(b'AI_MODE=live\nAI_PROVIDER=ollama\n',environments[0])
+   self.assertTrue(all(b'AI_MODE=unavailable\n' in env for env in environments[1:]))
+   self.assertTrue(all(b'fixture-not-a-key' not in env and b'DB_CONFIG=test' in env for env in environments))
+   self.assertEqual((config/'ollama-only').read_bytes(),b'ollama-only-v1\n')

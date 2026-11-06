@@ -105,7 +105,27 @@ def wait_healthy():
             if attempt == 19: raise
             time.sleep(.5)
 
-def activate(target, environment=None, recovery=None):
+AI_KEYS = (b'AI_MODE', b'AI_PROVIDER', b'GEMINI_API_KEY', b'ALLOW_PAID_AI')
+
+def ollama_environment(data, target, *, allow_live=True):
+    # Rewrite all assignments for these keys before writing the canonical policy.
+    lines = data.splitlines(keepends=True)
+    pattern = rb'^[ \t]*(' + b'|'.join(AI_KEYS) + rb')[ \t]*='
+    control = {}
+    other = []
+    for line in lines:
+        match = re.match(pattern, line)
+        if not match:
+            other.append(line)
+            continue
+        name = match[1]
+        if name in control: raise RuntimeError('Duplicate AI environment assignment')
+        control[name] = line[match.end():].strip()
+    local = allow_live and control.get(b'AI_MODE') == b'live' and control.get(b'AI_PROVIDER') == b'ollama' and target and (target / 'apps/api/src/ai/ollamaProvider.js').is_file()
+    mode = b'live' if local else b'unavailable'
+    return b''.join(other).rstrip(b'\r\n') + b'\nAI_MODE=' + mode + b'\nAI_PROVIDER=ollama\nGEMINI_API_KEY=\nALLOW_PAID_AI=false\n'
+
+def activate(target, environment=None, recovery=None, *, ollama_only=False):
     target = release(target)
     if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True: raise RuntimeError('Legacy releases cannot be activated; use an isolated rollback target')
     old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
@@ -132,6 +152,17 @@ def activate(target, environment=None, recovery=None):
     saved = snapshots / (target.name + '.env')
     next_env = private_environment(environment) if environment else private_environment(saved) if saved.exists() else old_env
     if environment and old_env is None: raise RuntimeError('Missing existing environment')
+    marker = ROOT / 'config/ollama-only'
+    locked = marker.exists() or marker.is_symlink()
+    if locked and private_environment(marker) != b'ollama-only-v1\n': raise RuntimeError('Invalid local AI policy marker')
+    if ollama_only:
+        if not environment or not next_env or b'\nAI_MODE=live\n' not in ollama_environment(next_env, target):
+            raise RuntimeError('Initial local-only cutover requires an explicit live Ollama release environment')
+        if not locked: write_environment(marker, b'ollama-only-v1\n')
+    locked = locked or ollama_only
+    if locked:
+        if next_env is None: raise RuntimeError('Local-only release environment is missing')
+        next_env = ollama_environment(next_env, target)
     if next_env is not None: write_environment(env, next_env)
     link('current', target)
     try:
@@ -139,7 +170,7 @@ def activate(target, environment=None, recovery=None):
         wait_healthy()
         run(['systemctl', 'reload', 'nginx'])
     except BaseException:
-        if old_env is not None: write_environment(env, old_env)
+        if old_env is not None: write_environment(env, ollama_environment(old_env, fallback, allow_live=False) if locked else old_env)
         if fallback:
             link('current', fallback)
             # A failed storage upgrade can only recover onto another ledger-compatible writer.
@@ -158,13 +189,19 @@ def activate(target, environment=None, recovery=None):
     print('Active: ' + str(target))
 
 def main():
-    p = argparse.ArgumentParser(); p.add_argument('action', choices=['install', 'activate', 'rollback', 'restart', 'stop', 'status']); p.add_argument('target', nargs='?'); p.add_argument('checksum', nargs='?'); p.add_argument('--environment'); p.add_argument('--recovery'); args = p.parse_args()
+    p = argparse.ArgumentParser(); p.add_argument('action', choices=['install', 'activate', 'rollback', 'restart', 'stop', 'status']); p.add_argument('target', nargs='?'); p.add_argument('checksum', nargs='?'); p.add_argument('--environment'); p.add_argument('--recovery'); p.add_argument('--ollama-only', action='store_true'); args = p.parse_args()
     m = load()
     if args.action == 'install': install(m, args.target, args.checksum)
-    elif args.action == 'activate': activate(args.target, args.environment, args.recovery)
+    elif args.action == 'activate': activate(args.target, args.environment, args.recovery, ollama_only=args.ollama_only)
     elif args.action == 'rollback': activate(ROOT / 'previous')
     else:
         owned_service()
         if args.action == 'status': run(['systemctl', 'show', UNIT, 'nginx.service', '-p', 'Id', '-p', 'ActiveState', '-p', 'MainPID', '-p', 'MemoryCurrent', '-p', 'NRestarts'])
-        else: run(['systemctl', args.action, UNIT])
+        else:
+            marker = ROOT / 'config/ollama-only'
+            if args.action == 'restart' and (marker.exists() or marker.is_symlink()):
+                if private_environment(marker) != b'ollama-only-v1\n': raise RuntimeError('Invalid local AI policy marker')
+                env = ROOT / 'config/api.env'
+                write_environment(env, ollama_environment(private_environment(env), release(ROOT / 'current')))
+            run(['systemctl', args.action, UNIT])
 if __name__ == '__main__': main()

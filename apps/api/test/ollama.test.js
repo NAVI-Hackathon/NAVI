@@ -1,3 +1,4 @@
+import { ApiError } from '../src/middleware/errorHandler.js';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -323,14 +324,25 @@ test('production Ollama selects local model without Gemini key, and refuses inse
   assert.equal(product.model, product.ollamaModel);
   assert.equal(product.modelPolicies[0].id, product.ollamaModel);
   assert.equal(product.modelPolicies[0].documentation, 'https://docs.ollama.com/api/chat');
+  let charged = 0;
+  let sent = 0;
+  product.store = { async charge(day, kind, limit) {
+    assert.match(day, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(kind, 'requests');
+    assert.equal(limit, product.dailyLimit);
+    if (charged++) throw new ApiError('AI_DAILY_LIMIT_REACHED', 'test only', 429, false);
+  } };
   const provider = createOllamaProvider(product, async (path, { payload }) => {
     if (path === '/api/version') return { status: 200, body: JSON.stringify({ version: 'mock' }) };
+    sent++;
     return response(payload, intent);
   });
   assert.equal(provider.backend, 'ollama');
   assert.equal(await provider.checkHealth(), true);
   assert.equal((await provider.understandIntent(message)).serviceType, 'hospitalization_claim');
   assert.equal(provider.getDebugMetadata().intent.fallbackUsed, false);
+  await assert.rejects(provider.understandIntent(message), { code: 'AI_DAILY_LIMIT_REACHED' });
+  assert.equal(sent, 1);
   assert.deepEqual(UnderstandingSchema.shape.meta.shape.source.safeParse('ollama').success, true);
   for (const override of [{ OLLAMA_BASE_URL: 'http://127.0.0.1:21144' },
     { OLLAMA_TLS_KEY_FILE: '' }, { OLLAMA_TLS_SERVER_NAME: '' },
