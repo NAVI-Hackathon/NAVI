@@ -13,8 +13,7 @@ const acknowledged = flags.includes('--confirm-synthetic');
 const value = flag => { const i = flags.indexOf(flag); return i < 0 ? null : flags[i + 1]; };
 const model = value('--model') || OLLAMA_VISION_MODELS[0];
 const limit = Number(value('--limit') || (run ? 0 : 40));
-if (!['--run', '--dry-run', '--model', '--limit', '--confirm-synthetic'].every(_ => true) ||
-    flags.some((flag, i) => !['--run', '--dry-run', '--confirm-synthetic'].includes(flag) && !(['--model', '--limit'].includes(flag) || ['--model', '--limit'].includes(flags[i - 1]))) ||
+if (flags.some((flag, i) => !['--run', '--dry-run', '--confirm-synthetic'].includes(flag) && !(['--model', '--limit'].includes(flag) || ['--model', '--limit'].includes(flags[i - 1]))) ||
     !OLLAMA_VISION_MODELS.includes(model) || !Number.isSafeInteger(limit) || limit < 1 || limit > 40 ||
     (run && (!acknowledged || !flags.includes('--model') || !flags.includes('--limit')))) {
   throw new Error('Usage: --dry-run [--model MODEL] [--limit 1..40] | --run --model MODEL --limit 1..40 --confirm-synthetic');
@@ -24,21 +23,21 @@ if (run && flags.includes('--dry-run')) throw new Error('Choose --dry-run or --r
 function makePdf(lines) {
   const encode = str => String(str).replace(/[\\()]/g, c => '\\' + c);
   const stream = 'BT /F1 13 Tf 40 750 Td 18 TL ' + lines.map((line, i) =>
-    (i ? 'T* ' : '') + '(' + encode(line) + ') Tj').join('\\n') + ' ET';
+    (i ? 'T* ' : '') + '(' + encode(line) + ') Tj').join('\n') + ' ET';
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    '<< /Length ' + Buffer.byteLength(stream) + ' >>\\nstream\\n' + stream + '\\nendstream',
+    '<< /Length ' + Buffer.byteLength(stream) + ' >>\nstream\n' + stream + '\nendstream',
   ];
-  let pdf = '%PDF-1.4\\n';
+  let pdf = '%PDF-1.4\n';
   const offsets = [0];
-  objects.forEach((object, i) => { offsets.push(Buffer.byteLength(pdf)); pdf += (i + 1) + ' 0 obj\\n' + object + '\\nendobj\\n'; });
+  objects.forEach((object, i) => { offsets.push(Buffer.byteLength(pdf)); pdf += (i + 1) + ' 0 obj\n' + object + '\nendobj\n'; });
   const xref = Buffer.byteLength(pdf);
-  pdf += 'xref\\n0 6\\n0000000000 65535 f \\n';
-  for (const off of offsets.slice(1)) pdf += String(off).padStart(10, '0') + ' 00000 n \\n';
-  return Buffer.from(pdf + 'trailer\\n<< /Size 6 /Root 1 0 R >>\\nstartxref\\n' + xref + '\\n%%EOF\\n');
+  pdf += 'xref\n0 6\n0000000000 65535 f \n';
+  for (const off of offsets.slice(1)) pdf += String(off).padStart(10, '0') + ' 00000 n \n';
+  return Buffer.from(pdf + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
 }
 const documents = Array.from({ length: 40 }, (_, i) => {
   const id = String(i + 1).padStart(2, '0');
@@ -104,7 +103,7 @@ const summary = { suite: 'synthetic-vision-40', generated: 40, requested: planne
   generationAttempts: 0, completed: 0, errors: 0, requests: [], fieldPrecision: null, fieldRecall: null, fieldF1: null };
 if (!run) {
   process.stdout.write(JSON.stringify({ ...summary, mode: 'dry-run',
-    cases: planned.map(d => ({ id: d.id, documentType: d.documentType, expectedFields: Object.keys(d.fields), pdfSha256: sha256(d.source) })) }, null, 2) + '\\n');
+    cases: planned.map(d => ({ id: d.id, documentType: d.documentType, expectedFields: Object.keys(d.fields), pdfSha256: sha256(d.source) })) }, null, 2) + '\n');
   process.exit(0);
 }
 const generated = [];
@@ -164,5 +163,5 @@ const durations = summary.requests.map(r => r.latencyMs).sort((a,b) => a-b);
 summary.p50Ms = durations[Math.ceil(durations.length/2)-1] ?? null;
 summary.p95Ms = durations[Math.ceil(durations.length*0.95)-1] ?? null;
 summary.note = 'All cases are generated synthetic PDFs, rasterized to PNG. No real private documents. VRAM must be measured separately. Errors count as false negatives. F1 is an experimental field metric, not production accuracy.';
-process.stdout.write(JSON.stringify(summary, null, 2) + '\\n');
+process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
 if (summary.errors) process.exitCode = 1;
