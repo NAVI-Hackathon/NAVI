@@ -218,12 +218,12 @@ test('knowledge uses retrieved evidence during disconnect and records the fallba
   assert.equal(provider.getDebugMetadata().knowledge.fallbackUsed, true);
 });
 
-test('vision sends actual approved PNG bytes, and valid output still cannot increase readiness', async () => {
+test('vision sends actual approved bytes and incomplete evidence cannot increase readiness', async () => {
   const provider = createOllamaProvider(config, async (_, { payload }) => {
     if (payload.model === config.ollamaModel) return response(payload, intent);
     assert.equal(payload.model, config.ollamaVisionModel);
     assert.deepEqual(Buffer.from(payload.messages[1].images[0], 'base64'), image);
-    return response(payload, bank);
+    return response(payload, {...bank,fields:{...bank.fields,accountHolder:null}});
   });
   const service = createJourneyService({ repository: new InMemoryJourneyRepository(), provider, config });
   const journey = await service.create({ message });
@@ -234,6 +234,11 @@ test('vision sends actual approved PNG bytes, and valid output still cannot incr
   assert.equal(added.document.isMock, false);
   assert.equal(added.journey.readiness, journey.readiness);
   assert.deepEqual(added.document.matchedRequirements, []);
+  const exact = await analyzeDocument(upload,{provider:mock(bank),config});
+  assert.equal(exact.status,'verified');
+  assert.equal(exact.verification.authenticity,'not_assessed');
+  const altered = {...upload,bytes:Buffer.concat([image,Buffer.from('changed bytes')]),sha256:sha};
+  await assert.rejects(analyzeDocument(altered,{provider:mock(bank),config}),{code:'DOCUMENT_NOT_SYNTHETIC'});
   await assert.rejects(provider.analyzeDocument({ ...upload, bytes: Buffer.concat([image, Buffer.from('extra')]), sha256: sha }), { code: 'DOCUMENT_NOT_SYNTHETIC' });
   await assert.rejects(provider.analyzeDocument({ ...upload, mimeType: 'application/pdf' }), { code: 'DOCUMENT_INTELLIGENCE_NOT_AVAILABLE' });
   await assert.rejects(analyzeDocument(upload, { provider: mock({ ...bank, documentType: 'unknown' }), config }), { code: 'DOCUMENT_UNRECOGNIZED' });
