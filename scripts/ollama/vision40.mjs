@@ -117,7 +117,7 @@ if (prepare) {
     ...summary, mode: 'prepare', rendered: generated.length, generationAttempts: 0,
     cases: generated.map(d => ({ id: d.id, pdfSha256: sha256(d.source), imageSha256: d.imageSha256,
       pngBytes: d.image.length, signatureValid: d.image.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])) })),
-  }, null, 2) + '\\n');
+  }, null, 2) + '\n');
   if (generated.some(d => !d.image.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])))) process.exitCode = 1;
   process.exit();
 }
