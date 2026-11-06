@@ -316,6 +316,9 @@ export default function App() {
     analysisCtl.current?.abort();
     const ctl = new AbortController();
     analysisCtl.current = ctl;
+    // A new tab can submit before the status check selects the persistent conversation API.
+    await productInit.current;
+    if (ctl.signal.aborted) return false;
     say({ role: 'user', text: label });
     // Official-site answers are searched locally (shared rules, the same as the server's); refused questions
     // never reach the AI.

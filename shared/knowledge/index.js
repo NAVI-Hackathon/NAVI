@@ -206,6 +206,7 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
 
     const profile = queryProfile(text);
     const outpatient = profile.outpatient || hasNegatedHospitalization(text);
+    const hospitalChecklist = !outpatient && /住院(?:醫療)?理賠(?:的)?(?:應備文件|(?:需要|要|應)準備(?:什麼|哪些)?(?:資料|文件)|需要(?:什麼|哪些)(?:資料|文件))/.test(rewrite(text).replaceAll(' ', ''));
     const exact = byId.get(text);
     const payment = paymentTopics(text);
     const wantsForm = /表單|申請書|授權書|下載|form|download/i.test(text);
@@ -226,7 +227,14 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
           scored.coverage = Math.max(scored.coverage, RANKING.phraseCoverage);
           scored.specific = true;
         }
-        else if (profile.inpatient && doc.entry.id === 'claim-doc:2') scored.score *= RANKING.inpatientBoost;
+        else if (profile.inpatient && doc.entry.id === 'claim-doc:2') {
+          scored.score *= RANKING.inpatientBoost;
+          if (hospitalChecklist) {
+            scored.score += RANKING.contextPhrase;
+            scored.coverage = Math.max(scored.coverage, RANKING.phraseCoverage);
+            scored.specific = true;
+          }
+        }
         if (exact === doc.entry) return { entry: doc.entry, score: Number.MAX_SAFE_INTEGER, coverage: 1, specific: true };
         return { entry: doc.entry, ...scored };
       })
@@ -238,7 +246,10 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     const results = ranked.filter(r => r.score >= best * RANKING.resultRatio).slice(0, Math.max(1, Math.min(3, Number.isInteger(limit) ? limit : 3))).map(r => r.entry);
     const shown = new Set(results.map(r => r.id));
     const related = results.flatMap(r => r.relatedIds).filter(id => !shown.has(id) && byId.has(id) && (shown.add(id), true)).slice(0, 3).map(id => byId.get(id));
-    const highlights = Object.fromEntries(results.map(r => [r.id, correspondenceEvidence(text, r) ?? relevantLines(r, queryTokens)]));
+    const highlights = Object.fromEntries(results.map(r => [r.id,
+      hospitalChecklist && r.id === 'claim-doc:2'
+        ? r.details[0].items.slice(0, 3)
+        : correspondenceEvidence(text, r) ?? relevantLines(r, queryTokens)]));
     return { ...(clarification ? { clarification } : {}), status: 'answered', results, related, highlights, hotline, ...(knowledgeVersion ? { knowledgeVersion } : {}) };
   }
 
