@@ -126,6 +126,7 @@ test('keyboard only: chat, guide, search and dialogs, with a visible focus and f
   await tabTo(page, /下一步/);
   await page.keyboard.press('Enter');
   await expect(page.getByText(/第 2 \/ \d 步/)).toBeVisible();
+  await expect(guide.locator('.guide-title')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(guide).toHaveCount(0);
 

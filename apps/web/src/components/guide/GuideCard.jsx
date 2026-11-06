@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Icon from '../Icon.jsx';
 import { transition } from '../../motion/tokens.js';
@@ -55,8 +55,12 @@ export default function GuideCard({ guide, embedded, arrival = null, hotline = n
   const lines = step.evidence.filter(line => line !== step.source.title);
   const excerpts = lines.length ? lines : step.evidence.slice(0, 1);
   const direction = useRef(1);
-  const heading = useRef(null);
-  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [index]);
+  const section = useRef(null);
+  const focusHeading = useCallback(node => { node?.focus({ preventScroll: true }); }, []);
+  useLayoutEffect(() => {
+    // A last-step transition can remove the focused Next button before the new heading mounts.
+    if (!section.current?.contains(document.activeElement)) section.current?.focus({ preventScroll: true });
+  }, [index]);
 
   function go(next) {
     direction.current = next > index ? 1 : -1;
@@ -65,7 +69,7 @@ export default function GuideCard({ guide, embedded, arrival = null, hotline = n
 
   return (
     <motion.section
-      className="guide-card" role="region" aria-label={single ? "NAVI 前往官網" : "NAVI 逐步導覽"}
+      ref={section} tabIndex={-1} className="guide-card" role="region" aria-label={single ? "NAVI 前往官網" : "NAVI 逐步導覽"}
       initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0, transition: transition.slow }} exit={{ opacity: 0, y: 16, transition: transition.exit }}
       onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onEnd(); } }}
     >
@@ -87,7 +91,7 @@ export default function GuideCard({ guide, embedded, arrival = null, hotline = n
           initial={{ opacity: 0, x: 14 * direction.current }} animate={{ opacity: 1, x: 0, transition: transition.enter }}
           exit={{ opacity: 0, x: -10 * direction.current, transition: transition.exit }}>
           <p className="guide-instruction">{step.instruction}</p>
-          <h2 ref={heading} tabIndex={-1} className="guide-title">{step.destination.label}</h2>
+          <h2 ref={focusHeading} tabIndex={-1} className="guide-title">{step.destination.label}</h2>
           <Where embedded={embedded} single={single} arrival={arrival} highlighted={Boolean(step.destination.anchor)} />
           {lost && <Fallback arrival={arrival} step={step} hotline={hotline} onHandoff={onHandoff} />}
           {index === 0 && prerequisites.length > 0 && (
