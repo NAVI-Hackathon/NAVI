@@ -22,7 +22,7 @@ export function productConfig(env, primary, freeTierConfirmed, provider = 'gemin
     sessionRateLimit: integer('AI_SESSION_REQUESTS_PER_MINUTE', 10, 1, 120),
     queueLimit: integer('AI_QUEUE_LIMIT', 30, 1, 200), queueWaitMs: integer('AI_QUEUE_TIMEOUT_MS', 10000, 100, 30000),
     requestsPerMinute: integer('AI_REQUESTS_PER_MINUTE', 12, 1, 1000),
-    requestTimeoutMs: integer('AI_REQUEST_TIMEOUT_MS', 40000, 1000, 90000),
+    requestTimeoutMs: integer('AI_REQUEST_TIMEOUT_MS', provider === 'ollama' ? 65000 : 40000, 1000, 90000),
     routeAttempts: integer('AI_ROUTE_MAX_ATTEMPTS', 3, 1, 4), modelPolicies: models,
     paidAuthorization: env.AI_PAID_AUTHORIZATION || '', paidBudgetCents: integer('AI_PAID_DAILY_BUDGET_CENTS', 0, 0, 100000),
     billingConfirmed: env.GEMINI_BILLING_CONFIRMED === 'true', adminToken: env.NAVI_ADMIN_TOKEN || '',
