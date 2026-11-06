@@ -112,11 +112,14 @@ test('multiple tasks preserve original spans and cannot omit or invent tasks', a
 test('conversation, knowledge and handoff reuse the existing structured schemas', async () => {
   const tasks = [{ input: message, data: intent }];
   const provider = createOllamaProvider(config, async (_, { payload }) => {
-    if (payload.format.properties.tasks) return response(payload, { tasks, answer: grounded });
+    if (payload.format.properties.tasks) return response(payload, { tasks });
     if (payload.format.properties.factIds) return response(payload, { factIds: ['issue'] });
     return response(payload, grounded);
   });
-  assert.deepEqual((await provider.converse(message, { tasks: [] }, knowledge.sources)).tasks, tasks);
+  const conversation = await provider.converse(message, { tasks: [] }, knowledge.sources);
+  assert.deepEqual(conversation.tasks, tasks);
+  assert.deepEqual(conversation.answer, { ...grounded, confidence: 0 });
+  assert.equal((await provider.converse(message, {}, [])).answer.supported, false);
   assert.deepEqual(await provider.answerKnowledge(message, knowledge), grounded);
   assert.deepEqual(await provider.summarizeHandoff([{ id: 'issue', text: '合成事實' }]), { factIds: ['issue'] });
   await assert.rejects(mock({ tasks, answer: { ...grounded, sourceIds: ['fake'] } }).converse(message, {}, knowledge.sources), { code: 'AI_RESPONSE_INVALID' });
