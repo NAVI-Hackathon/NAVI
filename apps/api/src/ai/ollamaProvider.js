@@ -54,8 +54,9 @@ const conversationPrompt = taskPrompt + '\n輸入 JSON 的 message 是本輪原�
 
 function sourceAnswer(sources) {
   for (const source of sources) {
-    const excerpt=source.content.split('\n').map(line=>line.trim()).find(line=>line&&line.length<=2000);
-    if(excerpt)return {answer:excerpt,sourceIds:[source.id],confidence:0,supported:true};
+    const excerpts=source.content.split('\n').map(line=>line.trim()).filter(line=>line&&line.length<=2000);
+    const answer=excerpts.join('\n');
+    if(answer)return {answer:answer.length<=2000?answer:excerpts[0],sourceIds:[source.id],confidence:0,supported:true};
   }
   return {answer:INSUFFICIENT_ANSWER,sourceIds:[],confidence:0,supported:false};
 }

@@ -119,6 +119,8 @@ test('conversation, knowledge and handoff reuse the existing structured schemas'
   const conversation = await provider.converse(message, { tasks: [] }, knowledge.sources);
   assert.deepEqual(conversation.tasks, tasks);
   assert.deepEqual(conversation.answer, { ...grounded, confidence: 0 });
+  const checklist='保險金申請書\n診斷書或住院證明';
+  assert.equal((await provider.converse(message, {}, [{id:'claim-doc:2',content:checklist}])).answer.answer,checklist);
   assert.equal((await provider.converse(message, {}, [])).answer.supported, false);
   assert.deepEqual(await provider.answerKnowledge(message, knowledge), grounded);
   assert.deepEqual(await provider.summarizeHandoff([{ id: 'issue', text: '合成事實' }]), { factIds: ['issue'] });
