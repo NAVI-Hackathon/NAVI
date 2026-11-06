@@ -20,7 +20,7 @@ export function loadConfig(env = process.env) {
   const local = aiProvider === 'ollama' && aiMode === 'live';
   const ollama = local ? ollamaConfig(env) : {};
   const model = local ? ollama.ollamaModel : env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
-  if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid GEMINI_MODEL configuration');
+  if (local ? model !== ollama.ollamaModel : !/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid AI model configuration');
   const product = productConfig(local ? { ...env, AI_MODELS_JSON: undefined } : env, model, !local && env.GEMINI_FREE_TIER_CONFIRMED === 'true', local ? 'ollama' : 'gemini');
   if (!local && !product.productMode && env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || env.GEMINI_FREE_TIER_CONFIRMED !== 'true' || model !== FREE_TIER_MODEL || !env.AI_USAGE_FILE?.startsWith('/') || (env.AI_PUBLIC_SYNTHETIC !== 'true' && (env.NAVI_TEST_SESSION_TOKEN?.trim().length ?? 0) < 32))) throw new Error('Production Live configuration is incomplete or unapproved');
   if (!local && product.productMode && env.NODE_ENV === 'production' && aiMode === 'live' && (!env.GEMINI_API_KEY?.trim() || !product.modelPolicies.some(p => p.id === model && p.confirmed && (p.tier === 'free' ? env.GEMINI_FREE_TIER_CONFIRMED === 'true' : env.ALLOW_PAID_AI === 'true' && product.billingConfirmed && product.paidAuthorization.length >= 32 && product.paidBudgetCents > 0)))) throw new Error('Production Live configuration is incomplete or unapproved');
