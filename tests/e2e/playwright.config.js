@@ -8,7 +8,8 @@ const device = process.env.PW_DEVICE ? (({ userAgent, deviceScaleFactor }) => ({
 // official-data snapshot and rules, no backend and no Gemini calls.
 //   npm run test:e2e                                        # local: both apps on their own ports (never 3000 / 5173)
 //   E2E_BASE_URL=https://navitw.com npm run test:e2e        # a deployed release (production regression)
-const NAVI = 4190, SITE = 4191;
+// WebKit reserves port 4190 (ManageSieve), so keep both origins on unrestricted test ports.
+const NAVI = 4186, SITE = 4187;
 const deployed = process.env.E2E_BASE_URL?.replace(/\/$/, '');
 
 export default defineConfig({
@@ -19,7 +20,7 @@ export default defineConfig({
   use: { baseURL: deployed ?? `http://127.0.0.1:${SITE}`, browserName: engine, ...device },
   webServer: deployed ? undefined : [
     {
-      command: `npm run dev --workspace @navi/web -- --port ${NAVI} --strictPort`,
+      command: `npm run dev --workspace @navi/web -- --port ${NAVI} --strictPort --config ../../tests/e2e/vite.config.js`,
       url: `http://127.0.0.1:${NAVI}/embed?mode=demo`,
       reuseExistingServer: false,
       timeout: 90_000,

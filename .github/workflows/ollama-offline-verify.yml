@@ -1,0 +1,67 @@
+name: Ollama Offline Integration Verification
+
+on:
+  push:
+    branches:
+      - feat/ollama-product-cutover
+  pull_request:
+    branches:
+      - feat/ollama-offline
+      - feat/ollama-product-cutover
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      AI_MODE: demo
+      ALLOW_PAID_AI: "false"
+      AI_PROVIDER: gemini
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install bounded PDF utilities
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends poppler-utils
+      - name: Check local Ollama module syntax
+        run: |
+          node --check apps/api/src/ai/ollamaDocumentInput.js
+          node --check apps/api/src/ai/ollamaProvider.js
+          node --check apps/api/src/ai/ollamaTransport.js
+          node --check apps/api/src/config/env.js
+          node --check apps/api/src/config/ollama.js
+          node --check scripts/ollama/vision40.mjs
+      - name: Ollama provider mocked offline tests — zero generation
+        run: node --import ./apps/api/test/networkGuard.js --test apps/api/test/ollama.test.js
+      - name: Shared broker, mTLS and real Poppler preprocessing
+        run: node --import ./apps/api/test/networkGuard.js --test scripts/ollama/broker/*.test.mjs apps/api/test/ollamaPdf.test.js
+      - name: Dedicated deployment and safe rollback
+        run: python3 -m unittest discover -s scripts/deploy/dedicated -p 'test_*.py'
+      - name: Vision40 synthetic fixtures dry run — zero generation
+        run: node scripts/ollama/vision40.mjs --dry-run --limit 40 > /tmp/navi-vision40-dry-run.json
+      - name: Rasterize all 40 synthetic PDFs without model generation
+        run: |
+          node scripts/ollama/vision40.mjs --prepare --limit 40 > /tmp/navi-vision40-prepared.json
+          node -e "const f=require('/tmp/navi-vision40-prepared.json');if(f.rendered!==40||f.generationAttempts!==0||f.cases.some(c=>!c.signatureValid))process.exit(1);console.log('Synthetic PDF render count:',f.rendered,'; model requests:',f.generationAttempts)"
+      - name: Web unit tests
+        run: npm run test:web
+      - name: Lint
+        run: npm run lint
+      - name: Build NAVI web and public assets
+        run: npm run build
+      - name: Mock site build and asset scan
+        run: npm run build:mock
+      - name: Public artifact security scan
+        run: npm run security:public
+      - name: Validate no external AI generation at CI
+        run: |
+          node -e "const fs=require('node:fs'); const r=JSON.parse(fs.readFileSync('/tmp/navi-vision40-dry-run.json','utf8')); if(r.generationAttempts!==0 || r.requested!==40) process.exit(1); console.log('Synthetic fixture count:',r.generated,'; attempted Ollama requests:',r.generationAttempts)"

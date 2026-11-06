@@ -63,7 +63,7 @@ function Result({ type, document, requirement, issues, disabled, onReplace, onMa
       {missing.length > 0 && <motion.p className="doc-match is-review" variants={fadeUp}><Icon name="info" size={14} />有 {missing.length} 個欄位未辨識，NAVI 不會自行補上；可替換成較清楚的文件，或由專員確認。</motion.p>}
       {/* Conflicts between documents, quoted from the server (consistencyIssues). */}
       {issues.map(issue => <motion.p key={issue.type} className="doc-match is-review doc-conflict" variants={fadeUp}><Icon name="alert" size={14} />{issue.message}</motion.p>)}
-      {document.requiresRevalidation && <motion.p className="doc-match is-review" variants={fadeUp}><Icon name="info" size={14} />這份文件是修正需求前上傳的，請重新上傳確認；目前不計入準備完成度。</motion.p>}
+      {document.requiresRevalidation && <motion.p className="doc-match is-review" variants={fadeUp}><Icon name="info" size={14} />這份文件的欄位需要確認，目前不計入準備完成度。</motion.p>}
       {review && !document.requiresRevalidation && issues.length === 0 && (
         <motion.p className="doc-match is-review" variants={fadeUp}><Icon name="info" size={14} />部分欄位不完整或與其他資料不一致，需要確認後才會計入。</motion.p>
       )}

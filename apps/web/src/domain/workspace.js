@@ -6,11 +6,13 @@ import { documentSpecs } from '../mocks/hospitalClaim.js';
 
 /**
  * 'full': a service with a document workflow (住院醫療理賠) — timeline, documents, readiness score.
- * 'compact': everything else (services NAVI only guides, specialist review) — no stages, no percentage.
+ * 'compact': guided services and specialist review without uploaded files — no stages or percentage.
  */
 export function workspaceProfile(snapshot) {
   const { journey, context } = snapshot;
-  return context.kind === 'hospital' && journey.supported !== false && journey.currentStage !== 'HUMAN_REVIEW' ? 'full' : 'compact';
+  // An uploaded file must stay visible and removable even if it triggers specialist review.
+  const showsDocuments = journey.currentStage !== 'HUMAN_REVIEW' || journey.documents.length > 0;
+  return context.kind === 'hospital' && journey.supported !== false && showsDocuments ? 'full' : 'compact';
 }
 
 /** Document slots of the journey, in the order of its requirements (the server's list, not a fixed pair). */
@@ -39,7 +41,7 @@ export function stageLabel(journey) {
 export function openConditions(journey) {
   const conflicts = (journey.consistencyIssues ?? []).map(issue => ({ id: `issue-${issue.type}`, tone: 'warn', text: issue.message }));
   const revalidate = journey.documents.filter(document => document.requiresRevalidation)
-    .map(document => ({ id: `revalidate-${document.id}`, tone: 'warn', text: `${documentTitle(document)}是修正需求前上傳的，需要重新上傳確認，目前不計入準備度。` }));
+    .map(document => ({ id: `revalidate-${document.id}`, tone: 'warn', text: `${documentTitle(document)}需要確認欄位，目前不計入準備度。` }));
   const review = journey.documents.filter(document => document.status === 'needs_review' && !document.requiresRevalidation)
     .map(document => ({ id: `review-${document.id}`, tone: 'info', text: `${documentTitle(document)}有欄位待人工確認。` }));
   return [...conflicts, ...revalidate, ...review];

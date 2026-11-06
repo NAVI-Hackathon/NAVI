@@ -49,7 +49,7 @@ export function createGeminiProvider(config, fetchImpl = fetch, { budget = creat
         if (++rateLimitStreak >= 2) budget.stop('AI_RATE_LIMITED');
         throw new ApiError('AI_RATE_LIMITED', '目前分析服務已達使用上限，請稍後再試或切換示範模式。', 429, rateLimitStreak < 2);
       }
-      if (!response.ok) throw new ApiError('AI_PROVIDER_ERROR', '目前暫時無法完成分析。請稍後再試。', 502, response.status >= 500);
+      if (!response.ok) throw new ApiError('AI_PROVIDER_ERROR', '目前暫時無法完成分析。請稍後再試。', response.status === 503 ? 503 : 502, response.status >= 500);
       rateLimitStreak = 0;
       const body = await response.json();
       const candidate = body.candidates?.[0];

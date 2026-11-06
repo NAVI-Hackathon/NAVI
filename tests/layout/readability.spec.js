@@ -56,7 +56,9 @@ for (const width of [375, 390]) {
     await expect(ring(page)).toHaveAttribute('aria-valuenow', '70');
 
     for (const tab of ['旅程', 'AI 助手', '文件']) {
-      await page.getByRole('tab', { name: new RegExp(tab) }).click();
+      const control = page.getByRole('tab', { name: new RegExp(tab) });
+      await control.click();
+      await expect(page.locator('#' + await control.getAttribute('aria-controls'))).toBeVisible();
       expect(await textBelow(page, 12), tab).toEqual([]);
     }
   });

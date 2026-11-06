@@ -6,6 +6,9 @@ import {fileURLToPath} from 'node:url';
 import {ApiError} from '../middleware/errorHandler.js';
 const run=promisify(execFile);
 export async function validateMedia(upload,config,signal,runPdf=run){
+ if(config.aiProvider==='ollama'&&!config.syntheticDocumentHashes?.includes(upload.sha256)){
+  throw new ApiError('DOCUMENT_NOT_SYNTHETIC','本地模型只允許已核對 SHA-256 指紋的合成文件。',422,false);
+ }
  if(!config.productMode||!config.production)return;
  const options={timeout:4000,maxBuffer:1024*1024,signal};
  let folder;

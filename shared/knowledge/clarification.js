@@ -27,7 +27,7 @@ export function queryClarification(query) {
   if (claim && unclearDate) return clarification('date_context_missing', '你想申請哪一類理賠？不確定的是事故、住院／出院，還是文件上的日期？請先說明，不需要猜填日期。', ['住院醫療理賠', '門診醫療理賠', '其他理賠', '不確定日期類型']);
   if (claim && /^(?:我)?(?:想要|想|要)?(?:辦理|申請)(?:保險)?理賠[ 可是但]*(?:不知(?:道)?(?:如何|怎麼)辦)?$/.test(text)) return clarification('claim_type_missing', '你想了解哪一類理賠的申請流程？目前還不能替你選定事故類型或申請管道。', ['住院醫療理賠', '門診醫療理賠', '其他理賠']);
   const namedService = /班機|航班|延誤|車禍|事故|過世|往生|保險|flight|boarding|accident|住院|門診|理賠|借款|借錢|地址|搬家|受益人|保費|付款|繳費|扣款|紅利|表單|申請書|密碼|保單|身故|死亡|戶政|醫起通|聯盟鏈|insurance|policy|claim|loan|address|beneficiary|form|password/i.test(text);
-  if (!namedService && /不知道|不知|不清楚|不確定|忘記|要辦什麼|怎麼辦|幫我處理|not sure|don.t know/i.test(text)) return clarification('service_unspecified', '你想處理哪一類事情？請先選擇或描述需求，目前尚未選定任何服務。', ['醫療理賠資料準備', '保單資料變更', '查詢表單', '聯絡客服']);
+  if (!namedService && /不知道|不知|不清楚|不確定|忘記|要辦什麼|怎麼辦|幫我處理|(?:修改|變更|更改|改)(?:我的)?(?:資料|資訊)[。！？.!?]*$|not sure|don.t know/i.test(text)) return clarification('service_unspecified', '你想處理哪一類事情？請先選擇或描述需求，目前尚未選定任何服務。', ['醫療理賠資料準備', '保單資料變更', '查詢表單', '聯絡客服']);
   if (/(?:地址|搬家)/.test(text) && !/通訊|戶籍|收費/.test(text)) return clarification('address_type_missing', '你要變更通訊地址、戶籍地址，還是收費地址？以下先提供地址變更來源，辦理管道及條件仍需確認。', ['通訊地址', '戶籍地址', '收費地址'], false);
   if (/受益人/.test(text) && /變更|更改|修改|改受益人/.test(text) && !/身故|醫療|失能|表單|申請書|下載/.test(text)) return clarification('beneficiary_type_missing', '你要了解哪一類保險金的受益人變更？是否已發生保險事故、滿期及保單類型，仍需依來源與專員確認。', ['身故保險金受益人', '醫療／失能保險金受益人', '不確定類型'], false);
   if (topics.premium && /變更|更改|修改|改用|更換|換卡|change/.test(text) && !/效期|卡號|銀行轉帳|改轉帳|改用信用卡/.test(text)) return clarification('payment_details_missing', '是同一張信用卡更新卡號／效期，還是改用其他信用卡或銀行轉帳？以下來源不代表已確認適用條件。', ['同一張信用卡更新', '改用其他信用卡', '改用銀行轉帳'], false);

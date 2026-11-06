@@ -22,7 +22,7 @@ export async function understandIntent(message, {
   const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
   try {
     const response = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/api/intelligence/understand`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message.trim() }), signal: combined,
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-NAVI-Contract': 'judge-v1' }, body: JSON.stringify({ message: message.trim() }), signal: combined,
     });
     let result;
     try { result = await response.json(); } catch {
