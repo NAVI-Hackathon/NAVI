@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../../apps/api/src/config/env.js';
-import { OLLAMA_TEXT_MODEL, OLLAMA_VISION_MODELS } from '../../apps/api/src/config/ollama.js';
+import { ollamaConfig, OLLAMA_TEXT_MODEL, OLLAMA_VISION_MODELS } from '../../apps/api/src/config/ollama.js';
 import { createOllamaProvider } from '../../apps/api/src/ai/ollamaProvider.js';
 import { createOllamaTransport } from '../../apps/api/src/ai/ollamaTransport.js';
 import { understandTasks } from '../../apps/api/src/services/taskService.js';
@@ -128,7 +128,15 @@ async function main() {
   if (mode === '--dry-run') return { ...evidence, jobs };
   if (mode === '--prepare') return { ...evidence, fixtures: publicMedia(prepareMedia()), jobs };
   if (process.env.CI && !['false', '0'].includes(process.env.CI.toLowerCase())) throw new Error('Ollama metadata and generation are disabled in CI');
-  const send = createOllamaTransport(base);
+  const connection = {
+    OLLAMA_BASE_URL: base,
+    OLLAMA_TLS_CA_FILE: process.env.OLLAMA_TLS_CA_FILE,
+    OLLAMA_TLS_CERT_FILE: process.env.OLLAMA_TLS_CERT_FILE,
+    OLLAMA_TLS_KEY_FILE: process.env.OLLAMA_TLS_KEY_FILE,
+    OLLAMA_TLS_SERVER_NAME: process.env.OLLAMA_TLS_SERVER_NAME,
+  };
+  const transportConfig = ollamaConfig(connection);
+  const send = createOllamaTransport(base, transportConfig.ollamaTls, { requireBroker: mode === '--run' });
   const inventory = await metadata(send);
   if (mode === '--metadata') return { ...evidence, inventory };
   const media = prepareMedia();
@@ -136,7 +144,7 @@ async function main() {
   const counts = new Map();
   const providers = new Map(models.map(model => {
     const config = loadConfig({
-      AI_MODE: 'live', AI_PROVIDER: 'ollama', OLLAMA_BASE_URL: base,
+      ...connection, AI_MODE: 'live', AI_PROVIDER: 'ollama',
       OLLAMA_VISION_MODEL: model === OLLAMA_TEXT_MODEL ? '' : model,
       OLLAMA_TIMEOUT_MS: '75000', NAVI_TEST_SESSION_TOKEN: 'isolated-offline-evaluation-internal',
       LIVE_AI_REQUEST_LIMIT: String(jobs.filter(job => job.model === model).length),
@@ -181,7 +189,9 @@ async function main() {
     }
     result.latencyMs = Math.round(performance.now() - started);
     result.attempts = (counts.get(job.model) ?? 0) - before;
-    result.usage = provider.getDebugMetadata()[job.operation]?.usage ?? null;
+    const modelMetadata = provider.getDebugMetadata()[job.operation];
+    result.usage = modelMetadata?.usage ?? null;
+    result.modelTiming = modelMetadata?.modelTiming ?? null;
   }
   if (results.some(result => result.status !== 'completed' || !result.correct)) process.exitCode = 1;
   return { ...evidence, inventory, fixtures: publicMedia(media), scores: scores(results), results };

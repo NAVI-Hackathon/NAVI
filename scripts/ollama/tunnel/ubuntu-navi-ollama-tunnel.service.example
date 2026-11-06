@@ -12,7 +12,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ExecStart=/usr/bin/ssh -F /dev/null -NT -i /etc/navi-ollama-tunnel/identity -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/navi-ollama-tunnel/known_hosts -o GlobalKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -o ConnectTimeout=10 -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -R 127.0.0.1:21144:127.0.0.1:11435 navi-ollama-tunnel@REPLACE_WITH_APPROVED_VPS_HOST
+ExecStart=/usr/bin/ssh -F /dev/null -NT -i /etc/navi-ollama-tunnel/identity -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/navi-ollama-tunnel/known_hosts -o GlobalKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -o ConnectTimeout=10 -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -R 127.0.0.1:21144:127.0.0.1:11436 navi-ollama-tunnel@REPLACE_WITH_APPROVED_VPS_HOST
 Restart=on-failure
 RestartSec=60
 

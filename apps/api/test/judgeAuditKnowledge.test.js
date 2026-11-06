@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { searchKnowledge, verifyEvidenceSnippet, verifyNavigationDestination } from '../../../shared/knowledge/index.js';
+import { searchKnowledge, retrieveKnowledgeContext, verifyEvidenceSnippet, verifyNavigationDestination } from '../../../shared/knowledge/index.js';
 import { searchVerifiedKnowledge } from '../../../shared/knowledge/evidence.js';
 import { isDecisionQuestion } from '../../../shared/knowledge/vocabulary.js';
 import { planNavigation } from '../../../shared/knowledge/navigationPlan.js';
@@ -29,6 +29,26 @@ test('address and beneficiary subtype questions preserve known source without el
  for(const query of ['我要改通訊地址','我要改戶籍地址','我要改收費地址'])assert.notEqual(searchKnowledge(query).clarification?.reason,'address_type_missing');
  assert.equal(planNavigation({sourceId:'form:form_contract_change'}).plan.steps.length,1);const steps=planNavigation({sourceId:'service:change_address'}).plan.steps;assert.equal(steps.length,2);assert.equal(new Set(steps.map(s=>s.destination.path+'#'+s.destination.anchor)).size,2);
 });
+test('correspondence address excerpts and AI context exclude unrelated paper instructions', () => {
+  const query = '我要更改通訊地址';
+  const result = searchVerifiedKnowledge(query);
+  const { source, excerpts } = result.results[0];
+  assert.equal(source.id, 'service:change_address');
+  assert.match(excerpts[0], /My Cardif.*通訊地址/);
+  assert.ok(excerpts.some(line => line.includes('有效會員')));
+  assert.ok(excerpts.every(line => verifyEvidenceSnippet(source.id, line)));
+  const context = retrieveKnowledgeContext(query);
+  assert.equal(context.sources[0].content, excerpts.join('\n'));
+  assert.doesNotMatch(context.answer, /戶籍|收費|郵寄|翌日/);
+});
+
+test('insurance refusal explains that NAVI does not recommend buying insurance', () => {
+  const { status, clarification } = searchVerifiedKnowledge('你推薦我買哪張保單？');
+  assert.equal(status, 'out_of_scope');
+  assert.match(clarification.question, /^NAVI 不提供投保或購買建議；/);
+  assert.match(clarification.question, /不判斷保障適用.*專員確認/);
+});
+
 test('provider failures expose stable actionable codes without raw transport details',()=>{
  for(const code of ['AI_PROVIDER_ERROR','AI_TIMEOUT','AI_BUSY','AI_DAILY_LIMIT_REACHED','AI_USAGE_UNAVAILABLE','STORAGE_UNAVAILABLE']){const f=conversationFailure({code,message:'secret mongodb://PRIVATE Cookie=PRIVATE'});assert.equal(f.code,code);assert.equal(f.retryable,!['AI_DAILY_LIMIT_REACHED'].includes(code));assert.doesNotMatch(JSON.stringify(f),/PRIVATE|mongodb|Cookie/);}
  assert.equal(conversationFailure({code:'SECRET_UNTRUSTED_MESSAGE'}).code,'AI_RESPONSE_INVALID');

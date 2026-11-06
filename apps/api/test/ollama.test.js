@@ -10,6 +10,7 @@ import { loadConfig } from '../src/config/env.js';
 import { createAIProvider } from '../src/ai/provider.js';
 import { createOllamaProvider } from '../src/ai/ollamaProvider.js';
 import { createOllamaTransport, ollamaOrigin } from '../src/ai/ollamaTransport.js';
+import { BROKER_HEADER, BROKER_VERSION } from '../src/ai/ollamaBrokerProtocol.js';
 import { prepareOllamaDocument } from '../src/ai/ollamaDocumentInput.js';
 import { UnderstandingSchema } from '../../../shared/intelligence.js';
 import { analyzeDocument } from '../src/services/documentService.js';
@@ -192,11 +193,12 @@ test('closed sockets, HTTP errors, oversized responses and redirects fail withou
       case 2: res.writeHead(302, { Location: 'https://example.invalid/' }).end(); break;
       case 3: res.writeHead(503).end('internal details'); break;
       case 4: res.writeHead(429).end(); break;
+      case 5: res.writeHead(504).end(); break;
       default: res.end('x'.repeat(129 * 1024));
     }
   }));
   const provider = createOllamaProvider(config, createOllamaTransport(base));
-  for (const [i, code] of ['AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_RATE_LIMITED', 'AI_PROVIDER_ERROR'].entries()) {
+  for (const [i, code] of ['AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_RATE_LIMITED', 'AI_TIMEOUT', 'AI_PROVIDER_ERROR'].entries()) {
     await assert.rejects(provider.understandIntent(message), { code });
     assert.equal(requests, i + 1);
   }
@@ -271,6 +273,7 @@ test('evaluation is offline by default, checks vision capabilities and preserves
   let offline = false;
   const tags = [config.ollamaModel, 'qwen3.5:4b-q4_K_M', 'qwen3-vl:4b-instruct'];
   const base = await loopback(t, createServer(async (req, res) => {
+    res.setHeader(BROKER_HEADER, BROKER_VERSION);
     if (req.url === '/api/version') return res.end(JSON.stringify({ version: '0.0.0-mock' }));
     if (req.url === '/api/tags') return res.end(JSON.stringify({ models: tags.map(name => ({ name, digest: 'a'.repeat(64) })) }));
     const chunks = [];
