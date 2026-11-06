@@ -13,24 +13,32 @@ function journeyTitle(item) {
   return created ? `${item.title}・${created.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })} 建立` : item.title;
 }
 
+// A request is shown as the user wrote it, without the closing punctuation (as in the chat options).
+const requestTitle = task => task.input.replace(/[。！？!?]+$/, '');
+
 function journeyStatus(item) {
   if (item.unavailable) return '暫時無法讀取，按一下再試';
   return scored(item) ? `${stageLabel(item)}・${item.readiness}%` : stageLabel(item);
 }
 
 /**
- * The user's tasks in this browser: journeys read from the server (switch between them) and requests from
- * one message not handled yet (from POST /intelligence/tasks). Nothing here is a local copy of a journey.
- *   variant 'workspace': every journey, the shown one marked, plus the open requests.
- *   variant 'chat': the journeys to go back to (the open requests are offered as chat options instead).
- * onRemove (workspace): forget one journey in this browser, after a second press to confirm.
+ * The user's tasks in this browser: journeys as the service has them (switch between them) and requests
+ * from one message (from POST /intelligence/tasks): not handled yet, or answered without a journey (read
+ * again). Nothing here is a local copy of a journey.
+ *   variant 'workspace': every journey, the shown one marked, plus the open and answered requests.
+ *   variant 'chat': the journeys and answered requests to go back to (the open requests are offered as
+ *   chat options instead).
+ * onRemove (workspace): remove one journey after a second press to confirm — deleted on the server when
+ * `deletes` (persistent service), otherwise forgotten by this browser.
+ * note: what this mode keeps (demo: this tab only).
  */
-export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOpen, onRemove = null, busy = false, variant = 'workspace' }) {
+export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOpen, onRemove = null, deletes = false, busy = false, variant = 'workspace', note = null }) {
   const open = variant === 'workspace' ? openTasks?.tasks ?? [] : [];
+  const answered = openTasks?.answered ?? [];
   const [asking, setAsking] = useState(null);
   const removable = variant === 'workspace' && onRemove;
-  // The workspace bar appears once there is something to switch to; the chat list once there is a journey.
-  if (variant === 'workspace' ? journeys.length < 2 && !open.length : !journeys.length) return null;
+  // The workspace bar appears once there is something to switch to; the chat list once there is something to go back to.
+  if (variant === 'workspace' ? journeys.length < 2 && !open.length && !answered.length : !journeys.length && !answered.length) return null;
   return (
     <nav className={`task-bar task-bar-${variant}`} aria-label={variant === 'chat' ? '繼續處理先前的事情' : '你的任務'}>
       <p className="eyebrow" aria-hidden="true">{variant === 'chat' ? '繼續處理先前的事情' : '你的任務'}</p>
@@ -44,12 +52,12 @@ export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOp
               <span className="task-chip-state">{item.current ? `目前・${journeyStatus(item)}` : journeyStatus(item)}</span>
             </button>
             {removable && (asking === item.id ? (
-              <span className="task-remove-confirm" role="group" aria-label={`確認移除「${journeyTitle(item)}」`}>
+              <span className="task-remove-confirm" role="group" aria-label={`確認${deletes ? '刪除' : '移除'}「${journeyTitle(item)}」`}>
                 <button type="button" className="button button-ghost button-small" onClick={() => setAsking(null)}>取消</button>
-                <button type="button" className="button button-danger button-small" disabled={busy} onClick={() => { setAsking(null); onRemove(item.id); }}>從瀏覽器移除</button>
+                <button type="button" className="button button-danger button-small" disabled={busy} onClick={() => { setAsking(null); onRemove(item.id); }}>{deletes ? '刪除這件事' : '從瀏覽器移除'}</button>
               </span>
             ) : (
-              <button type="button" className="icon-button task-chip-remove" disabled={busy} aria-label={`從這個瀏覽器移除「${journeyTitle(item)}」`} onClick={() => setAsking(item.id)}>
+              <button type="button" className="icon-button task-chip-remove" disabled={busy} aria-label={deletes ? `刪除「${journeyTitle(item)}」` : `從這個瀏覽器移除「${journeyTitle(item)}」`} onClick={() => setAsking(item.id)}>
                 <Icon name="close" size={14} />
               </button>
             ))}
@@ -59,12 +67,22 @@ export default function TaskBar({ journeys, openTasks = null, onSwitch, onPickOp
           <li key={task.id}>
             <button type="button" className="task-chip is-open" disabled={busy} onClick={() => onPickOpen(openTasks.split, task)}>
               <Icon name="chat" size={14} />
-              <span className="task-chip-title">{task.input}</span>
+              <span className="task-chip-title">{requestTitle(task)}</span>
               <span className="task-chip-state">尚未處理</span>
             </button>
           </li>
         ))}
+        {answered.map(task => (
+          <li key={task.id}>
+            <button type="button" className="task-chip is-answered" disabled={busy} onClick={() => onPickOpen(openTasks.split, task)}>
+              <Icon name="check" size={14} />
+              <span className="task-chip-title">{requestTitle(task)}</span>
+              <span className="task-chip-state">已看官網說明・再看一次</span>
+            </button>
+          </li>
+        ))}
       </ul>
+      {note && <p className="task-bar-note">{note}</p>}
     </nav>
   );
 }

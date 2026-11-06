@@ -4,6 +4,7 @@ import Icon from '../Icon.jsx';
 import ManualEntryForm, { unverifiedForms } from './ManualEntryForm.jsx';
 import { validateFile } from '../../domain/files.js';
 import { documentRecovery, unrecognizedFields } from '../../domain/documentRecovery.js';
+import { userMessage } from '../../domain/userMessage.js';
 import { documentSpecs } from '../../mocks/hospitalClaim.js';
 import { maskAccount, stayText } from '../../content/format.js';
 import { CheckDraw } from '../../motion/primitives.jsx';
@@ -171,7 +172,7 @@ function Failed({ state, kept, onKeep, onReselect, onRetrySame, onManual, manual
       <Icon name="alert" size={18} />
       <div>
         <strong>{recovery.title}</strong>
-        <p>{state?.message ?? recovery.fallback}</p>
+        <p>{userMessage(state?.message, recovery.fallback)}</p>
         <p className="doc-failed-note">{kept ? '原本的文件仍保留，準備完成度沒有改變。' : '準備完成度沒有改變。'}</p>
         <div className="doc-failed-actions">
           {buttons.length ? buttons : <button type="button" className="button button-secondary button-small" onClick={onReselect}>重新選擇文件<Icon name="upload" size={15} /></button>}

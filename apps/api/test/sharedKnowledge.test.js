@@ -104,10 +104,13 @@ test('all public HTTP queries match shared results and preserve Backend answer c
   const repository = new InMemoryJourneyRepository();
   const api = await startHospitalApi({ provider, repository }); t.after(() => api.close());
   for (const c of (await loadKnowledgeDataset()).filter(c => c.kind === 'query')) {
-    const response = await api.request(`/knowledge/search?query=${encodeURIComponent(c.query)}`);
+    const path = `/knowledge/search?query=${encodeURIComponent(c.query)}`;
+    const response = await fetch(api.baseUrl + '/api' + path, { headers: { 'X-NAVI-Contract': 'judge-v1' } });
     if (!c.query) { assert.equal(response.status, 400); continue; }
     assert.equal(response.status, 200);
     const actual = await response.json(); assert.deepEqual(actual, searchKnowledge(c.query));
+    const { clarification: _clarification, ...legacy } = actual;
+    assert.deepEqual(await (await api.request(path)).json(), legacy);
     if (c.status === 'answered') {
       const retrieval = await (await api.request(`/knowledge?query=${encodeURIComponent(c.query)}`)).json();
       assert.equal(retrieval.found, true); assert.equal(retrieval.isMock, false);

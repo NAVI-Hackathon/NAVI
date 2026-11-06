@@ -35,9 +35,11 @@ const destinations = {
 };
 export const claimDestinations = destinations;
 
-function claimContext(story) {
-  // Conservative matching: 「榮總」 alone names no specific hospital, so it is never treated as a partner.
-  const mentioned = findHospitalMention(story);
+function claimContext(story, documents = []) {
+  // The backend's rule (shared/hospitalization.js hospitalClaimContext): a verified certificate's hospital
+  // first, else the one in the description. Conservative matching: 「榮總」 alone names no specific hospital.
+  const certificate = documents.find(d => d.documentType === 'diagnosis_certificate' && d.status === 'verified');
+  const mentioned = certificate?.fields.hospitalName ?? findHospitalMention(story);
   const matchedName = mentioned ? matchPartnerHospital(mentioned) : null;
   const hospital = mentioned ? { mentioned, matchedName, partner: Boolean(matchedName) } : null;
   const partner = Boolean(hospital?.partner);
@@ -166,10 +168,10 @@ function hospitalNextAction(session, partner) {
     return { type: 'UPLOAD_DOCUMENT', target: 'bank_passbook', title: '請上傳存摺影本', description: `${passbookRule}。`, destination: destinations.rules };
   }
   if (!session.confirmed) {
-    return { type: 'REVIEW_INFORMATION', target: null, title: `確認資料並填寫${applicationForm}`, description: '確認辨識出的資料，並下載保險金申請書填寫簽名。', destination: destinations.form };
+    return { type: 'REVIEW_INFORMATION', target: null, title: `確認資料並填寫${applicationForm}`, description: '確認辨識出的資料，並取得保險金申請書填寫簽名（NAVI 不提供表單檔案）。', destination: destinations.form };
   }
   return partner
-    ? { type: 'PROCEED_TO_SERVICE', target: 'hospital_upload', title: '透過醫起通申請理賠', description: `你住院的醫院是醫起通合作醫院。${reminders.hospitalStillNeedsCertificate}。`, destination: destinations.hospitalUpload }
+    ? { type: 'PROCEED_TO_SERVICE', target: 'hospital_upload', title: '透過醫起通申請理賠', description: `你的醫院在醫起通合作院所名單上，能否使用此管道仍需確認。${reminders.hospitalStillNeedsCertificate}。`, destination: destinations.hospitalUpload }
     : { type: 'PROCEED_TO_SERVICE', target: 'union_chain', title: '透過理賠聯盟鏈申請', description: `${reminders.unionReturnOriginals}。`, destination: destinations.unionChain };
 }
 
@@ -192,7 +194,7 @@ export function toSnapshot(session) {
   };
   let journey;
   if (kind === 'hospital') {
-    const context = claimContext(session.story);
+    const context = claimContext(session.story, session.documents);
     const requirements = hospitalRequirements(session);
     const currentStage = hospitalStage(session);
     journey = {

@@ -120,7 +120,7 @@ for (const device of [{ name: 'desktop', viewport: { width: 1280, height: 860 },
       await navi(page).getByRole('button', { name: '使用範例文件' }).click();
       await expect(navi(page).locator('[role=progressbar][aria-label="準備完成度"]').first()).toHaveAttribute('aria-valuenow', '90');
       await navi(page).getByRole('button', { name: '確認資料' }).first().click();
-      for (const label of [/我已確認以上資料正確/, /我已下載並填妥/]) await navi(page).getByText(label).click();
+      for (const label of [/我已確認以上資料正確/, /我已另外取得並填妥/]) await navi(page).getByText(label).click();
       await navi(page).getByRole('dialog').getByRole('button', { name: '確認資料' }).click();
       await expect(navi(page).locator('[role=progressbar][aria-label="準備完成度"]').first()).toHaveAttribute('aria-valuenow', '100');
       await expect(navi(page).getByText('已完成 NAVI 初步資料準備，仍需依正式規定確認與送件。').first()).toBeVisible();

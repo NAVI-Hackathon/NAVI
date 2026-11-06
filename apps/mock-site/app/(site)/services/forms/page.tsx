@@ -110,6 +110,9 @@ export default function FormsPage() {
         <p className="mb-6 text-[15px] leading-relaxed text-muted">
           各類申請書請依您的保單類型下載對應版本，部分表單有唯一文件編號，請勿影印使用。
         </p>
+        <p role="note" className="mb-6 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-[15px] leading-relaxed text-neutral-800">
+          這是模擬網站：表單只標示位置，不提供檔案下載。正式表單請向保險公司取得。
+        </p>
         <Tabs label="表單分類" items={tabs} />
         {/* 保全表單列在 a311（form.page）；其餘理賠表單出自 a314 */}
         <SourceNote

@@ -30,6 +30,21 @@ function naviOff() {
 }
 const noSubscription = () => () => {};
 
+// 展示模式也記在 sessionStorage：?navi=demo 選了示範模式後，站內換頁、重新整理、上一頁、關閉再開都維持示範；
+// ?navi=on 是主動選回一般模式。沒有網址參數時沿用這個分頁先前的選擇（NAVI-004）。
+const MODE_KEY = "navi.mode";
+function chosenDemo() {
+  const query = new URLSearchParams(window.location.search).get("navi");
+  try {
+    if (query === "demo") sessionStorage.setItem(MODE_KEY, "demo");
+    else if (query === "on") sessionStorage.removeItem(MODE_KEY);
+    return sessionStorage.getItem(MODE_KEY) === "demo";
+  } catch { return query === "demo"; }
+}
+function rememberDemo(demo: boolean) {
+  try { if (demo) sessionStorage.setItem(MODE_KEY, "demo"); else sessionStorage.removeItem(MODE_KEY); } catch { /* this page only */ }
+}
+
 export type NaviDestination = { kind: string; path: string; anchor: string | null; label: string };
 
 export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDestination) => Promise<"found" | "missing"> }) {
@@ -50,6 +65,21 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     if (NAVI_ORIGIN) frame.current?.contentWindow?.postMessage(hostMessage("host:hello"), NAVI_ORIGIN);
   }, []);
 
+  const reconnect = useCallback((useDemo: boolean) => {
+    if (useDemo) rememberDemo(true);
+    setConnected(false);
+    setTimedOut(false);
+    setDemo(useDemo);
+    setAttempt(n => n + 1); // remounts the iframe
+  }, []);
+  const demoRef = useRef(demo);
+  useEffect(() => { demoRef.current = demo; }, [demo]);
+  const switchMode = useCallback((useDemo: boolean) => {
+    if (useDemo === demoRef.current || (useDemo && !DEMO_URL)) return;
+    rememberDemo(useDemo);
+    reconnect(useDemo);
+  }, [reconnect]);
+
   useEffect(() => {
     if (!NAVI_ORIGIN) return;
     const allowedOrigins = [NAVI_ORIGIN];
@@ -59,6 +89,9 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
       if (!message) return;
       if (message.type === "navi:ready") { setConnected(true); sayHello(); }
       if (message.type === "navi:close") { setOpen(false); launcher.current?.focus(); }
+      // 使用者在 NAVI 裡選了模式：記在這個分頁並用該模式重新載入 NAVI。已經是該模式就不動作，
+      // 重新載入的 NAVI 也不會再送 navi:mode，所以不會來回切換。
+      if (message.type === "navi:mode") switchMode(message.mode === "demo");
       if (message.type === "navi:navigate") {
         const { id } = message;
         // Tell NAVI whether the place was really found, so it never says "已帶到" for a missing target.
@@ -74,7 +107,7 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [onNavigate, sayHello]);
+  }, [onNavigate, sayHello, switchMode]);
 
   useEffect(() => {
     if (!mounted || connected) return;
@@ -82,12 +115,9 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
     return () => clearTimeout(timer);
   }, [mounted, connected, attempt]);
 
-  const reconnect = (useDemo: boolean) => {
-    setConnected(false);
-    setTimedOut(false);
-    setDemo(useDemo);
-    setAttempt(n => n + 1); // remounts the iframe
-  };
+  // Record the mode in the address when the site loads, before in-site navigation drops the query;
+  // the launcher reads it when NAVI is opened.
+  useEffect(() => { chosenDemo(); }, []);
 
   // Wide screens: the open panel docks at the right and the page makes room for it, so the place NAVI
   // outlines (and its buttons, e.g. 下載) is never hidden under the panel. Phones use a full-screen panel.
@@ -116,8 +146,8 @@ export function NaviLauncher({ onNavigate }: { onNavigate?: (destination: NaviDe
           aria-controls="navi-panel"
           aria-label={resume ? "回到 NAVI，繼續下一步" : undefined}
           onClick={() => {
-            // 錄影與展示入口：?navi=demo 直接載入示範模式（範例文件只在示範模式提供）。
-            if (!mounted && DEMO_URL && new URLSearchParams(window.location.search).get("navi") === "demo") setDemo(true);
+            // 錄影與展示入口：?navi=demo（或這個分頁先前的選擇）直接載入示範模式。
+            if (!mounted && DEMO_URL) setDemo(chosenDemo());
             setMounted(true); setOpen(true); setResume(false);
           }}
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-full border py-2.5 pl-2.5 pr-5 text-sm font-medium shadow-[0_12px_40px_rgba(0,0,0,0.28)] transition-transform hover:-translate-y-0.5 ${resume ? "navi-resume border-[#97c9b3]/60 bg-[#0a0b0d] text-[#eeefe9]" : "border-white/10 bg-[#0a0b0d] text-[#eeefe9]"}`}

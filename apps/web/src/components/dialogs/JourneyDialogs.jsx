@@ -8,6 +8,7 @@ import { claimApplicationForm } from '../../content/cardifData.js';
 import { maskAccount, stayDays, stayText } from '../../content/format.js';
 import { CheckDraw } from '../../motion/primitives.jsx';
 import { channelStatus } from '../../domain/channels.js';
+import { userMessage } from '../../domain/userMessage.js';
 import { transition } from '../../motion/tokens.js';
 import { copyText, downloadText } from '../../services/textExport.js';
 
@@ -50,7 +51,7 @@ export function ReviewDialog({ snapshot, onConfirm, onProceed, onClose }) {
           </label>
           <label className="check-row">
             <input type="checkbox" checked={formChecked} onChange={e => setFormChecked(e.target.checked)} />
-            <span>我已下載並填妥{formName}。</span>
+            <span>我已另外取得並填妥{formName}（NAVI 與模擬網站不提供表單檔案）。</span>
           </label>
         </>
       )}
@@ -210,7 +211,7 @@ export function HandoffDialog({ snapshot, service, onConfirmed, onClose }) {
     setPhase('loading'); setAgreed(false); setError('');
     service.handoffPreview({ signal: ctl.signal })
       .then(next => { setPreview(next); setPhase('preview'); })
-      .catch(err => { if (!ctl.signal.aborted) { setError(err?.code && err.message ? err.message : '目前無法整理摘要，請稍後再試。'); setPhase('error'); } });
+      .catch(err => { if (!ctl.signal.aborted) { setError(userMessage(err?.code && err, '目前無法整理摘要，請稍後再試。')); setPhase('error'); } });
     return () => ctl.abort();
   }, [service, attempt]);
 
@@ -223,7 +224,7 @@ export function HandoffDialog({ snapshot, service, onConfirmed, onClose }) {
       onConfirmed();
     } catch (err) {
       // Stale (journey changed) or expired previews must be reviewed again before confirming.
-      setError(err?.code && err.message ? err.message : '確認失敗，請重新查看摘要。');
+      setError(userMessage(err?.code && err, '確認失敗，請重新查看摘要。'));
       setPhase('error');
     }
   }

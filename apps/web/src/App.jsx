@@ -13,18 +13,22 @@ import { useHostBridge } from './hooks/useHostBridge.js';
 import { useOnline } from './hooks/useOnline.js';
 import { applyNavigationReply, newNavigationId, naviMessage, originOf } from '../../../shared/embed.js';
 import { analysisErrors } from './services/intelligence.js';
+import { errorNotice, journeyDeleteNotice, productErrors, reloadCodes } from './domain/productErrors.js';
+import { answersMessage } from './domain/chatAnswers.js';
+import { clarificationReply } from './domain/clarification.js';
 import { serviceLabel } from './domain/intelligence.js';
 import { knowledgeEntries, searchKnowledge } from '../../../shared/knowledge/index.js';
-import { followUpForAnswers, followUpForClarification, followUpForRefusal } from './domain/followUps.js';
+import { followUpForClarification, followUpForRefusal } from './domain/followUps.js';
 import Icon from './components/Icon.jsx';
 import GuideCard from './components/guide/GuideCard.jsx';
 import { journeyPrerequisites, serviceSteps, singleStepPlan } from './domain/guidance.js';
 import TaskBar from './components/tasks/TaskBar.jsx';
-import { PrivacyDialog, SearchDialog, SummaryDialog } from './components/dialogs/AssistDialogs.jsx';
+import { PrivacyContent, PrivacyDialog, SearchDialog, SummaryDialog } from './components/dialogs/AssistDialogs.jsx';
 import { transition } from './motion/tokens.js';
 import { JOURNEY_EXPIRED_MESSAGE, journeySummary, understandingOfTask } from './services/apiJourney.js';
 import { documentSpecs } from './mocks/hospitalClaim.js';
 import { documentRecovery } from './domain/documentRecovery.js';
+import { userMessage } from './domain/userMessage.js';
 
 const embedded = isEmbedPath(location.pathname);
 const mode = resolveMode(location);
@@ -37,9 +41,12 @@ const demoEntry = embedded && mockSiteOrigin ? `${mockSiteOrigin}/?navi=demo` : 
 const ARRIVAL_TIMEOUT_MS = 7000;
 const noSubscription = () => () => {};
 const tryDemo = `想先看完整流程，可以改用示範模式（${demoEntry}）。`;
+// What demo mode keeps, said wherever its tasks are listed.
+const DEMO_SCOPE = '示範模式：任務只存在這個分頁，重新整理會保留，關閉分頁即清除，不會跨裝置。';
 
 const errorCopy = {
   ...analysisErrors,
+  ...productErrors,
   AI_BUSY: ['NAVI 正在處理其他分析', '請稍候幾秒，再按「重新分析」。'],
   AI_DAILY_LIMIT_REACHED: ['今日 AI 分析次數已用完', `這個原型只使用免費額度，明天會重新開放。${tryDemo}`],
   AI_SESSION_LIMIT_REACHED: ['這次體驗的 AI 分析次數已用完', `為保留免費額度，每次體驗的分析次數有上限，約一小時後可再試。${tryDemo}`],
@@ -87,6 +94,10 @@ export default function App() {
   const service = useMemo(() => (mode === 'demo' ? createMockAdapter() : createApiAdapter()), []);
   const [recovery,setRecovery]=useState(()=>{const action=new URLSearchParams(location.search).get('auth'),token=new URLSearchParams(location.hash.slice(1)).get('token');return service.mode==='live'&&['verify','reset'].includes(action)&&/^[a-f0-9]{64}$/.test(token??'')?{action,token}:null;});
   const [productReady,setProductReady]=useState(false);
+  // GET /session of the persistent service (A3): retention, registration and e-mail availability.
+  const [productSession,setProductSession]=useState(null);
+  const keepDays = productSession?.retentionDays ?? null;
+  const productInit = useRef(null); // resolves to the init data, or null without a persistent service
   const [productDialog,setProductDialog]=useState(null);
   const [snapshot, setSnapshot] = useState(() => service.restore());
   // Embedded NAVI reopens on the journey in progress (the host page may have reloaded the iframe).
@@ -108,9 +119,10 @@ export default function App() {
   // unverified (the release has no verified place for it) or opened (standalone, a new tab).
   const [arrival, setArrival] = useState(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  // Requests from one message not handled yet (from POST /intelligence/tasks), and this browser's journeys
-  // as the server has them (formal mode). Neither is a local copy of journey state.
-  const [openTasks, setOpenTasks] = useState(null);
+  // Requests from one message (from POST /intelligence/tasks): those not handled yet, and those answered
+  // without a journey. And this browser's journeys as the service has them. In formal mode neither is a
+  // local copy of journey state; /demo keeps both in this tab (they come back after a reload).
+  const [openTasks, setOpenTasks] = useState(() => service.restoreTasks?.() ?? null);
   const [journeys, setJourneys] = useState([]);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failNext, setFailNext] = useState(false);
@@ -119,6 +131,9 @@ export default function App() {
     if (message.type === 'host:navigated') setArrival(current => applyNavigationReply(current, message));
   });
   const reduced = reduceMotion || systemReduced;
+  // 改用示範模式 inside the insurer site: the site switches (and remembers it for this tab, NAVI-004);
+  // without a verified host the link itself opens the demo entry.
+  const chooseDemo = event => { if (embedded && host.send(naviMessage('navi:mode', { mode: 'demo' }))) event.preventDefault(); };
   // Formal mode needs the NAVI service; /demo works offline (everything is local).
   const offline = !useOnline() && !service.capabilities.manualEntry;
   const wasOffline = useRef(false);
@@ -134,6 +149,7 @@ export default function App() {
   const fileInputs = useRef({});
   const uploads = useRef({}); // document type → AbortController of the upload in progress
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
+  useEffect(() => { service.saveTasks?.(openTasks); }, [service, openTasks]);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(reduced); }, [reduced]);
   useEffect(() => { document.documentElement.dataset.embedded = String(embedded); }, []);
   useEffect(() => { document.documentElement.dataset.guide = String(Boolean(guide)); }, [guide]);
@@ -149,7 +165,7 @@ export default function App() {
     return () => { window.removeEventListener('popstate', onPop); analysisCtl.current?.abort(); };
   }, []);
 
-  useEffect(()=>{if(!service.init)return;let disposed=false;service.init().then(data=>{if(!data||disposed)return;setProductReady(true);if(data.conversation?.messages)setMessages([{id:'welcome',role:'navi',kind:'welcome'},...data.conversation.messages.map((m,i)=>({id:'stored-'+i,role:m.role==='user'?'user':'navi',kind:'note',tone:'info',title:m.role==='user'?undefined:'先前的對話',text:m.text,body:m.text}))]);}).catch(()=>{});return()=>{disposed=true;};},[service]);
+  useEffect(()=>{if(!service.init)return;let disposed=false;const pending=service.init();productInit.current=pending.catch(()=>null);pending.then(data=>{if(!data||disposed)return;setProductReady(true);setProductSession(data.session??null);if(data.conversation?.messages)setMessages([{id:'welcome',role:'navi',kind:'welcome'},...data.conversation.messages.map((m,i)=>({id:'stored-'+i,role:m.role==='user'?'user':'navi',kind:'note',tone:'info',title:m.role==='user'?undefined:'先前的對話',text:m.text,body:m.text}))]);}).catch(()=>{});return()=>{disposed=true;};},[service]);
 
   useEffect(()=>{const change=e=>{if(e.key==='navi.identity.updated'&&service.mode==='live'){service.reset();location.reload();}};window.addEventListener('storage',change);return()=>window.removeEventListener('storage',change);},[service]);
 
@@ -191,7 +207,7 @@ export default function App() {
       setResuming(false);
     }).catch(error => {
       if (ctl.signal.aborted) return;
-      if(['AUTH_REQUIRED','SESSION_EXPIRED','EMAIL_NOT_VERIFIED'].includes(error?.code)){setProductDialog('data');say({kind:'note',tone:'info',title:'請重新登入',body:'登入並完成信箱驗證後，可從我的資料與歷程繼續處理。'});}
+      if(['AUTH_REQUIRED','SESSION_EXPIRED','EMAIL_NOT_VERIFIED'].includes(error?.code)){setProductDialog('data');say({kind:'note',tone:'info',title:'請重新登入',body:'登入並完成信箱驗證後，可從「資料與隱私」繼續處理。'});}
       else if (error?.code === 'JOURNEY_NOT_FOUND') expire();
       // Any other failure keeps the stored journey: say so instead of opening on an empty chat.
       else say({ kind: 'note', tone: 'error', title: '暫時無法讀回你的服務旅程', body: '請確認網路連線後重新整理頁面；已保存的資料會依服務保存政策保留。也可以先查詢有來源的服務資訊。' });
@@ -221,7 +237,8 @@ export default function App() {
     catch (error) {
       if (error?.code === 'JOURNEY_NOT_FOUND') expire();
       else if (error?.code === 'JOURNEY_STALE') await reloadStale();
-      else notify(error?.message && error?.code ? error.message : '目前暫時無法處理，請稍後再試。');
+      else if (reloadCodes.has(error?.code)) { await reloadStale(); notify(errorNotice(error)); }
+      else notify(errorNotice(error));
       return null;
     }
   }
@@ -300,12 +317,24 @@ export default function App() {
     const ctl = new AbortController();
     analysisCtl.current = ctl;
     say({ role: 'user', text: label });
-    const reply = next => { setAnalysisPhase(null); say(next); };
-    // Official-site answers are searched locally; refused questions never reach the AI.
+    // Official-site answers are searched locally (shared rules, the same as the server's); refused questions
+    // never reach the AI.
     const knowledge = searchKnowledge(text);
-    if (knowledge.status === 'out_of_scope') { reply(guardReply(knowledge.hotline)); return true; }
+    // A clarification that does not block (which address, which beneficiary…) follows the reply; the
+    // server's own, when it sends one, replaces the local one.
+    let asksAlso = knowledge.clarification?.blocking === false ? knowledge.clarification : null;
+    const reply = next => {
+      setAnalysisPhase(null);
+      say(next);
+      // Not after a failure: the reply's 重新分析／重新載入 must stay the latest choice.
+      if (asksAlso && ['answers', 'journey'].includes(next.kind) && !next.retry && !next.reload) say(clarificationReply(asksAlso));
+      asksAlso = null;
+    };
+    if (knowledge.status === 'out_of_scope') { reply(clarificationReply(knowledge.clarification) ?? guardReply(knowledge.hotline)); return true; }
+    // /demo: no service can be chosen yet — ask (as the server would, without calling the AI).
+    if (mode === 'demo' && knowledge.clarification?.blocking) { reply(clarificationReply(knowledge.clarification)); return true; }
     const answered = knowledge.status === 'answered';
-    const answers = notice => ({ kind: 'answers', result: knowledge, notice, followUp: followUpForAnswers(knowledge, text) });
+    const answers = notice => answersMessage(knowledge, text, { notice });
     setAnalysisPhase(0);
     const step = reduced ? 0 : 520;
     const startedAt = performance.now();
@@ -318,11 +347,25 @@ export default function App() {
         // Several independent requests: list them and let the user choose one; nothing opens on its own.
         const split = await service.understandTasks(text, { signal: ctl.signal });
         if(split?.productReply?.correctionRequired){reply({kind:'note',tone:'info',title:'請選擇要修正的事情',body:split.productReply.answer});return;}
-        if(split?.productReply&&!split.productReply.understanding){const p=split.productReply;reply(p.evidence.status==='answered'?{kind:'answers',result:service.knowledgeResult(p),notice:p.errorCode?'AI 暫時無法回應，以下為已核對來源的資料。':undefined}:{kind:'note',tone:'info',title:'下一步',body:p.answer});return;}
+        if(split?.productReply&&!split.productReply.understanding){
+          // The server answered from official sources only (retrieval), e.g. because the AI failed: show the
+          // sources and say why; the request is retried only by hand, and never replaced by demo results.
+          const p=split.productReply;
+          asksAlso=p.clarification&&!p.clarification.blocking?p.clarification:null;
+          // No service chosen yet, or a promise NAVI cannot make: the server's question and options.
+          if(!p.failure&&!p.errorCode&&p.clarification?.blocking){reply(clarificationReply(p.clarification));return;}
+          const fail=p.failure??(p.errorCode?{code:p.errorCode,retryable:true}:null);
+          const failed=fail?(errorCopy[fail.code]??['AI 分析暫時無法使用', userMessage(p.failure?.message,'請稍後再按「重新分析」。')]):null;
+          // retryable=false (quota spent, consent missing…): no 重新分析 for the same request.
+          const again=failed?{retry:{text,label,retryable:fail.retryable!==false}}:{};
+          if(p.evidence.status==='answered')reply(answersMessage(service.knowledgeResult(p),text,{notice:failed?`${failed[0]}，以下是已核對來源的官網資料。`:undefined,...again}));
+          else reply({kind:'note',tone:failed?'error':'info',title:failed?failed[0]:'下一步',body:failed?failed[1]:p.answer,...(failed&&p.answer?{detail:p.answer}:{}),...again});
+          return;}
+        if(split?.productReply?.clarification&&!split.productReply.clarification.blocking)asksAlso=split.productReply.clarification;
         if(split?.productReply?.answer)say({kind:'note',tone:'info',title:'依據資料整理',body:split.productReply.answer});
         if (split && split.tasks.length > 1) {
           await wait(step + 160 - (performance.now() - startedAt), ctl.signal);
-          setOpenTasks({ split, tasks: split.tasks });
+          setOpenTasks({ split, tasks: split.tasks, answered: [] });
           reply({ kind: 'tasks', split });
           return true;
         }
@@ -340,33 +383,41 @@ export default function App() {
       setSnapshot(result.snapshot);
       // The journey opens as a card in the chat; the user enters the workspace from there.
       reply({ kind: 'journey', journeyId: result.snapshot.journey.id });
-      return true;
+      if (result.reused) notify('這件事已經有服務旅程，已切回原本那份，不會重複建立。');
+      return result.snapshot.journey.id;
     } catch (error) {
       if (ctl.signal.aborted) return false;
       // The official answers do not depend on the AI service, so they still help when it is down.
       // The analysis can still be retried (manually: a timeout is never re-sent on its own).
+      // A conflict (another tab or request already acted): read the latest state instead of sending again.
+      const again = reloadCodes.has(error?.code) ? { reload: true } : { retry: { text, label } };
       if (answered) {
         const notice = error?.code === 'INTENT_RECEIPT_REQUIRED'
           ? `${errorCopy.INTENT_RECEIPT_REQUIRED[0]}，以下先列出官網資料中的相關說明；按「重新分析」可再建立服務旅程。`
           // Say the real reason (quota spent, service down, timeout…), not a generic "unavailable".
           : `${(errorCopy[error?.code] ?? ['AI 分析暫時無法使用'])[0]}，以下是官網資料中的相關說明。`;
-        reply({ ...answers(notice), retry: { text, label } });
+        reply({ ...answers(notice), ...again });
         return false;
       }
       const [title, body] = errorCopy[error?.code] ?? errorCopy.DEFAULT;
-      reply({ kind: 'note', tone: 'error', title, body, retry: { text, label } });
+      reply({ kind: 'note', tone: 'error', title, body, ...again });
       return false;
     }
   }
 
-  /** Handle one task of several; the others stay listed for later. */
+  /**
+   * Handle one task of several; the others stay listed for later. A task answered without a journey stays
+   * listed as answered (to read again); one that opened a journey is in the journey list from then on.
+   */
   async function pickTask(split, task) {
     const understanding = understandingOfTask(split, task);
     const handled = await send(task.input, task.input, understanding ? { understanding, split } : null);
     if (handled) setOpenTasks(current => {
       if (current?.split !== split) return current;
       const tasks = current.tasks.filter(other => other.id !== task.id);
-      return tasks.length ? { split: current.split, tasks } : null;
+      const others = (current.answered ?? []).filter(other => other.id !== task.id);
+      const answered = typeof handled === 'string' ? others : [...others, task];
+      return tasks.length || answered.length ? { split: current.split, tasks, answered } : null;
     });
   }
   /** From the workspace: back to the chat, where the chosen request is handled. */
@@ -390,8 +441,10 @@ export default function App() {
       notify(`已切換到「${next.journey.title}」。`);
     } catch (error) {
       if (error?.name === 'AbortError') return;
-      if (error?.code === 'JOURNEY_NOT_FOUND') notify('這件事的服務旅程已失效（超過 1 小時或服務重新啟動），已從清單移除；其他事情不受影響。');
-      else notify(error?.message && error?.code ? error.message : '目前無法讀取這件事，請確認網路後再試一次。');
+      if (error?.code === 'JOURNEY_NOT_FOUND') notify(productReady
+        ? '這件事已刪除、超過保存期限，或屬於其他登入身分，已從清單移除；其他事情不受影響。'
+        : '這件事的服務旅程已失效（超過 1 小時或服務重新啟動），已從清單移除；其他事情不受影響。');
+      else notify(errorNotice(error, '目前無法讀取這件事，請確認網路後再試一次。'));
       refreshJourneys();
     }
   }
@@ -417,7 +470,7 @@ export default function App() {
       if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return; }
       if (error?.code === 'JOURNEY_STALE') { setDocStates(s => ({ ...s, [type]: { status: 'idle' } })); await reloadStale(); return; }
       // Server messages (e.g. 文件類型與目前服務需求不同, JOURNEY_BUSY) are written for the user.
-      const message = error?.code && error.message ? error.message : null;
+      const message = userMessage(error?.code && error, null);
       // The file stays in memory only, so「再試一次」can send the same file again when the user asks.
       const retrySource = documentRecovery(error?.code).actions.includes('retry') ? source : null;
       setDocStates(s => ({ ...s, [type]: { status: 'failed', code: error?.code ?? null, message, retrySource } }));
@@ -508,10 +561,14 @@ export default function App() {
       ? '文件辨識使用示範資料；你的檔案不會被讀取或上傳。'
       : serverDemo
         ? '這個 NAVI 服務目前使用示範資料：合成範例會得到固定的示範結果，你自己的檔案不會被送出辨識。'
-        : '檔案會傳送到 NAVI 服務由 AI 辨識；伺服器不保存檔案本身，只保留辨識出的欄位，案件 1 小時後失效。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。',
+        : keepDays
+          ? `檔案會傳送到 NAVI 服務由 AI 辨識；原始檔處理後即刪除，只加密保存辨識出的欄位，自最後一次異動起保存 ${keepDays} 天。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。`
+          : '檔案會傳送到 NAVI 服務由 AI 辨識；伺服器不保存檔案本身，只保留辨識出的欄位，案件 1 小時後失效。這是原型服務，請只使用合成範例，勿上傳真實病歷或銀行資料。',
     footerNotice: service.capabilities.manualEntry
       ? '進度只保留在這個分頁；文件不會被上傳。'
-      : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
+      : keepDays
+        ? `案件由 NAVI 服務加密保存，自最後一次異動起保存 ${keepDays} 天；這是示範原型，請勿輸入真實病歷或銀行資料。`
+        : '案件由 NAVI 服務保存，1 小時後失效；這是示範原型，請勿輸入真實病歷或銀行資料。',
     manualVerifies: service.capabilities.manualEntry,
     upload,
     cancelUpload,
@@ -552,7 +609,7 @@ export default function App() {
     proceed() { setDialog('proceed'); },
     handoff() { setDialog('handoff'); },
     summary() { setDialog('summary'); },
-    privacy() { if(productReady)setProductDialog('data');else setDialog('privacy'); },
+    privacy: openPrivacy,
     next(action) {
       switch (action.type) {
         case 'UPLOAD_DOCUMENT': {
@@ -587,6 +644,12 @@ export default function App() {
     },
   };
 
+  /** The one 資料與隱私 entry. Until the service has answered, wait for it rather than show the wrong policy. */
+  async function openPrivacy() {
+    if (productReady) { setProductDialog('data'); return; }
+    if (await productInit.current) setProductDialog('data'); else setDialog('privacy');
+  }
+
   /** 資料與隱私: delete every document and piece of information of the shown journey (server endpoints). */
   async function removeJourneyData() {
     const { journey } = snapshotRef.current;
@@ -606,10 +669,18 @@ export default function App() {
     notify(removed ? `已移除 ${removed} 份文件或資訊，準備完成度已更新。` : '沒有移除任何資料，請稍後再試。');
   }
 
-  /** Forget one journey in this browser (formal: the server copy expires on its own; demo: cleared now). */
-  function forgetJourney(id) {
+  /**
+   * Remove one journey. Persistent service (A3): deleted on the server, and only after it commits is it
+   * removed here (a failure says so and changes nothing). Older formal releases: forgotten by this browser,
+   * the server copy expires on its own. /demo: cleared now.
+   */
+  async function forgetJourney(id) {
     const shown = snapshotRef.current?.journey.id === id;
-    if (service.forgetJourney) service.forgetJourney(id); else service.reset();
+    if (productReady) {
+      try { await service.deleteJourney(id); }
+      catch (error) { notify(journeyDeleteNotice(error)); return; }
+      setProductDialog(null);
+    } else if (service.forgetJourney) service.forgetJourney(id); else service.reset();
     setJourneys(list => list.filter(item => item.id !== id));
     setDialog(null);
     if (shown || !service.forgetJourney) {
@@ -619,7 +690,8 @@ export default function App() {
       setGuide(null);
       goLanding();
     }
-    notify(service.forgetJourney ? '已從這個瀏覽器移除這件事；NAVI 服務上的案件會在 1 小時內自動失效。' : '已移除這件事的示範資料。');
+    notify(productReady ? '已刪除這件事。線上資料已移除；既有備份約 7 天內例行輪替清除。'
+      : service.mode === 'demo' ? '已移除這件事的示範資料。' : '已從這個瀏覽器移除這件事；NAVI 服務上的案件會在 1 小時內自動失效。');
   }
 
   function reset() {
@@ -662,25 +734,26 @@ export default function App() {
         {embedded ? (
           <EmbedHeader
             mode={serverDemo ? 'demo' : mode} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
-            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')} onPrivacy={() => productReady ? setProductDialog('data') : setDialog('privacy')}
-            onData={productReady?()=>setProductDialog('data'):null}
+            onHome={goLanding} onResume={goWorkspace} onReset={reset} onSearch={() => setDialog('search')} onPrivacy={openPrivacy}
             onClose={host.connected ? () => host.send(naviMessage('navi:close')) : null}
           />
         ) : (
           <AppHeader
             mode={mode} demoData={serverDemo} view={view} hasJourney={Boolean(snapshot)} busy={analysisPhase !== null || Boolean(busyType)}
             onHome={goLanding} onResume={goWorkspace} onReset={reset}
-            onSearch={() => setDialog('search')} onPrivacy={() => productReady ? setProductDialog('data') : setDialog('privacy')}
-            onData={productReady?()=>setProductDialog('data'):null}
+            onSearch={() => setDialog('search')} onPrivacy={openPrivacy}
             reduceMotion={reduceMotion} onReduceMotion={setReduceMotion}
             failNext={failNext} onFailNext={value => { setFailNext(value); service.setFailNextDocument(value); }}
           />
         )}
         {serverDemo && <p className="demo-banner" role="note">NAVI 服務目前以示範資料回答，不是 AI 分析：需求理解與文件辨識都是固定的合成結果，只供體驗流程。</p>}
-        {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'}>示範模式</a>體驗完整流程。</p>}
+        {aiUnavailable && <p className="demo-banner" role="note">AI 分析目前沒有啟用，無法理解新的需求或辨識文件。可以先用「找服務」查官網資料，或改用<a href={embedded ? '/embed?mode=demo' : '/demo'} onClick={chooseDemo}>示範模式</a>體驗完整流程。</p>}
         {offline && <p className="network-banner" role="status"><Icon name="alert" size={13} />目前沒有網路連線：NAVI 暫停送出與上傳，已有的內容不會遺失。</p>}
         {recovery&&<AccountRecoveryDialog service={service} {...recovery} onClose={()=>{history.replaceState(null,'',location.pathname);setRecovery(null);setProductDialog('data');}}/>}
-        {productDialog&&<ProductDataDialog service={service} consentOnly={productDialog==='consent'} onClose={()=>setProductDialog(null)} onJourney={next=>{setSnapshot(next);goWorkspace();}} onDeleted={reset}/>}
+        {productDialog&&<ProductDataDialog service={service} consentOnly={productDialog==='consent'} onClose={()=>setProductDialog(null)} onJourney={next=>{setSnapshot(next);goWorkspace();}} onDeleted={reset}>
+          {/* One 資料與隱私 entry: what is kept and the shown journey's data, then account and history. */}
+          <PrivacyContent snapshot={snapshot} formal retentionDays={keepDays} onRemoveData={removeJourneyData} onForget={() => forgetJourney(snapshot.journey.id)} />
+        </ProductDataDialog>}
         {mode === 'demo' && !embedded && (
           <p className="demo-banner" role="note">示範模式：使用示範資料展示完整流程，不連線 AI，也不會送出任何申請。</p>
         )}
@@ -698,14 +771,14 @@ export default function App() {
                 tab={tab} onTab={setTab} assistantOpen={assistantOpen} onAssistantOpen={setAssistantOpen}
                 actions={actions} registerInput={(type, el) => { fileInputs.current[type] = el; }}
                 preparation={snapshot.journey.workflowId?<ServiceWorkflow snapshot={snapshot} service={service} onUpdate={setSnapshot}/>:null}
-                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} />}
+                taskBar={<TaskBar journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null || Boolean(busyType)} onSwitch={switchJourney} onPickOpen={pickOpenTask} onRemove={service.forgetJourney ? forgetJourney : null} deletes={productReady} note={mode === 'demo' ? DEMO_SCOPE : null} />}
               />
             ) : (
               <Landing
                 key="landing" mode={mode} messages={messages} analysisPhase={analysisPhase} snapshot={snapshot} openTasks={openTasks}
-                journeysSlot={journeyList.length > (snapshot ? 1 : 0) ? <TaskBar variant="chat" journeys={journeyList} busy={analysisPhase !== null} onSwitch={switchJourney} /> : null}
+                journeysSlot={journeyList.length > (snapshot ? 1 : 0) || openTasks?.answered?.length ? <TaskBar variant="chat" journeys={journeyList} openTasks={openTasks} busy={analysisPhase !== null} onSwitch={switchJourney} onPickOpen={pickTask} note={mode === 'demo' ? DEMO_SCOPE : null} /> : null}
                 onSwitchJourney={service.switchJourney ? switchJourney : null}
-                dock={guideLayer} offline={offline} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
+                dock={guideLayer} offline={offline} onDemo={chooseDemo} onSend={send} onPickTask={pickTask} onNavigate={navigate} onOpenWorkspace={goWorkspace}
                 onHotline={() => say({ kind: 'note', tone: 'info', title: '真人客服', body: `請撥免付費服務專線 ${searchKnowledge('').hotline}，專人會協助你。NAVI 不會代為聯絡或送出資料。` })}
               />
             )}
@@ -748,7 +821,7 @@ export default function App() {
                   return null;
                 } catch (error) {
                   if (error?.code === 'JOURNEY_NOT_FOUND') { expire(); return null; }
-                  return error?.code && error.message ? error.message : '目前無法修正，請稍後再試。';
+                  return userMessage(error?.code && error, '目前無法修正，請稍後再試。');
                 }
               }} />
           )}

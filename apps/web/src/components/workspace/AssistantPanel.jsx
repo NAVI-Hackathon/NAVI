@@ -5,6 +5,7 @@ import SourceEvidence from '../knowledge/SourceEvidence.jsx';
 import AnswerCard from '../knowledge/AnswerCard.jsx';
 import { assistantQuestions } from '../../mocks/hospitalClaim.js';
 import { searchKnowledge } from '../../../../../shared/knowledge/index.js';
+import { hospitalFacts, hospitalLabel, partnerLabel } from '../../domain/journeyFacts.js';
 import { crossfade, fadeUp, staggerChildren, transition } from '../../motion/tokens.js';
 
 function suggestionFor(snapshot) {
@@ -14,7 +15,7 @@ function suggestionFor(snapshot) {
   const target = journey.nextAction.target;
   if (target === 'diagnosis_certificate') return '先從診斷書開始：它能確認醫院、住院期間與病名，是後續申請的主要文件。';
   if (target === 'bank_passbook') return '理賠金以匯款給付，準備好存摺封面影本，確認戶名與帳號清楚可辨識。';
-  if (journey.nextAction.type === 'REVIEW_INFORMATION') return '兩份文件都已辨識。確認資料無誤後，記得下載並填妥保險金申請書。';
+  if (journey.nextAction.type === 'REVIEW_INFORMATION') return '兩份文件都已辨識。確認資料無誤後，記得另外取得並填妥保險金申請書。';
   return journey.nextAction.description;
 }
 
@@ -29,7 +30,8 @@ function answerFor(question) {
 export default function AssistantPanel({ snapshot, onHandoff, onNavigate }) {
   const { journey, context } = snapshot;
   const isHospital = context.kind === 'hospital';
-  const hospital = journey.claimContext?.hospital;
+  // Facts from the journey as it is now; the summary below it is what NAVI understood at the start.
+  const hospital = isHospital ? hospitalFacts(journey) : null;
   const [question, setQuestion] = useState('');
   const [answers, setAnswers] = useState([]);
   const [thinking, setThinking] = useState(false);
@@ -45,7 +47,8 @@ export default function AssistantPanel({ snapshot, onHandoff, onNavigate }) {
 
   const facts = [
     ['已辨識服務', journey.title],
-    ...(isHospital ? [['住院醫院', hospital ? (hospital.matchedName ?? hospital.mentioned) : '待確認'], ['醫起通', hospital ? (hospital.partner ? '合作醫院' : '未對應合作院所') : '待確認']] : []),
+    ...(hospital ? [['住院醫院', hospitalLabel(hospital)], ['醫起通', partnerLabel(hospital)]] : []),
+    ...(hospital?.toConfirm.length ? [['醫起通須確認', hospital.toConfirm.join('；')]] : []),
   ];
 
   return (
@@ -63,7 +66,8 @@ export default function AssistantPanel({ snapshot, onHandoff, onNavigate }) {
 
         <motion.section className="insight" variants={fadeUp} aria-labelledby="insight-title">
           <h3 id="insight-title" className="section-label">NAVI 的理解</h3>
-          <p className="insight-summary">{journey.summary}</p>
+          <p className="insight-origin">你一開始的需求：{journey.summary}</p>
+          <p className="eyebrow insight-now">目前狀況</p>
           <dl className="insight-facts">
             {facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
             <div>

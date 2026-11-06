@@ -82,3 +82,23 @@ class ProductReadinessTests(unittest.TestCase):
    m.healthy();self.assertEqual(call.call_count,3)
   with patch.object(m.urllib.request,'urlopen',side_effect=[Reply(v) for v in replies+['{"status":"ready","storage":"memory"}']]):
    with self.assertRaises(RuntimeError):m.healthy()
+
+class ErasureCutoverTests(unittest.TestCase):
+ def test_storage_floor_and_one_compatible_recovery(self):
+  import json
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   old,new,recovery=[m.ROOT/'releases'/(ch*12+'-1') for ch in 'abc']
+   for path,version in [(old,1),(new,2),(recovery,2)]:
+    path.mkdir(parents=True)
+    (path/'ready.json').write_text(json.dumps({'providerIsolation':True,'storageSchema':version}))
+   (m.ROOT/'current').symlink_to(old)
+   with patch.object(m,'owned_service'),patch.object(m,'run') as run,patch.object(m,'wait_healthy',side_effect=[RuntimeError('synthetic candidate outage'),None]):
+    with self.assertRaisesRegex(RuntimeError,'Stage a tested recovery'):m.activate(new)
+    with self.assertRaisesRegex(RuntimeError,'does not support'):m.activate(new,recovery=old)
+    run.assert_not_called()
+    with self.assertRaisesRegex(RuntimeError,'synthetic candidate outage'):m.activate(new,recovery=recovery)
+    self.assertEqual((m.ROOT/'current').resolve(),recovery)
+    self.assertEqual(run.call_args_list.count(unittest.mock.call(['systemctl','restart',m.UNIT])),2)
+    run.reset_mock()
+    with self.assertRaisesRegex(RuntimeError,'interrupt the erasure ledger'):m.activate(old)
+    run.assert_not_called()

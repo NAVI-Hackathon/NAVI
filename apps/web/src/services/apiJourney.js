@@ -133,7 +133,7 @@ export function createApiJourneyService({
   }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
-  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress } = {}) {
+  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress, headers } = {}) {
     const deadline = AbortSignal.timeout(timeout);
     const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
     let response;
@@ -144,7 +144,8 @@ export function createApiJourneyService({
         onProgress?.({ phase: 'sending' }); // no byte count available: the UI says 上傳並辨識中 without a percentage
         response = await fetchImpl(api(path), {
           method, signal: combined,
-          ...(json ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) } : body ? { body } : {}),
+          headers: { ...headers, ...(json ? { 'Content-Type': 'application/json' } : {}) },
+          ...(json ? { body: JSON.stringify(json) } : body ? { body } : {}),
         });
       }
     } catch (error) {
@@ -294,8 +295,19 @@ export function createApiJourneyService({
       return refs.length;
     },
     /**
+     * Persistent service (A3): delete one whole journey on the server (DELETE /journeys/:id: documents,
+     * drafts, events and task links in one transaction). The id is dropped here only after the server
+     * commits and confirms the matching id; an unconfirmed result keeps the local reference.
+     * Returns how many journeys remain in this browser.
+     */
+    async deleteJourney(id) {
+      const confirmation = z.object({ deleted: z.literal(true), id: z.literal(id), deletedAt: z.iso.datetime() }).strict();
+      await request(`/journeys/${id}`, { method: 'DELETE', schema: confirmation });
+      return this.forgetJourney(id);
+    },
+    /**
      * The user removes one journey from this browser (資料與隱私 / 任務列). Only the id is forgotten here;
-     * the server copy expires on its own (no journey DELETE endpoint yet). Returns how many remain.
+     * the server copy expires on its own (older releases without persistence). Returns how many remain.
      */
     forgetJourney(id) {
       selection++;

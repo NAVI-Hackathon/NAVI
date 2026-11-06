@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Icon, { Mark } from './Icon.jsx';
 
-export default function AppHeader({ mode, demoData = false, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onData, reduceMotion, onReduceMotion, failNext, onFailNext }) {
+export default function AppHeader({ mode, demoData = false, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, reduceMotion, onReduceMotion, failNext, onFailNext }) {
   const menu = useRef(null);
   useEffect(() => {
     function dismiss(e) {
@@ -20,21 +20,28 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
       <div className="app-header-inner">
         <button type="button" className="brand" onClick={onHome} disabled={busy} aria-label="回到 NAVI 首頁">
           <Mark />
-          <span className="wordmark">NAVI<small>AI Service Journey Navigator</small></span>
+          <span className="wordmark">NAVI<small className="wordmark-en">AI Service Journey Navigator</small><small className="wordmark-zh">智慧保險導引</small></span>
         </button>
         {mode === 'demo' && <span className="mode-badge" title="使用示範資料，不連線 AI">示範模式</span>}
         {mode !== 'demo' && demoData && <span className="mode-badge" title="NAVI 服務目前以示範資料回答，不是 AI 分析">示範資料</span>}
+        {/* J-16: the formal page says it is AI analysis, and that only synthetic data belongs in it. */}
+        {mode !== 'demo' && !demoData && (
+          <span className="mode-badge mode-badge-ai" title="會把你的描述送到 AI 分析；請只用合成資料">
+            <span className="mode-badge-long">AI 分析・合成資料</span><span className="mode-badge-short" aria-hidden="true">AI</span>
+          </span>
+        )}
 
         <div className="app-header-actions">
           {hasJourney && view === 'landing' && (
-            <button type="button" className="button button-ghost button-small" disabled={busy} onClick={onResume}>回到我的旅程<Icon name="arrow" size={14} /></button>
+            <button type="button" className="button button-ghost button-small header-resume" disabled={busy} onClick={onResume}>
+              <Icon name="route" size={17} className="header-resume-icon" /><span className="header-resume-label">回到我的旅程</span><Icon name="arrow" size={14} className="header-resume-arrow" />
+            </button>
           )}
           <button type="button" className="icon-button" onClick={onSearch} aria-label="找服務"><Icon name="search" size={18} /></button>
           <details className="menu" ref={menu}>
             <summary className="icon-button" aria-label="更多選項"><Icon name="more" size={20} /></summary>
             <div className="menu-popover" role="group" aria-label="更多選項">
               <button type="button" onClick={close(onPrivacy)}><Icon name="lock" size={16} />資料與隱私</button>
-              {onData&&<button type='button' onClick={close(onData)}><Icon name='document' size={16}/>我的資料與歷程</button>}
               <button type="button" onClick={close(onReset)}><Icon name="reset" size={16} />重新開始</button>
               <label className="menu-toggle"><input type="checkbox" checked={reduceMotion} onChange={e => onReduceMotion(e.target.checked)} />減少動畫</label>
               {mode === 'demo' && (
@@ -51,12 +58,12 @@ export default function AppHeader({ mode, demoData = false, view, hasJourney, bu
 }
 
 /** Compact header for NAVI inside a host website's side panel. */
-export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onData, onClose }) {
+export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, onReset, onSearch, onPrivacy, onClose }) {
   return (
     <header className="embed-header">
       <button type="button" className="brand" onClick={onHome} disabled={busy} aria-label="回到 NAVI 首頁">
         <Mark />
-        <span className="wordmark">NAVI<small>服務導航助手</small></span>
+        <span className="wordmark">NAVI<small>智慧保險導引</small></span>
       </button>
       {mode === 'demo' && <span className="mode-badge" title="使用示範資料，不連線 AI">示範</span>}
       <div className="embed-header-actions">
@@ -65,7 +72,6 @@ export function EmbedHeader({ mode, view, hasJourney, busy, onHome, onResume, on
         )}
         <button type="button" className="icon-button" onClick={onSearch} aria-label="找服務"><Icon name="search" size={17} /></button>
         <button type="button" className="icon-button" onClick={onPrivacy} aria-label="資料與隱私"><Icon name="lock" size={17} /></button>
-        {onData&&<button type='button' className='icon-button' onClick={onData} aria-label='我的資料與歷程'><Icon name='document' size={17}/></button>}
         <button type="button" className="icon-button" onClick={onReset} aria-label="重新開始"><Icon name="reset" size={17} /></button>
         {onClose && <button type="button" className="icon-button" onClick={onClose} aria-label="關閉 NAVI"><Icon name="close" size={18} /></button>}
       </div>

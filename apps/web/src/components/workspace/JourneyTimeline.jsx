@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { channelStatus } from '../../domain/channels.js';
+import { hospitalFacts, hospitalStep, partnerLabel } from '../../domain/journeyFacts.js';
 import Icon from '../Icon.jsx';
 import { stages as hospitalStages } from '../../mocks/hospitalClaim.js';
 import { stayDays, stayText } from '../../content/format.js';
@@ -12,12 +13,11 @@ export function activeStepIndex(journey) {
 }
 
 function hospitalStepText(i, journey) {
-  const hospital = journey.claimContext?.hospital;
   const ready = journey.currentStage === 'READY_FOR_REVIEW';
   const proceeding = journey.currentStage === 'READY_TO_PROCEED';
   return [
     '已整理你描述的住院情況。',
-    hospital?.partner ? `${hospital.matchedName} 是醫起通合作醫院，可由醫院直接上傳文件。` : hospital ? `無法將「${hospital.mentioned}」對應到醫起通合作院所，可改用理賠聯盟鏈或郵寄申請；若是合作院所，請提供醫院全名。` : '還不知道住院的醫院，上傳診斷書後會再確認。',
+    hospitalStep(journey).text,
     ready || proceeding ? '必要文件已備齊。' : '補齊診斷書或住院證明，以及匯款用的存摺影本。',
     proceeding ? '資料已確認，保險金申請書已填妥。' : ready ? '請確認辨識出的資料，並填寫保險金申請書。' : '文件備齊後進行確認。',
     proceeding ? '選擇申請管道，前往服務入口。' : '資料確認後，選擇醫起通、理賠聯盟鏈或郵寄申請。',
@@ -72,7 +72,8 @@ function ChannelList({ journey, onProceed, onNavigate }) {
 export default function JourneyTimeline({ snapshot, documentsSlot, onReview, onProceed, onNavigate }) {
   const { journey } = snapshot;
   const active = activeStepIndex(journey);
-  const hospital = journey.claimContext?.hospital;
+  const facts = hospitalFacts(journey);
+  const hospitalKnown = hospitalStep(journey).done;
   const certificate = journey.documents.find(d => d.documentType === 'diagnosis_certificate')?.fields;
   const days = certificate ? stayDays(certificate.admissionDate, certificate.dischargeDate) : null;
 
@@ -92,8 +93,8 @@ export default function JourneyTimeline({ snapshot, documentsSlot, onReview, onP
       <div className="trip-strip">
         <div>
           <span>住院醫院</span>
-          <strong>{hospital?.matchedName ?? hospital?.mentioned ?? certificate?.hospitalName ?? '待確認'}</strong>
-          {hospital && <small className={hospital.partner ? 'strip-note is-ok' : 'strip-note'}>{hospital.partner ? '醫起通合作醫院' : '未對應合作院所'}</small>}
+          <strong>{facts.name ?? '待確認'}</strong>
+          {facts.name && <small className={facts.listed ? 'strip-note is-ok' : 'strip-note'}>醫起通：{partnerLabel(facts)}</small>}
         </div>
         <div>
           <span>{certificate ? '文件日期區間（日曆日）' : '住院期間'}</span>
@@ -106,11 +107,13 @@ export default function JourneyTimeline({ snapshot, documentsSlot, onReview, onP
 
       <motion.ol className="timeline" initial="hidden" animate="show" variants={staggerChildren(0.08, 0.1)}>
         {hospitalStages.map((stage, i) => {
-          const done = i < active;
+          // 醫院與管道 is done only once the hospital is known; until then it waits for the certificate.
+          const waiting = i === 1 && i < active && !hospitalKnown;
+          const done = i < active && !waiting;
           const current = i === active;
           const description = hospitalStepText(i, journey);
           return (
-            <motion.li key={stage} variants={fadeUp} className={`step ${done ? 'is-done' : ''} ${current ? 'is-current' : ''}`} aria-current={current ? 'step' : undefined}>
+            <motion.li key={stage} variants={fadeUp} className={`step ${done ? 'is-done' : ''} ${current ? 'is-current' : ''} ${waiting ? 'is-waiting' : ''}`} aria-current={current ? 'step' : undefined}>
               <span className="step-marker" aria-hidden="true">
                 {done ? <CheckDraw size={13} strokeWidth={2.6} /> : <span className="step-number">{i + 1}</span>}
                 {current && <span className="step-pulse" />}
@@ -118,7 +121,7 @@ export default function JourneyTimeline({ snapshot, documentsSlot, onReview, onP
               <div className="step-body">
                 <div className="step-title">
                   <h3>{stage}</h3>
-                  <span className="step-state">{done ? '已完成' : current ? '進行中' : '尚未開始'}</span>
+                  <span className="step-state">{done ? '已完成' : current ? '進行中' : waiting ? '待確認' : '尚未開始'}</span>
                 </div>
                 {description && <p className="step-text">{description}</p>}
 

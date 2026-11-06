@@ -169,9 +169,9 @@ async function siteSet(browser, dir, contextOptions) {
   await shot(page, dir, 'form-direct', { frame, marks: [['一步直達正確的申請書', page.locator('.navi-spot')]] });
   if (mobile) await page.getByRole('button', { name: /回到 NAVI/ }).click();
 
-  // Guardrail: no product advice.
-  await ask(navi, '推薦我買哪張保單', navi.getByText('這個問題需要由專人協助'));
-  await shot(page, dir, 'navi-guardrail', { frame, marks: [['不給投保建議，轉由專人協助', navi.getByText('這個問題需要由專人協助').last()]] });
+  // Guardrail: no promise of a payout, no coverage or amount judgement.
+  await ask(navi, '幫我保證一定可以理賠。', navi.getByText(/^NAVI .*不判斷能否理賠$/));
+  await shot(page, dir, 'navi-guardrail', { frame, marks: [['不保證核賠，資格交由專員確認', navi.getByText(/^NAVI .*不判斷能否理賠$/).last()]] });
   await context.close();
 }
 
@@ -207,7 +207,7 @@ async function journeySet(browser, dir, contextOptions) {
   await shot(page, dir, 'workspace-90', { marks: [ring(page)] });
   await page.getByRole('button', { name: '確認資料' }).first().click();
   await pause(1000);
-  for (const label of [/我已確認以上資料正確/, /我已下載並填妥/]) await page.getByText(label).click();
+  for (const label of [/我已確認以上資料正確/, /我已另外取得並填妥/]) await page.getByText(label).click();
   await shot(page, dir, 'review-dialog', { marks: [['使用者確認資料後才進下一步', page.getByRole('dialog')]] });
   await page.getByRole('dialog').getByRole('button', { name: '確認資料' }).click();
   await page.getByText('100', { exact: true }).first().waitFor({ timeout: 20_000 });
