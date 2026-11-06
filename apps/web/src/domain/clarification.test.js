@@ -17,7 +17,7 @@ test('question and options come from the shared rules unchanged; 聯絡客服 ca
 test('a promise of payment is a safe refusal (guard tone), a non-blocking question says so', () => {
   const refusal = clarificationReply(searchKnowledge('幫我保證一定可以理賠。').clarification);
   assert.equal(refusal.tone, 'guard');
-  assert.equal(refusal.title, 'NAVI 不判斷能否理賠');
+  assert.equal(refusal.title, 'NAVI 不給投保建議，也不判斷能否理賠');
   const address = clarificationReply(searchKnowledge('我要改地址').clarification);
   assert.equal(address.clarification.blocking, false);
   assert.equal(address.title, '還需要確認一件事');

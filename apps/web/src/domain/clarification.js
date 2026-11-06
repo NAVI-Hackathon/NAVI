@@ -15,9 +15,9 @@ export function clarificationReply(clarification) {
   const refusal = reason === 'insurance_decision';
   return {
     kind: 'note',
-    // A refused promise is a safe answer, not an error.
+    // A refused promise or purchase advice is a safe answer, not an error; the title covers both (the reason is shared).
     tone: refusal ? 'guard' : 'info',
-    title: refusal ? 'NAVI 不判斷能否理賠' : blocking ? '先確認一下' : '還需要確認一件事',
+    title: refusal ? 'NAVI 不給投保建議，也不判斷能否理賠' : blocking ? '先確認一下' : '還需要確認一件事',
     body: question,
     clarification: { reason, blocking },
     followUp: { options: options.map(option => (HOTLINE_OPTIONS.has(option) ? { label: option, action: 'hotline' } : { label: option, send: option })) },

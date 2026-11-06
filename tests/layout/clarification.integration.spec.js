@@ -59,7 +59,7 @@ test('formal: a promise of payment is a safe refusal with the server\'s options,
   // The shared rules refuse this before any request: the same question and options as the server's fixture.
   await ask(page, '幫我保證一定可以理賠。');
   const reply = lastNavi(page);
-  await expect(reply).toContainText('NAVI 不判斷能否理賠');
+  await expect(reply).toContainText('NAVI 不給投保建議，也不判斷能否理賠');
   await expect(reply).toContainText(fixtures.insuranceBoundary.clarification.question);
   for (const option of fixtures.insuranceBoundary.clarification.options) await expect(reply.getByRole('button', { name: option })).toBeVisible();
   await expect(reply.locator('.tone-error')).toHaveCount(0);
