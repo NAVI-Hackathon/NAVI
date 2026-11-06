@@ -6,12 +6,15 @@ const model = z.object({
   documentation: z.url().startsWith('https://ai.google.dev/'),
   maxRequestCostCents: z.number().int().positive().optional(),
 }).strict().refine(m => m.tier !== 'paid' || m.maxRequestCostCents, 'Paid models require a conservative per-request cost reservation');
-export function productConfig(env, primary, freeTierConfirmed) {
+export function productConfig(env, primary, freeTierConfirmed, provider = 'gemini') {
   if(env.NAVI_PUBLIC_APP_ORIGIN&&(!/^https:\/\/[^/]+$/.test(env.NAVI_PUBLIC_APP_ORIGIN)||!new URL(env.NAVI_PUBLIC_APP_ORIGIN).hostname))throw Error('Invalid public app origin');
   const enabled = env.NAVI_PRODUCT_MODE === 'true';
   if (env.MONGODB_DB_NAME && env.MONGODB_DATABASE && env.MONGODB_DB_NAME.trim() !== env.MONGODB_DATABASE.trim()) throw Error('Conflicting NAVI MongoDB database names');
   const integer = (name, fallback, min, max) => { const n = env[name] ? Number(env[name]) : fallback; if (!Number.isSafeInteger(n) || n < min || n > max) throw Error(`Invalid ${name}`); return n; };
-  const models = z.array(model).min(1).max(6).parse(env.AI_MODELS_JSON ? JSON.parse(env.AI_MODELS_JSON) : [{ id: primary, capabilities: ['text','image','pdf','structured'], tier: 'free', confirmed: freeTierConfirmed, documentation: 'https://ai.google.dev/gemini-api/docs/models' }]);
+  const localModel = z.object({ id: z.string().regex(/^qwen3:[a-zA-Z0-9._-]+$/), capabilities: z.array(z.enum(['text','structured'])).min(1), tier: z.literal('free'), confirmed: z.boolean(), documentation: z.literal('https://docs.ollama.com/api/chat') }).strict();
+  const selected = provider === 'ollama' ? localModel : model;
+  const defaults = provider === 'ollama' ? [{ id: primary, capabilities: ['text','structured'], tier: 'free', confirmed: true, documentation: 'https://docs.ollama.com/api/chat' }] : [{ id: primary, capabilities: ['text','image','pdf','structured'], tier: 'free', confirmed: freeTierConfirmed, documentation: 'https://ai.google.dev/gemini-api/docs/models' }];
+  const models = z.array(selected).min(1).max(6).parse(env.AI_MODELS_JSON ? JSON.parse(env.AI_MODELS_JSON) : defaults);
   if (new Set(models.map(m => m.id)).size !== models.length) throw Error('Duplicate models');
   return { productMode: enabled, databasePath: env.NAVI_PRIVATE_STATE_PATH || '', mongoUri:env.MONGODB_URI||'', mongoDatabase:(env.MONGODB_DB_NAME||env.MONGODB_DATABASE||'').trim(), authRequired:env.NAVI_AUTH_REQUIRED==='true', authRequireVerifiedEmail:env.NAVI_AUTH_REQUIRE_VERIFIED_EMAIL==='true', dataEncryptionKey: env.NAVI_DATA_ENCRYPTION_KEY || '',
     dataRetentionMs: integer('NAVI_RETENTION_DAYS', 30, 1, 90) * 86400000,
