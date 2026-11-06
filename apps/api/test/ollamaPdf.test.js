@@ -3,6 +3,8 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createOllamaProvider } from '../src/ai/ollamaProvider.js';
+import { loadConfig } from '../src/config/env.js';
 import { prepareOllamaDocument } from '../src/ai/ollamaDocumentInput.js';
 import { validateMedia } from '../src/services/mediaValidationService.js';
 import { isOllamaImage } from '../src/ai/ollamaImages.js';
@@ -66,4 +68,21 @@ test('unapproved Ollama uploads are rejected before qpdf or decoding', async () 
   await assert.rejects(validateMedia(upload, { aiProvider: 'ollama', productMode: true, production: true,
     syntheticDocumentHashes: [] }, undefined, async () => { parserCalls++; }), { code: 'DOCUMENT_NOT_SYNTHETIC' });
   assert.equal(parserCalls, 0);
+});
+
+test('text PDF wire dates require decimal ISO digits and still undergo schema validation', options, async () => {
+  const config = loadConfig({ AI_MODE:'live', AI_PROVIDER:'ollama', NAVI_TEST_SESSION_TOKEN:'synthetic-token'.repeat(3),
+    AI_SYNTHETIC_DOCUMENT_SHA256:hash(diagnosis) });
+  const provider = createOllamaProvider(config, async (_path, { payload }) => {
+    const dates = payload.format.properties.fields.properties;
+    for (const field of ['admissionDate','dischargeDate','visitDate']) {
+      const regex = new RegExp(dates[field].anyOf.find(value=>value.pattern).pattern);
+      assert.equal(regex.test('2026-08-06'),true);
+      assert.equal(regex.test('2026-08-_6'),false);
+    }
+    return {status:200,body:JSON.stringify({model:payload.model,done:true,done_reason:'stop',
+      message:{role:'assistant',content:JSON.stringify({documentType:'diagnosis_certificate',confidence:.9,
+        fields:{admissionDate:'2026-08-03',dischargeDate:'2026-08-_6'}})}})};
+  });
+  await assert.rejects(provider.analyzeDocument({bytes:diagnosis,mimeType:'application/pdf'}),{code:'AI_RESPONSE_INVALID'});
 });
