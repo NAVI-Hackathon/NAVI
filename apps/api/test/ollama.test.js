@@ -236,6 +236,8 @@ test('vision sends actual approved PNG bytes, and valid output still cannot incr
 
 test('sandbox API requires an operator cookie and exposes truthful provider status without changing shared contracts', async t => {
   const provider = mock(intent);
+  // The mock transport represents an online model for this route test; the separate health check verifies offline behavior.
+  provider.checkHealth = async () => true;
   const app = createApp(config, provider);
   const base = await loopback(t, createServer(app));
   const headers = { Origin: config.origins[0], 'Content-Type': 'application/json' };
