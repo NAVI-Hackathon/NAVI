@@ -9,6 +9,8 @@ import { loadConfig } from '../src/config/env.js';
 import { createAIProvider } from '../src/ai/provider.js';
 import { createOllamaProvider } from '../src/ai/ollamaProvider.js';
 import { createOllamaTransport, ollamaOrigin } from '../src/ai/ollamaTransport.js';
+import { prepareOllamaDocument } from '../src/ai/ollamaDocumentInput.js';
+import { UnderstandingSchema } from '../../../shared/intelligence.js';
 import { analyzeDocument } from '../src/services/documentService.js';
 import { answerKnowledge } from '../src/services/knowledgeAnswerService.js';
 import { understandTasks } from '../src/services/taskService.js';
@@ -224,8 +226,8 @@ test('vision sends actual approved PNG bytes, and valid output still cannot incr
   assert.equal(added.document.isMock, false);
   assert.equal(added.journey.readiness, journey.readiness);
   assert.deepEqual(added.document.matchedRequirements, []);
-  assert.throws(() => provider.analyzeDocument({ ...upload, bytes: Buffer.concat([image, Buffer.from('extra')]), sha256: sha }), { code: 'DOCUMENT_NOT_SYNTHETIC' });
-  assert.throws(() => provider.analyzeDocument({ ...upload, mimeType: 'application/pdf' }), { code: 'DOCUMENT_NOT_SYNTHETIC' });
+  await assert.rejects(provider.analyzeDocument({ ...upload, bytes: Buffer.concat([image, Buffer.from('extra')]), sha256: sha }), { code: 'DOCUMENT_NOT_SYNTHETIC' });
+  await assert.rejects(provider.analyzeDocument({ ...upload, mimeType: 'application/pdf' }), { code: 'DOCUMENT_INTELLIGENCE_NOT_AVAILABLE' });
   await assert.rejects(analyzeDocument(upload, { provider: mock({ ...bank, documentType: 'unknown' }), config }), { code: 'DOCUMENT_UNRECOGNIZED' });
   await assert.rejects(analyzeDocument(upload, { provider: mock({ ...bank, status: 'verified' }), config }), { code: 'AI_RESPONSE_INVALID' });
 });
@@ -302,4 +304,50 @@ test('evaluation is offline by default, checks vision capabilities and preserves
   assert.equal(report.generationAttempts, 4);
   assert.equal(chatCount, 4);
   assert.deepEqual(report.scores.slice(1).map(score => score.fields.f1), [1, 1]);
+});
+
+test('production Ollama selects local model without Gemini key, and refuses insecure transport', async () => {
+  const tls = {
+    OLLAMA_BASE_URL: 'https://127.0.0.1:21144', OLLAMA_TLS_CA_FILE: '/private/ca.pem',
+    OLLAMA_TLS_CERT_FILE: '/private/client.pem', OLLAMA_TLS_KEY_FILE: '/private/client.key',
+    OLLAMA_TLS_SERVER_NAME: 'navi-gateway.internal',
+  };
+  const product = loadConfig({ ...env, ...tls, NODE_ENV: 'production', NAVI_PRODUCT_MODE: 'true',
+    NAVI_DATA_ENCRYPTION_KEY: 'only-an-isolated-test-marker', GEMINI_API_KEY: 'never-used' });
+  assert.equal(product.aiProvider, 'ollama');
+  assert.equal(product.apiKey, '');
+  assert.equal(product.model, product.ollamaModel);
+  assert.equal(product.modelPolicies[0].id, product.ollamaModel);
+  assert.equal(product.modelPolicies[0].documentation, 'https://docs.ollama.com/api/chat');
+  const provider = createOllamaProvider(product, async (path, { payload }) => {
+    if (path === '/api/version') return { status: 200, body: JSON.stringify({ version: 'mock' }) };
+    return response(payload, intent);
+  });
+  assert.equal(provider.backend, 'ollama');
+  assert.equal(await provider.checkHealth(), true);
+  assert.equal((await provider.understandIntent(message)).serviceType, 'hospitalization_claim');
+  assert.equal(provider.getDebugMetadata().intent.fallbackUsed, false);
+  assert.deepEqual(UnderstandingSchema.shape.meta.shape.source.safeParse('ollama').success, true);
+  for (const override of [{ OLLAMA_BASE_URL: 'http://127.0.0.1:21144' },
+    { OLLAMA_TLS_KEY_FILE: '' }, { OLLAMA_TLS_SERVER_NAME: '' },
+    { OLLAMA_BASE_URL: 'https://example.invalid:443' }, { ALLOW_PAID_AI: 'true' }]) {
+    assert.throws(() => loadConfig({ ...env, ...tls, ...override, NODE_ENV: 'production',
+      NAVI_PRODUCT_MODE: 'true', NAVI_DATA_ENCRYPTION_KEY: 'test-only' }));
+  }
+});
+
+test('synthetic document protection requires known bytes, never filename or claimed hash', async () => {
+  const allow = new Set([sha]);
+  const prepared = await prepareOllamaDocument(upload, allow);
+  assert.equal(prepared.kind, 'image');
+  assert.equal(prepared.media.length, 1);
+  assert.deepEqual(prepared.media[0], image);
+  const fakePdf = Buffer.from('%PDF-1.7\\n%%EOF\\n');
+  await assert.rejects(prepareOllamaDocument({
+    bytes: fakePdf, mimeType: 'application/pdf', filename: 'synthetic.pdf', sha256: sha,
+  }, allow), { code: 'DOCUMENT_NOT_SYNTHETIC' });
+  const tooLarge = Buffer.alloc(2 * 1024 * 1024 + 1);
+  tooLarge.set(image.subarray(0, Math.min(image.length, 24)));
+  await assert.rejects(prepareOllamaDocument({ bytes: tooLarge, mimeType: 'image/png' },
+    new Set([createHash('sha256').update(tooLarge).digest('hex')])), { code: 'DOCUMENT_INTELLIGENCE_NOT_AVAILABLE' });
 });
