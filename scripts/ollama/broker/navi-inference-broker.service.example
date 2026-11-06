@@ -1,0 +1,25 @@
+[Unit]
+Description=Shared NAVI and Adrift Ollama inference broker
+After=ollama.service
+
+[Service]
+Type=simple
+User=navi-inference
+Group=navi-inference
+WorkingDirectory=/opt/navi-inference
+LoadCredential=clients.json:/etc/navi-inference/clients.json
+ExecStart=/usr/bin/node /opt/navi-inference/scripts/ollama/broker/start.mjs %d/clients.json
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+IPAddressDeny=any
+IPAddressAllow=localhost
+RestrictAddressFamilies=AF_INET AF_UNIX
+MemoryMax=256M
+TimeoutStopSec=85s
+# An automatic restart could overlap an uncertain upstream runner.
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

@@ -23,7 +23,9 @@ else
   [[ "$status" == 000 && "$code" == 35 || "$status" == 000 && "$code" == 56 ]] ||
     { echo 'Unauthenticated connection failed for an unexpected reason' >&2; exit 1; }
 fi
-version="$(curl "${tls[@]}" --cert "$2" --key "$3" --fail "$url")"
+version="$(curl "${tls[@]}" --cert "$2" --key "$3" --fail --write-out $'\n%header{x-navi-inference-broker}' "$url")"
+[[ "${version##*$'\n'}" == shared-v1 ]] || { echo 'Shared broker handshake was not present' >&2; exit 1; }
+version="${version%$'\n'*}"
 printf '%s' "$version" | python3 -c 'import json,re,sys; v=json.load(sys.stdin).get("version"); sys.exit("Invalid Ollama version response") if not isinstance(v, str) or not re.fullmatch(r"[0-9A-Za-z.+-]{1,48}",v) else print("Authenticated Ollama metadata, version",v)'
 blocked="$(curl "${tls[@]}" --cert "$2" --key "$3" --output /dev/null --write-out '%{http_code}' "https://$hostname:$port/api/pull")"
 [[ "$blocked" == 404 ]] || { echo 'Unexpected response for prohibited model-management route' >&2; exit 1; }

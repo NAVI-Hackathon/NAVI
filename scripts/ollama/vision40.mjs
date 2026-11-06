@@ -123,35 +123,60 @@ if (prepare) {
 }
 const config = loadConfig({ AI_MODE: 'live', AI_PROVIDER: 'ollama',
   NAVI_TEST_SESSION_TOKEN: 'isolated-synthetic-evaluator-only-2026',
+  OLLAMA_TLS_CA_FILE: process.env.OLLAMA_TLS_CA_FILE,
+  OLLAMA_TLS_CERT_FILE: process.env.OLLAMA_TLS_CERT_FILE,
+  OLLAMA_TLS_KEY_FILE: process.env.OLLAMA_TLS_KEY_FILE,
+  OLLAMA_TLS_SERVER_NAME: process.env.OLLAMA_TLS_SERVER_NAME,
   OLLAMA_VISION_MODEL: model, OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434',
   AI_SYNTHETIC_DOCUMENT_SHA256: generated.map(d => d.imageSha256).join(','),
   LIVE_AI_REQUEST_LIMIT: String(limit), AI_REQUEST_TIMEOUT_MS: '70000',
 });
-const send = createOllamaTransport(config.ollamaBaseUrl, config.ollamaTls);
+const send = createOllamaTransport(config.ollamaBaseUrl, config.ollamaTls, { requireBroker: true });
+async function metadata(path, payload) {
+  const result = await send(path, { payload, signal: AbortSignal.timeout(5000) });
+  if (result.status !== 200) throw new Error('Ollama broker metadata unavailable');
+  return JSON.parse(result.body);
+}
+const [{ version }, { models: installed }, info] = await Promise.all([
+  metadata('/api/version'), metadata('/api/tags'), metadata('/api/show', { model }),
+]);
+const digest = installed.find(entry => entry.name === model)?.digest;
+if (typeof version !== 'string' || !/^[a-f0-9]{64}$/.test(digest ?? '') ||
+    !info.capabilities?.includes('completion') || !info.capabilities.includes('vision')) {
+  throw new Error('Exact vision model, digest or capabilities not verified');
+}
+summary.inventory = { version, digest, capabilities: info.capabilities };
 const provider = createOllamaProvider(config, send);
-let tp = 0, fp = 0, fn = 0, done = 0;
+let tp = 0, fp = 0, fn = 0, omitted = 0, guessed = 0, wrong = 0, done = 0;
 for (const d of generated) {
   const start = performance.now();
-  const record = { id: d.id, model, pdfSha256: sha256(d.source), imageSha256: d.imageSha256, status: 'error' };
+  const record = { id: d.id, model, pdfSha256: sha256(d.source), imageSha256: d.imageSha256, status: 'error', startedAt: new Date().toISOString() };
   summary.generationAttempts++;
   try {
     const actual = await provider.analyzeDocument({ mimeType: 'image/png', bytes: d.image, filename: d.id + '.png',
       documentType: d.documentType, size: d.image.length });
     record.documentTypeCorrect = actual.documentType === d.documentType;
     record.status = 'completed';
+    const modelMetadata = provider.getDebugMetadata().document;
+    record.usage = modelMetadata?.usage ?? null;
+    record.modelTiming = modelMetadata?.modelTiming ?? null;
     record.fields = Object.fromEntries(Object.entries(actual.fields).filter(([,v]) => v != null));
     const keys = new Set([...Object.keys(d.fields), ...Object.keys(actual.fields)]);
     for (const key of keys) {
       const expected = d.fields[key] ?? null, observed = actual.fields[key] ?? null;
       if (expected != null && observed != null && String(expected).trim().toLowerCase() === String(observed).trim().toLowerCase()) tp++;
-      else { if (observed != null) fp++; if (expected != null) fn++; }
+      else {
+        if (observed != null) fp++;
+        if (expected != null) fn++;
+        if (expected == null && observed != null) guessed++;
+        if (expected != null && observed == null) omitted++;
+        if (expected != null && observed != null) wrong++;
+      }
     }
-    if (d.documentType !== actual.documentType) { fp++; fn++; }
     done++;
   } catch (error) {
     record.errorCode = error.code || 'EVALUATION_ERROR';
     for (const expected of Object.values(d.fields)) if (expected != null) fn++;
-    fn++;
     summary.errors++;
     // Avoid hammering a disconnected host; report remaining cases as not attempted.
     if (['AI_TIMEOUT', 'AI_PROVIDER_ERROR', 'AI_BUSY', 'AI_RATE_LIMITED'].includes(record.errorCode)) {
@@ -167,7 +192,9 @@ summary.completed = done;
 summary.notRun = planned.length - summary.generationAttempts;
 summary.fieldPrecision = tp + fp ? tp / (tp + fp) : null;
 summary.fieldRecall = tp + fn ? tp / (tp + fn) : null;
-summary.fieldF1 = tp ? 2 * tp / (2 * tp + fp + fn) : 0;
+summary.fieldF1 = 2 * tp + fp + fn ? 2 * tp / (2 * tp + fp + fn) : null;
+summary.fields = { truePositive: tp, falsePositive: fp, falseNegative: fn, omitted, guessed, wrong };
+summary.notRunIds = planned.slice(summary.generationAttempts).map(record => record.id);
 summary.typeCorrect = summary.requests.filter(r => r.documentTypeCorrect).length;
 const durations = summary.requests.map(r => r.latencyMs).sort((a,b) => a-b);
 summary.p50Ms = durations[Math.ceil(durations.length/2)-1] ?? null;
