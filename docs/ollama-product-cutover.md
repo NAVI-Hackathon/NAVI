@@ -87,3 +87,13 @@ NAVI Provider 只允許單一生成槽與有限等待佇列，每次 `keep_alive
 7. 使用者另行核准正式 Release 和回滾閘門。舊版的 fallback 如需使用，是操作員明確回滾整個 Release，而非 Ollama failure 時自動呼叫 Gemini；若最終要求完全零 Google 生成，回滾也應切至 `AI_MODE=unavailable`＋可信檢索。
 
 **驗收前不得宣稱「Gemini 已在 Production 完全被取代」。**
+
+## 2026-11-06 整合與實機預檢
+
+已將候選整合至 main `24dde2b8dcfda7634c8ccb37ac901b11224325a6`。家中 Ollama 0.40.13 在 RTX 2060 SUPER 8 GiB 主機運行，已安裝的精確標籤為 `qwen3.5:4b-q4_K_M`，`/api/show` 回報 Vision；文字模型 `qwen3:4b-instruct-2507-q4_K_M` 回報 completion。
+
+暫時驗收通道透過 SSH 從 VPS loopback 經操作機轉至家中獨立 mTLS 測試端點。實測憑證身分、拒絕匿名、拒絕模型管理和生成、兩個模型 metadata、關閉反向監聽。使用後已清理暫時 listener 與憑證。這項檢查的生成次數為零。
+
+Adrift 使用家中 `11435`，自身閘道的排程只覆蓋進入該閘道的請求，並拒絕 image message 欄位。正式 NAVI 需另立通道及可共用的推論容量管制，或使用獨立推論資源；在此之前停止真實生成與 Production 切換。正式發布仍須取得 A、B 對新窗口的同意。
+
+既有 dedicated manager 新增 `activate <release> --environment <private-env> --ollama-only`。通過正式驗收後才使用；它會鎖定日後發布的本地 AI 政策。初次切換失敗或回到舊程式時，回復環境移除 Gemini 金鑰、關閉付費並將生成設為 unavailable。Ollama 產品請求沿用既有 MongoDB 每日配額與 Session 限流。舊嚴格意圖客戶端以既有 `X-NAVI-Contract: judge-v1` opt-in 區分新版 provenance。
