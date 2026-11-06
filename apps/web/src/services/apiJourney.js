@@ -39,7 +39,7 @@ const UploadResponse = z.object({ journey: ServiceJourneySchema }).passthrough()
 export function understandingOfTask(split, task) {
   const parsed = UnderstandingSchema.safeParse({
     success: true, data: task.data,
-    meta: { source: split.provider === 'live' ? 'gemini' : 'demo_fallback', outcome: task.outcome, confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD },
+    meta: { source: split.provider === 'live' ? (split.backend === 'ollama' ? 'ollama' : 'gemini') : 'demo_fallback', outcome: task.outcome, confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD },
   });
   return parsed.success ? parsed.data : null;
 }
@@ -97,7 +97,7 @@ export function createApiJourneyService({
   let aiMode = null;
   let aiBackend = 'gemini';
   let disclosureVersion = 'gemini-unpaid-2026-10';
-  const rememberDisclosure = session => { if (session?.disclosureVersion === 'ollama-local-synthetic-2026-11' || session?.disclosureVersion === 'gemini-unpaid-2026-10') disclosureVersion = session.disclosureVersion; };
+  const rememberDisclosure = session => { if (session?.disclosureVersion === 'ollama-local-synthetic-2026-11' || session?.disclosureVersion === 'gemini-unpaid-2026-10') { disclosureVersion = session.disclosureVersion; aiBackend = disclosureVersion.startsWith('ollama-') ? 'ollama' : 'gemini'; } };
   const modeListeners = new Set();
   const setAiMode = value => {
     const next = ['live', 'demo', 'unavailable'].includes(value) ? value : null;
@@ -309,9 +309,9 @@ export function createApiJourneyService({
      * Null when the server has no such endpoint (older release): the caller then understands it as one request.
      */
     async understandTasks(message, { signal } = {}) {
-      if(product.enabled){const reply=await product.send(message.trim(),signal);return {...reply.understanding,productReply:reply,tasks:reply.understanding?.tasks??[]};}
+      if(product.enabled){const reply=await product.send(message.trim(),signal);return {...reply.understanding,backend:aiBackend,productReply:reply,tasks:reply.understanding?.tasks??[]};}
       try {
-        return await request('/intelligence/tasks', { method: 'POST', json: { message: message.trim() }, signal, schema: TaskUnderstandingSchema });
+        const parsed=await request('/intelligence/tasks', { method: 'POST', json: { message: message.trim() }, signal, schema: TaskUnderstandingSchema });return {...parsed,backend:aiBackend};
       } catch (error) {
         if (error?.status === 404 && error.code !== 'JOURNEY_NOT_FOUND') return null;
         throw error;
