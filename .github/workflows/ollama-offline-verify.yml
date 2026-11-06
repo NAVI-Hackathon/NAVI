@@ -43,6 +43,10 @@ jobs:
         run: node --import ./apps/api/test/networkGuard.js --test apps/api/test/ollama.test.js
       - name: Vision40 synthetic fixtures dry run — zero generation
         run: node scripts/ollama/vision40.mjs --dry-run --limit 40 > /tmp/navi-vision40-dry-run.json
+      - name: Rasterize all 40 synthetic PDFs without model generation
+        run: |
+          node scripts/ollama/vision40.mjs --prepare --limit 40 > /tmp/navi-vision40-prepared.json
+          node -e "const f=require('/tmp/navi-vision40-prepared.json');if(f.rendered!==40||f.generationAttempts!==0||f.cases.some(c=>!c.signatureValid))process.exit(1);console.log('Synthetic PDF render count:',f.rendered,'; model requests:',f.generationAttempts)"
       - name: Web unit tests
         run: npm run test:web
       - name: Lint
