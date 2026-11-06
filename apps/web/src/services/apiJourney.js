@@ -22,7 +22,7 @@ export const RECOGNITION_UNAVAILABLE_MESSAGE = '目前線上服務尚未啟用�
 const kindOf = serviceType => (serviceType === 'hospitalization_claim' ? 'hospital' : serviceType);
 // Privacy: the browser keeps only journey ids and display flags. The description and document
 // fields stay on the server and are read back after a reload.
-const JourneyRef = z.object({ journeyId: z.string().uuid(), source: z.enum(['gemini', 'demo_fallback']), handoffRequested: z.boolean() }).strict();
+const JourneyRef = z.object({ journeyId: z.string().uuid(), source: z.enum(['gemini', 'ollama', 'demo_fallback']), handoffRequested: z.boolean() }).strict();
 const StoredV2 = JourneyRef.extend({ v: z.literal(2) }).strict();
 // v3: several journeys of this browser (most recent first) and the one shown now.
 const Stored = z.object({ v: z.literal(3), current: z.string().uuid().nullable(), journeys: z.array(JourneyRef).max(5) }).strict();
@@ -39,7 +39,7 @@ const UploadResponse = z.object({ journey: ServiceJourneySchema }).passthrough()
 export function understandingOfTask(split, task) {
   const parsed = UnderstandingSchema.safeParse({
     success: true, data: task.data,
-    meta: { source: split.provider === 'live' ? 'gemini' : 'demo_fallback', outcome: task.outcome, confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD },
+    meta: { source: split.provider === 'live' ? (split.backend === 'ollama' ? 'ollama' : 'gemini') : 'demo_fallback', outcome: task.outcome, confidenceThreshold: DEFAULT_CONFIDENCE_THRESHOLD },
   });
   return parsed.success ? parsed.data : null;
 }
@@ -95,6 +95,9 @@ export function createApiJourneyService({
   // X-NAVI-AI-Mode of the server. A 'demo' server answers every upload with fixed sample fields
   // whatever the file holds, so formal mode never sends the user's own file there.
   let aiMode = null;
+  let aiBackend = 'gemini';
+  let disclosureVersion = 'gemini-unpaid-2026-10';
+  const rememberDisclosure = session => { if (session?.disclosureVersion === 'ollama-local-synthetic-2026-11' || session?.disclosureVersion === 'gemini-unpaid-2026-10') { disclosureVersion = session.disclosureVersion; aiBackend = disclosureVersion.startsWith('ollama-') ? 'ollama' : 'gemini'; } };
   const modeListeners = new Set();
   const setAiMode = value => {
     const next = ['live', 'demo', 'unavailable'].includes(value) ? value : null;
@@ -130,7 +133,7 @@ export function createApiJourneyService({
   }
   function requireState() { if (!state) throw new JourneyApiError('JOURNEY_NOT_FOUND', JOURNEY_EXPIRED_MESSAGE, 404); return state; }
 
-  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress } = {}) {
+  async function request(path, { method = 'GET', body, json, signal, timeout = timeoutMs, schema = ServiceJourneySchema, onProgress, headers } = {}) {
     const deadline = AbortSignal.timeout(timeout);
     const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
     let response;
@@ -141,7 +144,8 @@ export function createApiJourneyService({
         onProgress?.({ phase: 'sending' }); // no byte count available: the UI says 上傳並辨識中 without a percentage
         response = await fetchImpl(api(path), {
           method, signal: combined,
-          ...(json ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) } : body ? { body } : {}),
+          headers: { ...headers, ...(json ? { 'Content-Type': 'application/json' } : {}) },
+          ...(json ? { body: JSON.stringify(json) } : body ? { body } : {}),
         });
       }
     } catch (error) {
@@ -169,21 +173,21 @@ export function createApiJourneyService({
   return {
     mode: 'live',
     get productEnabled(){return product.enabled;},
-    init:()=>product.init(),
-    productInfo:async()=>{const session=await request('/session',{schema:null});if(session.authRequired&&!session.authenticated)return {session,history:{journeys:[],conversations:[]},tasks:[]};const history=session.authenticated?await request('/journeys',{schema:null}):null;return {session,history:history?{journeys:history.items,nextCursor:history.nextCursor}:await request('/history',{schema:null}),tasks:session.authenticated?(await request('/tasks',{schema:null})).tasks:[]};},
+    init:async()=>{const result=await product.init();rememberDisclosure(result?.session);return result;},
+    productInfo:async()=>{const session=await request('/session',{schema:null});rememberDisclosure(session);if(session.authRequired&&!session.authenticated)return {session,history:{journeys:[],conversations:[]},tasks:[]};const history=session.authenticated?await request('/journeys',{schema:null}):null;return {session,history:history?{journeys:history.items,nextCursor:history.nextCursor}:await request('/history',{schema:null}),tasks:session.authenticated?(await request('/tasks',{schema:null})).tasks:[]};},
     historyPage:cursor=>request('/journeys?limit=20'+(cursor?'&cursor='+encodeURIComponent(cursor):''),{schema:null}),
-    acceptConsent:()=>request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'},schema:null}),
+    acceptConsent:()=>request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion},schema:null}),
     register:async(username,password)=>{const result=await request('/auth/register',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
     login:async(username,password)=>{const result=await request('/auth/login',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
     logout:async()=>{await request('/session/logout',{method:'POST',json:{},schema:null});identityChanged();},
     exportData:async()=>download(JSON.stringify(await request('/account/export',{schema:null}),null,2),'navi-data.json','application/json'),
     deleteData:async()=>{await request('/account/data',{method:'DELETE',json:{confirmed:true},schema:null});identityChanged();},
-    continueTask:async taskId=>{const stamp=++selection;const journey=await request('/journeys',{method:'POST',json:{taskId,idempotencyKey:crypto.randomUUID()}});if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':'gemini',handoffRequested:false};save();return snapshot();},
+    continueTask:async taskId=>{const stamp=++selection;const journey=await request('/journeys',{method:'POST',json:{taskId,idempotencyKey:crypto.randomUUID()}});if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':aiBackend==='ollama'?'ollama':'gemini',handoffRequested:false};save();return snapshot();},
     requestPasswordReset:email=>request('/auth/password/forgot',{method:'POST',json:{email},schema:null}),
     requestVerification:email=>request('/auth/verification/request',{method:'POST',json:{email},schema:null}),
     verifyEmail:token=>request('/auth/verify-email',{method:'POST',json:{token},schema:null}),
     resetPassword:(token,password)=>request('/auth/password/reset',{method:'POST',json:{token,password},schema:null}),
-    openJourney:async id=>{const stamp=++selection;const journey=await request('/journeys/'+id);if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':'gemini',handoffRequested:false};pending=null;save();return snapshot();},
+    openJourney:async id=>{const stamp=++selection;const journey=await request('/journeys/'+id);if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':aiBackend==='ollama'?'ollama':'gemini',handoffRequested:false};pending=null;save();return snapshot();},
     workflow:id=>request('/service-workflows/'+id,{schema:null}),
     checklist:async checked=>commit(await request('/journeys/'+requireState().journey.id+'/checklist',{method:'POST',json:{checked,revision:requireState().journey.revision}})),
     knowledgeResult:reply=>product.result(reply),
@@ -199,11 +203,13 @@ export function createApiJourneyService({
      * The page labels results by it, so a demo server is never presented as AI analysis.
      */
     get aiMode() { return aiMode; },
+    get aiBackend() { return aiBackend; },
     subscribeAiMode(listener) { modeListeners.add(listener); return () => modeListeners.delete(listener); },
     async checkAiMode({ signal } = {}) {
       try {
         const response = await fetchImpl(api('/ai/status'), { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs) });
         const body = await response.json().catch(() => null);
+        if (response.ok) aiBackend = body?.backend === 'ollama' ? 'ollama' : 'gemini';
         const header = response.headers?.get?.('X-NAVI-AI-Mode');
         const consistent = response.ok && ['live', 'demo', 'unavailable'].includes(body?.mode)
           && (!header || header === body.mode) && (body?.available === undefined || body.available === (body.mode === 'live'));
@@ -289,8 +295,19 @@ export function createApiJourneyService({
       return refs.length;
     },
     /**
+     * Persistent service (A3): delete one whole journey on the server (DELETE /journeys/:id: documents,
+     * drafts, events and task links in one transaction). The id is dropped here only after the server
+     * commits and confirms the matching id; an unconfirmed result keeps the local reference.
+     * Returns how many journeys remain in this browser.
+     */
+    async deleteJourney(id) {
+      const confirmation = z.object({ deleted: z.literal(true), id: z.literal(id), deletedAt: z.iso.datetime() }).strict();
+      await request(`/journeys/${id}`, { method: 'DELETE', schema: confirmation });
+      return this.forgetJourney(id);
+    },
+    /**
      * The user removes one journey from this browser (資料與隱私 / 任務列). Only the id is forgotten here;
-     * the server copy expires on its own (no journey DELETE endpoint yet). Returns how many remain.
+     * the server copy expires on its own (older releases without persistence). Returns how many remain.
      */
     forgetJourney(id) {
       selection++;
@@ -304,9 +321,9 @@ export function createApiJourneyService({
      * Null when the server has no such endpoint (older release): the caller then understands it as one request.
      */
     async understandTasks(message, { signal } = {}) {
-      if(product.enabled){const reply=await product.send(message.trim(),signal);return {...reply.understanding,productReply:reply,tasks:reply.understanding?.tasks??[]};}
+      if(product.enabled){const reply=await product.send(message.trim(),signal);return {...reply.understanding,backend:aiBackend,productReply:reply,tasks:reply.understanding?.tasks??[]};}
       try {
-        return await request('/intelligence/tasks', { method: 'POST', json: { message: message.trim() }, signal, schema: TaskUnderstandingSchema });
+        const parsed=await request('/intelligence/tasks', { method: 'POST', json: { message: message.trim() }, signal, schema: TaskUnderstandingSchema });return {...parsed,backend:aiBackend};
       } catch (error) {
         if (error?.status === 404 && error.code !== 'JOURNEY_NOT_FOUND') return null;
         throw error;
@@ -382,7 +399,7 @@ export function createApiJourneyService({
       return request(`/journeys/${journey.id}/explanation`, { signal, schema: JourneyExplanationSchema });
     },
     /** Consent-based handoff: a redacted preview bound to this journey version, then the user's confirmation. Nothing is sent. */
-    handoffDraft:({signal}={})=>request('/journeys/'+requireState().journey.id+'/handoff/draft',{signal,schema:HandoffDraftResponseSchema}),
+    handoffDraft:async({signal,journeyId}={})=>request('/journeys/'+(journeyId??requireState().journey.id)+'/handoff/draft',{signal,schema:HandoffDraftResponseSchema}),
     saveHandoffDraft:(text,version)=>request('/journeys/'+requireState().journey.id+'/handoff/draft',{method:'PUT',json:{text,version,journeyVersion:requireState().journey.revision},schema:HandoffDraftResponseSchema}),
     async handoffPreview({ signal } = {}) {
       const { journey } = requireState();

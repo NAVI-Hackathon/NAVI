@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Icon from '../Icon.jsx';
+import ErrorBoundary from '../ErrorBoundary.jsx';
 import AnalysisSequence from './AnalysisSequence.jsx';
 import AnswerCard from '../knowledge/AnswerCard.jsx';
 import { ReadinessRing } from '../workspace/ReadinessPanel.jsx';
@@ -45,13 +46,36 @@ function TaskOptions({ split, tasks, disabled, onPickTask, first }) {
   );
 }
 
-/** After a failed analysis: try again by hand (never automatically), or continue with the demo. */
-function RetryOptions({ retry, busy, mode, onSend }) {
+/** After a failed analysis: try again by hand (never automatically, and not when the server says the same
+ *  request cannot be retried), or continue with the demo. */
+function RetryOptions({ retry, busy, mode, onSend, onDemo }) {
   return (
     <div className="chat-option-list">
-      <button type="button" className="chat-option" disabled={busy} onClick={() => onSend(retry.text, retry.label)}>重新分析</button>
+      {retry.retryable !== false && <button type="button" className="chat-option" disabled={busy} onClick={() => onSend(retry.text, retry.label)}>重新分析</button>}
       {/* Embedded NAVI stays in its panel: the demo entry is /embed?mode=demo, not the full-page /demo. */}
-      {mode !== 'demo' && <a className="chat-option" href={embedded ? '/embed?mode=demo' : '/demo'}>改用示範模式</a>}
+      {mode !== 'demo' && <a className="chat-option" href={embedded ? '/embed?mode=demo' : '/demo'} onClick={onDemo}>改用示範模式</a>}
+    </div>
+  );
+}
+
+/** After a conflict (another tab or request already acted): read the saved state again; nothing is re-sent. */
+function ReloadOption() {
+  return (
+    <div className="chat-option-list">
+      <button type="button" className="chat-option" onClick={() => location.reload()}>重新載入</button>
+    </div>
+  );
+}
+
+/** One reply that could not be shown: say so in its place; the rest of the chat and the input keep working. */
+function BrokenMessage() {
+  return (
+    <div className="msg msg-navi">
+      <span className="msg-avatar" aria-hidden="true">N</span>
+      <div className="msg-bubble">
+        <p className="chat-title tone-error"><Icon name="alert" size={15} />這則回覆無法顯示</p>
+        <p className="chat-text">其他對話不受影響，可以換個說法再問一次。</p>
+      </div>
     </div>
   );
 }
@@ -59,7 +83,7 @@ function RetryOptions({ retry, busy, mode, onSend }) {
 /** The journey NAVI opened: a compact card in the chat, entered with 開啟工作區. */
 function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   const current = snapshot?.journey.id === message.journeyId ? snapshot.journey : null;
-  // Formal mode keeps earlier journeys (read back from the server on switching); /demo holds one.
+  // Earlier journeys are kept (formal: read back from the server on switching; /demo: in this tab).
   if (!current && onSwitch) {
     return (
       <div className="chat-journey-past">
@@ -83,7 +107,7 @@ function JourneyCard({ message, snapshot, onOpen, onSwitch }) {
   );
 }
 
-function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journeysSlot, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney }) {
+function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journeysSlot, onSend, onDemo, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney }) {
   const followUp = latest ? message.followUp : null;
   let body = null;
   if (message.kind === 'welcome') {
@@ -95,14 +119,19 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
       </>
     );
   } else if (message.kind === 'answers') {
-    const first = message.result.results[0];
+    // Built by answersMessage (domain/chatAnswers.js); still read defensively, whatever the reply held.
+    const first = message.result?.results?.[0];
+    const hotline = message.result?.hotline;
     body = (
       <>
         {message.notice && <p className="chat-notice" role="note">{message.notice}</p>}
-        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
-        {message.followUp.showAnswers
-          ? <><p className="chat-text">在官網資料中找到：</p><AnswerCard entry={first} onNavigate={onNavigate} compact expandable highlights={message.result.highlights[first.id]} headingLevel={3} /></>
-          : null}
+        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} onDemo={onDemo} />}
+        {latest && message.reload && <ReloadOption />}
+        {!first
+          ? <p className="chat-text">官網資料中沒有找到可以直接引用的說明{hotline ? `，可以換個說法再問，或洽客服專線 ${hotline}` : '，可以換個說法再問'}。</p>
+          : message.followUp?.showAnswers !== false
+            ? <><p className="chat-text">在官網資料中找到：</p><AnswerCard entry={first} onNavigate={onNavigate} compact expandable highlights={message.result.highlights?.[first.id]} headingLevel={3} /></>
+            : null}
       </>
     );
   } else if (message.kind === 'tasks') {
@@ -120,7 +149,9 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
       <>
         <p className={`chat-title tone-${message.tone}`}>{message.tone === 'error' && <Icon name="alert" size={15} />}{message.title}</p>
         <p className="chat-text">{message.body}</p>
-        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} />}
+        {message.detail && <p className="chat-text">{message.detail}</p>}
+        {latest && message.retry && <RetryOptions retry={message.retry} busy={busy} mode={mode} onSend={onSend} onDemo={onDemo} />}
+        {latest && message.reload && <ReloadOption />}
       </>
     );
   }
@@ -145,7 +176,7 @@ function NaviMessage({ message, latest, busy, mode, snapshot, openTasks, journey
  * NAVI landing as a chat: the conversation scrolls above, the input stays at the bottom.
  * Replies come from the official-site search and the backend; option buttons only send text back.
  */
-export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, offline = false, ref }) {
+export default function Landing({ messages, analysisPhase, snapshot, openTasks = null, journeysSlot = null, mode, dock, onSend, onDemo, onPickTask, onNavigate, onHotline, onOpenWorkspace, onSwitchJourney = null, offline = false, ref }) {
   const [text, setText] = useState('');
   const textarea = useRef(null);
   const dockRef = useRef(null);
@@ -218,8 +249,10 @@ export default function Landing({ messages, analysisPhase, snapshot, openTasks =
             <motion.div key={message.id} layout="position" variants={fadeUp} initial="hidden" animate="show">
               {message.role === 'user'
                 ? <div className="msg msg-user"><p className="msg-bubble">{message.text}</p></div>
-                : <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot} openTasks={openTasks} journeysSlot={journeysSlot}
-                  onSend={onSend} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />}
+                : <ErrorBoundary name="chat message" fallback={() => <BrokenMessage />}>
+                  <NaviMessage message={message} latest={message.id === latestNavi && !busy} busy={busy} mode={mode} snapshot={snapshot} openTasks={openTasks} journeysSlot={journeysSlot}
+                    onSend={onSend} onDemo={onDemo} onPickTask={onPickTask} onNavigate={onNavigate} onHotline={onHotline} onOpenWorkspace={onOpenWorkspace} onSwitchJourney={onSwitchJourney} />
+                </ErrorBoundary>}
             </motion.div>
           ))}
           {busy && (

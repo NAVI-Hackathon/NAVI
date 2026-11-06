@@ -1,25 +1,59 @@
-import { request } from 'node:http';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { readFileSync, lstatSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
 
 const MAX_RESPONSE_BYTES = 128 * 1024;
 const paths = new Set(['/api/chat', '/api/version', '/api/tags', '/api/show']);
 
-export function ollamaOrigin(value) {
-  const match = /^http:\/\/127\.0\.0\.1:([1-9][0-9]{0,4})\/?$/.exec(value);
-  if (!match || match[0] !== value || Number(match[1]) > 65535) throw new Error('OLLAMA_BASE_URL must be an explicit HTTP IPv4 loopback origin');
+export function ollamaOrigin(value, { requireTLS = false } = {}) {
+  const match = /^https?:\/\/127\.0\.0\.1:([1-9][0-9]{0,4})\/?$/.exec(value);
+  if (!match || match[0] !== value || Number(match[1]) > 65535 ||
+      (requireTLS && !value.startsWith('https://'))) {
+    throw new Error('OLLAMA_BASE_URL must use an explicit loopback origin; production requires HTTPS');
+  }
   return new URL(value).origin;
 }
 
-export function createOllamaTransport(origin) {
+function readPrivateFile(path) {
+  if (!isAbsolute(path)) throw new Error('Ollama TLS files must use absolute paths');
+  const stat = lstatSync(path);
+  if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) ||
+      (stat.uid !== process.getuid() && stat.uid !== 0)) {
+    throw new Error('Unsafe Ollama TLS file permissions or ownership');
+  }
+  return readFileSync(path);
+}
+
+export function createOllamaTransport(origin, tls = {}) {
   const base = ollamaOrigin(origin);
+  const secure = base.startsWith('https://');
+  let tlsOptions = {};
+  if (secure) {
+    if (!tls.caPath || !tls.certPath || !tls.keyPath ||
+        !/^[a-zA-Z0-9.-]{1,253}$/.test(tls.serverName || '')) {
+      throw new Error('HTTPS Ollama requires CA, client certificate, key, and verified server name');
+    }
+    tlsOptions = {
+      ca: readPrivateFile(tls.caPath),
+      cert: readPrivateFile(tls.certPath),
+      key: readPrivateFile(tls.keyPath),
+      servername: tls.serverName,
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2',
+    };
+  }
   return (path, { payload, signal }) => new Promise((resolve, reject) => {
     if (!paths.has(path)) return reject(new Error('Invalid Ollama API path'));
     const body = payload === undefined ? undefined : JSON.stringify(payload);
-    const req = request(new URL(path, base), {
+    const req = (secure ? httpsRequest : httpRequest)(new URL(path, base), {
       agent: false, signal, method: body === undefined ? 'GET' : 'POST',
+      ...tlsOptions,
       headers: body === undefined ? {} : { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
     }, res => {
       const status = res.statusCode;
       res.on('error', reject);
+      // Redirects and every non-200 response fail closed; no external URL is followed.
       if (status !== 200) {
         resolve({ status });
         res.destroy();

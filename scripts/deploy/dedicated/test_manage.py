@@ -82,3 +82,48 @@ class ProductReadinessTests(unittest.TestCase):
    m.healthy();self.assertEqual(call.call_count,3)
   with patch.object(m.urllib.request,'urlopen',side_effect=[Reply(v) for v in replies+['{"status":"ready","storage":"memory"}']]):
    with self.assertRaises(RuntimeError):m.healthy()
+
+class ErasureCutoverTests(unittest.TestCase):
+ def test_storage_floor_and_one_compatible_recovery(self):
+  import json
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   old,new,recovery=[m.ROOT/'releases'/(ch*12+'-1') for ch in 'abc']
+   for path,version in [(old,1),(new,2),(recovery,2)]:
+    path.mkdir(parents=True)
+    (path/'ready.json').write_text(json.dumps({'providerIsolation':True,'storageSchema':version}))
+   (m.ROOT/'current').symlink_to(old)
+   with patch.object(m,'owned_service'),patch.object(m,'run') as run,patch.object(m,'wait_healthy',side_effect=[RuntimeError('synthetic candidate outage'),None]):
+    with self.assertRaisesRegex(RuntimeError,'Stage a tested recovery'):m.activate(new)
+    with self.assertRaisesRegex(RuntimeError,'does not support'):m.activate(new,recovery=old)
+    run.assert_not_called()
+    with self.assertRaisesRegex(RuntimeError,'synthetic candidate outage'):m.activate(new,recovery=recovery)
+    self.assertEqual((m.ROOT/'current').resolve(),recovery)
+    self.assertEqual(run.call_args_list.count(unittest.mock.call(['systemctl','restart',m.UNIT])),2)
+    run.reset_mock()
+    with self.assertRaisesRegex(RuntimeError,'interrupt the erasure ledger'):m.activate(old)
+    run.assert_not_called()
+
+class OllamaCutoverTests(unittest.TestCase):
+ def test_failed_cutover_and_legacy_rollback_never_restart_gemini(self):
+  with tempfile.TemporaryDirectory() as tmp,patch.object(m,'ROOT',pathlib.Path(tmp).resolve()):
+   config=m.ROOT/'config';config.mkdir()
+   active=config/'api.env';candidate=config/'candidate.env'
+   active.write_bytes(b'AI_MODE=live\nGEMINI_API_KEY=fixture-not-a-key\nDB_CONFIG=test\n')
+   candidate.write_bytes(b'AI_MODE=live\nAI_PROVIDER=ollama\nGEMINI_API_KEY=fixture-not-a-key\nDB_CONFIG=test\n')
+   for path in (active,candidate):path.chmod(0o600)
+   old,new=[m.ROOT/'releases'/(ch*12+'-1') for ch in 'ab']
+   for path in (old,new):
+    path.mkdir(parents=True);(path/'ready.json').write_text('{"providerIsolation":true,"storageSchema":2}')
+   provider=new/'apps/api/src/ai/ollamaProvider.js';provider.parent.mkdir(parents=True);provider.touch()
+   (m.ROOT/'current').symlink_to(old)
+   environments=[]
+   def run(args,**_):
+    if args==['systemctl','restart',m.UNIT]:environments.append(active.read_bytes())
+   with patch.object(m,'owned_service'),patch.object(m,'run',side_effect=run),patch.object(m,'wait_healthy',side_effect=[RuntimeError('synthetic outage'),None]):
+    with self.assertRaisesRegex(RuntimeError,'synthetic outage'):m.activate(new,candidate,ollama_only=True)
+    m.activate(old)
+   self.assertEqual(len(environments),3)
+   self.assertIn(b'AI_MODE=live\nAI_PROVIDER=ollama\n',environments[0])
+   self.assertTrue(all(b'AI_MODE=unavailable\n' in env for env in environments[1:]))
+   self.assertTrue(all(b'fixture-not-a-key' not in env and b'DB_CONFIG=test' in env for env in environments))
+   self.assertEqual((config/'ollama-only').read_bytes(),b'ollama-only-v1\n')

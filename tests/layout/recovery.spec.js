@@ -30,7 +30,7 @@ test('a failed upload says so and keeps the score; the retry works; 100% is prel
   await expect(ring(page)).toHaveAttribute('aria-valuenow', '90');
 
   await page.getByRole('button', { name: '確認資料' }).first().click();
-  for (const label of [/我已確認以上資料正確/, /我已下載並填妥/]) await page.getByText(label).click();
+  for (const label of [/我已確認以上資料正確/, /我已另外取得並填妥/]) await page.getByText(label).click();
   await page.getByRole('dialog').getByRole('button', { name: '確認資料' }).click();
   await expect(ring(page)).toHaveAttribute('aria-valuenow', '100');
   await expect(page.getByText('已完成 NAVI 初步資料準備，仍需依正式規定確認與送件。').first()).toBeVisible();

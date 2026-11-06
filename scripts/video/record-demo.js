@@ -170,7 +170,7 @@ async function main() {
 
   mark('確認資料 → 100%');
   await click(navi.getByRole('button', { name: '確認資料' }).first(), { hold: 2500 });
-  for (const label of [/我已確認以上資料正確/, /我已下載並填妥/]) await click(navi.getByText(label), { hold: 700 });
+  for (const label of [/我已確認以上資料正確/, /我已另外取得並填妥/]) await click(navi.getByText(label), { hold: 700 });
   await click(navi.getByRole('dialog').getByRole('button', { name: '確認資料' }));
   await navi.getByText('100', { exact: true }).first().waitFor({ timeout: 20_000 });
   await showReadiness();

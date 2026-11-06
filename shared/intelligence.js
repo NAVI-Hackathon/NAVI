@@ -36,7 +36,7 @@ export const UnderstandingSchema = z.object({
   success: z.literal(true),
   data: IntentDataSchema,
   meta: z.object({
-    source: z.enum(['gemini', 'demo_fallback']),
+    source: z.enum(['gemini', 'ollama', 'demo_fallback']),
     outcome: z.enum(['supported', 'preview', 'clarification', 'human_review']),
     confidenceThreshold: z.number().finite().min(0).max(1),
   }).strict(),
