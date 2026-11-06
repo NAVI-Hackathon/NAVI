@@ -53,6 +53,7 @@ export function createApp(config, provider = null, repository = null) {
     methods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type','If-Match','X-NAVI-Contract'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,
   }));
   app.use('/api', async (req, res, next) => { res.set({ 'Referrer-Policy':'no-referrer', 'Cross-Origin-Resource-Policy':'same-site', 'X-NAVI-AI-Mode': provider.mode === 'demo' ? 'demo' : provider.mode === 'unavailable' ? 'unavailable' : 'live', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); next(); });
+  app.use('/api', (req,res,next)=>{if(app.locals.draining)return next(new ApiError('SERVICE_DRAINING','服務正在更新，請稍後再試。',503,true));next();});
   const release = readReleaseSha(config.releaseManifest);
   app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey || provider.backend === 'ollama'), release }));
   // ponytail: in-memory limit is per process; use a shared store only when deploying multiple instances.

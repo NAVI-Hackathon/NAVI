@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Manage only the marker-verified dedicated NAVI deployment; no OS installation."""
+import contextlib, fcntl, http.client
 import argparse, hashlib, json, os, pathlib, pwd, re, subprocess, tarfile, time, urllib.request
 ROOT = pathlib.Path('/opt/navi-hackathon')
 NODE = ROOT / 'runtime/node/bin/node'
 UNIT = 'navi-api.service'
+API_PORT = 18172
 
 def run(args, **kw): return subprocess.run(args, check=True, **kw)
 def save(path, value):
@@ -67,18 +69,83 @@ def owned_service():
 def link(name, target):
     temp = ROOT / (name + '.new'); temp.symlink_to(target); temp.replace(ROOT / name)
 
-def healthy():
-    with urllib.request.urlopen('http://127.0.0.1:18172/api/health', timeout=2) as r:
-        body = json.load(r)
-        mode = r.headers.get('X-NAVI-AI-Mode')
-        if body.get('status') != 'ok' or type(body.get('aiProviderConfigured')) is not bool or mode not in ('live', 'unavailable'): raise RuntimeError('Unexpected API mode/configuration')
-    with urllib.request.urlopen('http://127.0.0.1:18172/api/ai/status', timeout=2) as r:
-        state = json.load(r)
-        if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
-    if state.get('product', {}).get('enabled'):
-        with urllib.request.urlopen('http://127.0.0.1:18172/api/ready', timeout=5) as r:
-            ready = json.load(r)
-            if ready.get('status') != 'ready' or ready.get('storage') != 'mongodb_encrypted': raise RuntimeError('Persistent storage is not ready')
+def request_json(path, timeout):
+    # A fresh connection cannot reuse a socket belonging to the previous process.
+    connection = http.client.HTTPConnection('127.0.0.1', API_PORT, timeout=timeout)
+    try:
+        connection.request('GET', path, headers={'Connection': 'close'})
+        response = connection.getresponse()
+        if response.status != 200: raise RuntimeError('API not ready')
+        return json.load(response), response.getheader('X-NAVI-AI-Mode')
+    finally: connection.close()
+
+def service_state():
+    raw = subprocess.check_output(['systemctl', 'show', UNIT, '-p', 'ActiveState', '-p', 'SubState', '-p', 'MainPID', '-p', 'NRestarts', '-p', 'ExecMainStartTimestampMonotonic', '-p', 'StartLimitIntervalUSec', '-p', 'StartLimitBurst', '-p', 'ExecStart', '-p', 'WorkingDirectory'], text=True)
+    return dict(line.split('=', 1) for line in raw.splitlines())
+
+def host_uptime():
+    return float(pathlib.Path('/proc/uptime').read_text().split()[0])
+
+def preflight_start():
+    state = service_state()
+    if '/api-current/' not in state.get('ExecStart', '') or state.get('WorkingDirectory') != str(ROOT / 'api-current'):
+        raise RuntimeError('Migrate the NAVI unit to api-current before activation; nothing changed')
+    if state.get('ActiveState') in ('activating', 'deactivating') or state.get('SubState') == 'auto-restart': raise RuntimeError('NAVI is already changing state')
+    interval = state['StartLimitIntervalUSec']
+    # This deployment is validated against the existing 300-second/3-start protection.
+    if interval not in ('5min', '300s') or int(state['StartLimitBurst']) < 3: raise RuntimeError('Review unexpected start protection before deploying')
+    uptime = host_uptime()
+    started = int(state.get('ExecMainStartTimestampMonotonic', '0')) / 1000000
+    if started and uptime - started < 300: raise RuntimeError('Wait for the current 300-second start window before deploying')
+
+@contextlib.contextmanager
+def deployment_lock(rollback_target=None):
+    directory = ROOT / 'config'
+    if directory.is_symlink(): raise RuntimeError('Unsafe deployment state')
+    directory.mkdir(mode=0o700, exist_ok=True)
+    fd = os.open(directory / 'deployment.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        if os.fstat(fd).st_uid != ROOT.stat().st_uid or os.fstat(fd).st_mode & 0o077: raise RuntimeError('Unsafe deployment lock')
+        try: fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError: raise RuntimeError('Another NAVI deployment is running')
+        state = directory / 'deployment-window.json'
+        if state.exists():
+            previous = json.loads(state.read_text())
+            if time.time() - previous['startedAt'] < 300:
+                service = service_state() if rollback_target else {}
+                reserved = rollback_target and previous.get('rollbackAvailable') and previous.get('rollbackTarget') == str(rollback_target) and previous.get('activePid') == service.get('MainPID') and service.get('ActiveState') == 'active' and int(service.get('NRestarts', '0')) == 0
+                if not reserved: raise RuntimeError('Wait for the 300-second deployment window; no service changed')
+                previous.update(rollbackAvailable=False, rollbackConsumed=True); save(state, previous)
+                yield; return
+        preflight_start()
+        save(state, {'startedAt': time.time(), 'rollbackAvailable': False, 'rollbackConsumed': False})
+        yield
+    finally: os.close(fd)
+
+def process_release(pid):
+    return pathlib.Path('/proc/' + pid + '/cwd').resolve()
+
+def healthy(expected=None, product=False):
+    body, mode = request_json('/api/health', 1)
+    if body.get('status') != 'ok' or type(body.get('aiProviderConfigured')) is not bool or mode not in ('live', 'unavailable'): raise RuntimeError('Unexpected API mode/configuration')
+    state, _ = request_json('/api/ai/status', 1)
+    if state.get('mode') != mode or state.get('syntheticOnly') is not True or state.get('available') is not (mode == 'live') or (mode == 'live' and not body['aiProviderConfigured']): raise RuntimeError('Unsafe AI access mode')
+    if product or expected is not None or state.get('product', {}).get('enabled'):
+        ready, _ = request_json('/api/ready', 1)
+        if ready.get('status') != 'ready' or ready.get('storage') != 'mongodb_encrypted': raise RuntimeError('Persistent storage is not ready')
+    if expected:
+        service = service_state()
+        if service['ActiveState'] != 'active' or process_release(service['MainPID']) != expected: raise RuntimeError('API process does not match the release')
+
+def wait_healthy(target, product=False):
+    deadline = time.monotonic() + 25
+    while True:
+        state = service_state()
+        if state['ActiveState'] == 'failed' or state.get('SubState') == 'auto-restart' or int(state.get('NRestarts', '0')) > 0: raise RuntimeError('Candidate failed to start; no repeated restart')
+        try: healthy(target, product); return
+        except Exception:
+            if time.monotonic() >= deadline: raise
+            time.sleep(1)
 
 def private_environment(path):
     path = pathlib.Path(path)
@@ -97,13 +164,6 @@ def write_environment(path, data):
 
 def storage_schema(path):
     return json.loads((path / 'ready.json').read_text()).get('storageSchema', 1) if path else 1
-
-def wait_healthy():
-    for attempt in range(20):
-        try: healthy(); return
-        except Exception:
-            if attempt == 19: raise
-            time.sleep(.5)
 
 AI_KEYS = (b'AI_MODE', b'AI_PROVIDER', b'GEMINI_API_KEY', b'ALLOW_PAID_AI')
 
@@ -125,9 +185,17 @@ def ollama_environment(data, target, *, allow_live=True):
     mode = b'live' if local else b'unavailable'
     return b''.join(other).rstrip(b'\r\n') + b'\nAI_MODE=' + mode + b'\nAI_PROVIDER=ollama\nGEMINI_API_KEY=\nALLOW_PAID_AI=false\n'
 
-def activate(target, environment=None, recovery=None, *, ollama_only=False):
+def activate(target, environment=None, recovery=None, *, ollama_only=False, rollback=False):
     target = release(target)
-    if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True: raise RuntimeError('Legacy releases cannot be activated; use an isolated rollback target')
+    if json.loads((target / 'ready.json').read_text()).get('providerIsolation') is not True:
+        raise RuntimeError('Legacy releases cannot be activated; use an isolated rollback target')
+    if not any((environment, recovery, ollama_only, rollback)) and (ROOT / 'current').exists() and target == release(ROOT / 'current'):
+        healthy(target); print('Already active: ' + str(target)); return
+    activation_recovery(target, environment, recovery)
+    with deployment_lock(target if rollback else None):
+        return activate_once(target, environment, recovery, ollama_only=ollama_only)
+
+def activation_recovery(target, environment, recovery):
     old = release(ROOT / 'current') if (ROOT / 'current').exists() else None
     current_schema, target_schema = storage_schema(old), storage_schema(target)
     if target_schema < current_schema: raise RuntimeError('Rollback would interrupt the erasure ledger')
@@ -139,7 +207,10 @@ def activate(target, environment=None, recovery=None, *, ollama_only=False):
             raise RuntimeError('Recovery release does not support the erasure ledger')
     elif recovery:
         raise RuntimeError('A recovery override applies only to a storage upgrade')
-    fallback = recovery or old
+    return old, recovery or old
+
+def activate_once(target, environment, recovery, *, ollama_only):
+    old, fallback = activation_recovery(target, environment, recovery)
     owned_service(); run(['nginx', '-t'])
     env = ROOT / 'config/api.env'
     old_env = private_environment(env) if env.exists() else None
@@ -163,29 +234,39 @@ def activate(target, environment=None, recovery=None, *, ollama_only=False):
     if locked:
         if next_env is None: raise RuntimeError('Local-only release environment is missing')
         next_env = ollama_environment(next_env, target)
-    if next_env is not None: write_environment(env, next_env)
-    link('current', target)
+    event = {'target': str(target), 'previous': str(old) if old else None, 'startedAt': time.time()}
     try:
+        if next_env is not None: write_environment(env, next_env)
+        link('api-current', target)
         run(['systemctl', 'restart', UNIT])
-        wait_healthy()
+        wait_healthy(target, bool(next_env and b'NAVI_PRODUCT_MODE=true' in next_env.splitlines()))
+        link('current', target)
         run(['systemctl', 'reload', 'nginx'])
     except BaseException:
+        event['failedAt'] = time.time()
+        save(ROOT / 'config' / ('deployment-failed-' + str(time.time_ns()) + '.json'), event)
+        run(['systemctl', 'stop', UNIT])
         if old_env is not None: write_environment(env, ollama_environment(old_env, fallback, allow_live=False) if locked else old_env)
         if fallback:
-            link('current', fallback)
-            # A failed storage upgrade can only recover onto another ledger-compatible writer.
+            link('api-current', fallback); link('current', fallback)
+            # Never restore a legacy public Demo API after a live-isolation failure.
             isolated = json.loads((fallback / 'ready.json').read_text()).get('providerIsolation') is True
-            run(['systemctl', 'restart' if isolated else 'stop', UNIT])
-            if recovery:
-                try: wait_healthy()
-                except Exception:
-                    run(['systemctl', 'stop', UNIT])
-                    raise
-            run(['systemctl', 'reload', 'nginx'])
+            try:
+                if isolated:
+                    run(['systemctl', 'start', UNIT]); wait_healthy(fallback, bool(old_env and b'NAVI_PRODUCT_MODE=true' in old_env.splitlines()))
+                    event['recoveredAt'] = time.time()
+                run(['systemctl', 'reload', 'nginx'])
+            except BaseException:
+                run(['systemctl', 'stop', UNIT]); raise
+            finally: save(ROOT / 'config' / ('deployment-' + str(time.time_ns()) + '.json'), event)
         else: run(['systemctl', 'stop', UNIT])
         raise
+    event['readyAt'] = time.time(); save(ROOT / 'config' / ('deployment-' + str(time.time_ns()) + '.json'), event)
     if next_env is not None: write_environment(saved, next_env)
-    if fallback and fallback != target: link('previous', fallback)
+    if fallback and fallback != target:
+        link('previous', fallback)
+        state = ROOT / 'config/deployment-window.json'; window = json.loads(state.read_text())
+        window.update(rollbackAvailable=not window.get('rollbackConsumed', False), rollbackTarget=str(fallback), activePid=service_state()['MainPID']); save(state, window)
     print('Active: ' + str(target))
 
 def main():
@@ -193,15 +274,18 @@ def main():
     m = load()
     if args.action == 'install': install(m, args.target, args.checksum)
     elif args.action == 'activate': activate(args.target, args.environment, args.recovery, ollama_only=args.ollama_only)
-    elif args.action == 'rollback': activate(ROOT / 'previous')
+    elif args.action == 'rollback': activate(ROOT / 'previous', rollback=True)
     else:
         owned_service()
         if args.action == 'status': run(['systemctl', 'show', UNIT, 'nginx.service', '-p', 'Id', '-p', 'ActiveState', '-p', 'MainPID', '-p', 'MemoryCurrent', '-p', 'NRestarts'])
-        else:
-            marker = ROOT / 'config/ollama-only'
-            if args.action == 'restart' and (marker.exists() or marker.is_symlink()):
-                if private_environment(marker) != b'ollama-only-v1\n': raise RuntimeError('Invalid local AI policy marker')
-                env = ROOT / 'config/api.env'
-                write_environment(env, ollama_environment(private_environment(env), release(ROOT / 'current')))
-            run(['systemctl', args.action, UNIT])
+        elif args.action == 'restart':
+            with deployment_lock():
+                target = release(ROOT / 'current')
+                marker = ROOT / 'config/ollama-only'
+                if marker.exists() or marker.is_symlink():
+                    if private_environment(marker) != b'ollama-only-v1\n': raise RuntimeError('Invalid local AI policy marker')
+                    env = ROOT / 'config/api.env'
+                    write_environment(env, ollama_environment(private_environment(env), target))
+                run(['systemctl', 'restart', UNIT]); wait_healthy(target)
+        else: run(['systemctl', args.action, UNIT])
 if __name__ == '__main__': main()
