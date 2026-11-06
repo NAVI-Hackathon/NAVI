@@ -481,6 +481,7 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .how-step:not(:last-child)::after { top: auto; right: auto; bottom: -15px; left: 50%; transform: translateX(-50%) rotate(135deg); }
   .how-note { align-items: flex-start; text-align: left; }
   .workspace { padding: 26px 20px 0; }
+  .workspace .section-label { font-size: var(--text-label); }
   .workspace-head { display: block; margin-bottom: 24px; }
   .workspace-meta { margin-top: 12px; }
   .panel-header { margin-bottom: 18px; }
