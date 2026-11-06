@@ -193,11 +193,12 @@ test('closed sockets, HTTP errors, oversized responses and redirects fail withou
       case 2: res.writeHead(302, { Location: 'https://example.invalid/' }).end(); break;
       case 3: res.writeHead(503).end('internal details'); break;
       case 4: res.writeHead(429).end(); break;
+      case 5: res.writeHead(504).end(); break;
       default: res.end('x'.repeat(129 * 1024));
     }
   }));
   const provider = createOllamaProvider(config, createOllamaTransport(base));
-  for (const [i, code] of ['AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_RATE_LIMITED', 'AI_PROVIDER_ERROR'].entries()) {
+  for (const [i, code] of ['AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_PROVIDER_ERROR', 'AI_RATE_LIMITED', 'AI_TIMEOUT', 'AI_PROVIDER_ERROR'].entries()) {
     await assert.rejects(provider.understandIntent(message), { code });
     assert.equal(requests, i + 1);
   }

@@ -73,6 +73,7 @@ export function createOllamaProvider(config, transport) {
         } });
         combined.throwIfAborted();
         if (status === 429) throw new ApiError('AI_RATE_LIMITED', '本地 AI 暫時忙碌，請稍後再試。', 429, false);
+        if (status === 504) throw new ApiError('AI_TIMEOUT', '本地 AI 分析逾時，你仍可查詢已驗證資料。', 504, false);
         if (status !== 200) throw new ApiError('AI_PROVIDER_ERROR', '本地 AI 暫時無法回應；仍可查詢已驗證資料。', 502, false);
         const result = envelopeSchema.parse(JSON.parse(body));
         if (result.model !== model) throw new ApiError('AI_RESPONSE_INVALID', '本地模型回應來源不符。', 502, false);
