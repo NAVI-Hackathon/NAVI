@@ -8,9 +8,9 @@ export default function ProductDataDialog({service,onClose,onJourney,onDeleted,c
   useEffect(()=>{const pending=refresh(),version=requestVersion.current;pending.catch(e=>{if(version===requestVersion.current)setError(e.message);});return()=>{requestVersion.current++;};},[refresh]);
   async function run(fn){requestVersion.current++;setError('');setBusy(true);try{await fn();}catch(e){setError(e.message??'目前無法完成操作，請稍後再試。');}finally{setBusy(false);}}
   return <Modal title={consentOnly?'資料處理說明':'我的資料與歷程'} onClose={onClose}>
-    <p className="modal-lead">AI 會將你提供的內容交由 Google Gemini 處理。免費服務目前僅接受合成資料，請勿輸入真實病歷、姓名或銀行資料。</p>
+    <p className="modal-lead">{data?.session?.disclosure??'正在讀取 AI 處理方式。請勿輸入真實病歷、姓名或銀行資料。'}</p>
     <p className="modal-footnote">{data?.session ? <>原始檔只在處理期間暫存；旅程與對話自最後異動起加密保存最長 {data.session.retentionDays} 天；帳號最多保存 10 年，可自行刪除。關閉瀏覽器後可在同一工作階段恢復；登入後可於其他裝置存取。備份依約 7 天的例行輪替清理；線上刪除不會立即消除既有備份。</> : '正在讀取資料保存期限…'}</p>
-    <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">查看 Google 資料處理條款</a>
+    {data?.session?.disclosureVersion==='gemini-unpaid-2026-10'&&<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">查看 Google 資料處理條款</a>}
     {!data?.session?.consentAccepted&&<><label className="check-row"><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/>我已閱讀說明，這次僅使用合成資料。</label><button className="button button-primary" disabled={!agreed||busy} onClick={()=>run(async()=>{await service.acceptConsent();await refresh();onConsent?.();if(consentOnly)onClose();})}>確認並繼續</button></>}
     {!consentOnly&&<>
       <section className="review-section"><h3>{data?.session?.authenticated?'已登入':'保存至帳號'}</h3>
