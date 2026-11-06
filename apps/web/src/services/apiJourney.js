@@ -22,7 +22,7 @@ export const RECOGNITION_UNAVAILABLE_MESSAGE = '目前線上服務尚未啟用�
 const kindOf = serviceType => (serviceType === 'hospitalization_claim' ? 'hospital' : serviceType);
 // Privacy: the browser keeps only journey ids and display flags. The description and document
 // fields stay on the server and are read back after a reload.
-const JourneyRef = z.object({ journeyId: z.string().uuid(), source: z.enum(['gemini', 'demo_fallback']), handoffRequested: z.boolean() }).strict();
+const JourneyRef = z.object({ journeyId: z.string().uuid(), source: z.enum(['gemini', 'ollama', 'demo_fallback']), handoffRequested: z.boolean() }).strict();
 const StoredV2 = JourneyRef.extend({ v: z.literal(2) }).strict();
 // v3: several journeys of this browser (most recent first) and the one shown now.
 const Stored = z.object({ v: z.literal(3), current: z.string().uuid().nullable(), journeys: z.array(JourneyRef).max(5) }).strict();
@@ -95,6 +95,9 @@ export function createApiJourneyService({
   // X-NAVI-AI-Mode of the server. A 'demo' server answers every upload with fixed sample fields
   // whatever the file holds, so formal mode never sends the user's own file there.
   let aiMode = null;
+  let aiBackend = 'gemini';
+  let disclosureVersion = 'gemini-unpaid-2026-10';
+  const rememberDisclosure = session => { if (session?.disclosureVersion === 'ollama-local-synthetic-2026-11' || session?.disclosureVersion === 'gemini-unpaid-2026-10') disclosureVersion = session.disclosureVersion; };
   const modeListeners = new Set();
   const setAiMode = value => {
     const next = ['live', 'demo', 'unavailable'].includes(value) ? value : null;
@@ -169,21 +172,21 @@ export function createApiJourneyService({
   return {
     mode: 'live',
     get productEnabled(){return product.enabled;},
-    init:()=>product.init(),
-    productInfo:async()=>{const session=await request('/session',{schema:null});if(session.authRequired&&!session.authenticated)return {session,history:{journeys:[],conversations:[]},tasks:[]};const history=session.authenticated?await request('/journeys',{schema:null}):null;return {session,history:history?{journeys:history.items,nextCursor:history.nextCursor}:await request('/history',{schema:null}),tasks:session.authenticated?(await request('/tasks',{schema:null})).tasks:[]};},
+    init:async()=>{const result=await product.init();rememberDisclosure(result?.session);return result;},
+    productInfo:async()=>{const session=await request('/session',{schema:null});rememberDisclosure(session);if(session.authRequired&&!session.authenticated)return {session,history:{journeys:[],conversations:[]},tasks:[]};const history=session.authenticated?await request('/journeys',{schema:null}):null;return {session,history:history?{journeys:history.items,nextCursor:history.nextCursor}:await request('/history',{schema:null}),tasks:session.authenticated?(await request('/tasks',{schema:null})).tasks:[]};},
     historyPage:cursor=>request('/journeys?limit=20'+(cursor?'&cursor='+encodeURIComponent(cursor):''),{schema:null}),
-    acceptConsent:()=>request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion:'gemini-unpaid-2026-10'},schema:null}),
+    acceptConsent:async()=>{rememberDisclosure(await request('/session',{schema:null}));return request('/session/consent',{method:'POST',json:{syntheticOnly:true,disclosureVersion},schema:null});},
     register:async(username,password)=>{const result=await request('/auth/register',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
     login:async(username,password)=>{const result=await request('/auth/login',{method:'POST',json:{...(username.includes('@')?{email:username}:{username}),password},schema:null});identityChanged();return result;},
     logout:async()=>{await request('/session/logout',{method:'POST',json:{},schema:null});identityChanged();},
     exportData:async()=>download(JSON.stringify(await request('/account/export',{schema:null}),null,2),'navi-data.json','application/json'),
     deleteData:async()=>{await request('/account/data',{method:'DELETE',json:{confirmed:true},schema:null});identityChanged();},
-    continueTask:async taskId=>{const stamp=++selection;const journey=await request('/journeys',{method:'POST',json:{taskId,idempotencyKey:crypto.randomUUID()}});if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':'gemini',handoffRequested:false};save();return snapshot();},
+    continueTask:async taskId=>{const stamp=++selection;const journey=await request('/journeys',{method:'POST',json:{taskId,idempotencyKey:crypto.randomUUID()}});if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':aiBackend==='ollama'?'ollama':'gemini',handoffRequested:false};save();return snapshot();},
     requestPasswordReset:email=>request('/auth/password/forgot',{method:'POST',json:{email},schema:null}),
     requestVerification:email=>request('/auth/verification/request',{method:'POST',json:{email},schema:null}),
     verifyEmail:token=>request('/auth/verify-email',{method:'POST',json:{token},schema:null}),
     resetPassword:(token,password)=>request('/auth/password/reset',{method:'POST',json:{token,password},schema:null}),
-    openJourney:async id=>{const stamp=++selection;const journey=await request('/journeys/'+id);if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':'gemini',handoffRequested:false};pending=null;save();return snapshot();},
+    openJourney:async id=>{const stamp=++selection;const journey=await request('/journeys/'+id);if(stamp!==selection)throw new DOMException('已選擇其他旅程。','AbortError');state={journey:remember(journey),source:journey.provider==='demo'?'demo_fallback':aiBackend==='ollama'?'ollama':'gemini',handoffRequested:false};pending=null;save();return snapshot();},
     workflow:id=>request('/service-workflows/'+id,{schema:null}),
     checklist:async checked=>commit(await request('/journeys/'+requireState().journey.id+'/checklist',{method:'POST',json:{checked,revision:requireState().journey.revision}})),
     knowledgeResult:reply=>product.result(reply),
@@ -199,11 +202,13 @@ export function createApiJourneyService({
      * The page labels results by it, so a demo server is never presented as AI analysis.
      */
     get aiMode() { return aiMode; },
+    get aiBackend() { return aiBackend; },
     subscribeAiMode(listener) { modeListeners.add(listener); return () => modeListeners.delete(listener); },
     async checkAiMode({ signal } = {}) {
       try {
         const response = await fetchImpl(api('/ai/status'), { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs) });
         const body = await response.json().catch(() => null);
+        if (response.ok) aiBackend = body?.backend === 'ollama' ? 'ollama' : 'gemini';
         const header = response.headers?.get?.('X-NAVI-AI-Mode');
         const consistent = response.ok && ['live', 'demo', 'unavailable'].includes(body?.mode)
           && (!header || header === body.mode) && (body?.available === undefined || body.available === (body.mode === 'live'));
