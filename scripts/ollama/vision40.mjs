@@ -9,16 +9,17 @@ import { OLLAMA_VISION_MODELS } from '../../apps/api/src/config/ollama.js';
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const flags = process.argv.slice(2);
 const run = flags.includes('--run');
+const prepare = flags.includes('--prepare');
 const acknowledged = flags.includes('--confirm-synthetic');
 const value = flag => { const i = flags.indexOf(flag); return i < 0 ? null : flags[i + 1]; };
 const model = value('--model') || OLLAMA_VISION_MODELS[0];
 const limit = Number(value('--limit') || (run ? 0 : 40));
-if (flags.some((flag, i) => !['--run', '--dry-run', '--confirm-synthetic'].includes(flag) && !(['--model', '--limit'].includes(flag) || ['--model', '--limit'].includes(flags[i - 1]))) ||
+if (flags.some((flag, i) => !['--run', '--dry-run', '--prepare', '--confirm-synthetic'].includes(flag) && !(['--model', '--limit'].includes(flag) || ['--model', '--limit'].includes(flags[i - 1]))) ||
     !OLLAMA_VISION_MODELS.includes(model) || !Number.isSafeInteger(limit) || limit < 1 || limit > 40 ||
     (run && (!acknowledged || !flags.includes('--model') || !flags.includes('--limit')))) {
-  throw new Error('Usage: --dry-run [--model MODEL] [--limit 1..40] | --run --model MODEL --limit 1..40 --confirm-synthetic');
+  throw new Error('Usage: --dry-run [--limit 1..40] | --prepare [--limit 1..40] | --run --model MODEL --limit 1..40 --confirm-synthetic');
 }
-if (run && flags.includes('--dry-run')) throw new Error('Choose --dry-run or --run');
+if (Number(run) + Number(prepare) + Number(flags.includes('--dry-run')) > 1) throw new Error('Choose one of --run, --prepare, --dry-run');
 
 function makePdf(lines) {
   const encode = str => String(str).replace(/[\\()]/g, c => '\\' + c);
@@ -101,7 +102,7 @@ const gitSha = (() => { try { return execFileSync('git', ['rev-parse', 'HEAD'], 
 const summary = { suite: 'synthetic-vision-40', generated: 40, requested: planned.length,
   model, gitSha, dataSha256: sha256(Buffer.from(JSON.stringify(documents.map(d => ({ id: d.id, documentType: d.documentType, fields: d.fields, sourceSha256: sha256(d.source) }))))),
   generationAttempts: 0, completed: 0, errors: 0, requests: [], fieldPrecision: null, fieldRecall: null, fieldF1: null };
-if (!run) {
+if (!run && !prepare) {
   process.stdout.write(JSON.stringify({ ...summary, mode: 'dry-run',
     cases: planned.map(d => ({ id: d.id, documentType: d.documentType, expectedFields: Object.keys(d.fields), pdfSha256: sha256(d.source) })) }, null, 2) + '\n');
   process.exit(0);
@@ -110,6 +111,15 @@ const generated = [];
 for (const d of planned) {
   const image = await render(d.source);
   generated.push({ ...d, image, imageSha256: sha256(image) });
+}
+if (prepare) {
+  process.stdout.write(JSON.stringify({
+    ...summary, mode: 'prepare', rendered: generated.length, generationAttempts: 0,
+    cases: generated.map(d => ({ id: d.id, pdfSha256: sha256(d.source), imageSha256: d.imageSha256,
+      pngBytes: d.image.length, signatureValid: d.image.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])) })),
+  }, null, 2) + '\\n');
+  if (generated.some(d => !d.image.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])))) process.exitCode = 1;
+  process.exit();
 }
 const config = loadConfig({ AI_MODE: 'live', AI_PROVIDER: 'ollama',
   NAVI_TEST_SESSION_TOKEN: 'isolated-synthetic-evaluator-only-2026',
