@@ -164,6 +164,15 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     return { score, coverage: total ? matched / total : 0, specific: phrase || distinctive >= RANKING.minDistinctive };
   }
 
+  // The snapshot lists correspondence under My Cardif, separately from the paper address instructions.
+  function correspondenceEvidence(query, entry) {
+    if (entry.id !== 'service:change_address' || !rewrite(query).includes('通訊地址') || /戶籍|收費/.test(query)) return null;
+    const online = entry.details.find(detail => detail.label === '線上辦理')?.items.filter(line => line.includes('通訊地址'));
+    if (!online?.length) return null;
+    const requirements = entry.details.find(detail => detail.label === '線上服務條件')?.items ?? [];
+    return [...online, ...requirements];
+  }
+
   /** The detail lines of an entry that share the most pieces with the question (e.g. 正本 → the 10-day originals rule). */
   function relevantLines(entry, queryTokens, max = 3) {
     return entry.details
@@ -229,7 +238,7 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     const results = ranked.filter(r => r.score >= best * RANKING.resultRatio).slice(0, Math.max(1, Math.min(3, Number.isInteger(limit) ? limit : 3))).map(r => r.entry);
     const shown = new Set(results.map(r => r.id));
     const related = results.flatMap(r => r.relatedIds).filter(id => !shown.has(id) && byId.has(id) && (shown.add(id), true)).slice(0, 3).map(id => byId.get(id));
-    const highlights = Object.fromEntries(results.map(r => [r.id, relevantLines(r, queryTokens)]));
+    const highlights = Object.fromEntries(results.map(r => [r.id, correspondenceEvidence(text, r) ?? relevantLines(r, queryTokens)]));
     return { ...(clarification ? { clarification } : {}), status: 'answered', results, related, highlights, hotline, ...(knowledgeVersion ? { knowledgeVersion } : {}) };
   }
 
@@ -262,10 +271,10 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     const lines = [], sources = [];
     let length = 0;
     for (const item of search.results) {
-      const evidence = item.content.split('\n');
+      const evidence = correspondenceEvidence(query, item) ?? item.content.split('\n');
       const priority = [...(search.highlights[item.id] ?? []), ...evidence];
       const included = [...new Set(priority)].filter(line => verifyEvidenceSnippet(item.id, line) && length + line.length + 1 <= 1800 && (length += line.length + 1));
-      if (included.length) { lines.push(...included); sources.push({ ...knowledgeSource(item), content: item.content }); }
+      if (included.length) { lines.push(...included); sources.push({ ...knowledgeSource(item), content: evidence.join('\n') }); }
     }
     return sources.length ? { answer: lines.join('\n'), sources, sourceIds: sources.map(s => s.id), isMock: synthetic, ...(knowledgeVersion ? { knowledgeVersion } : {}) } : null;
   }
@@ -278,7 +287,7 @@ export function createKnowledgeEngine(snapshot = cardif, { synthetic = Boolean(s
     const source = parsed.data, record = byId.get(source.id);
     return Boolean(record && source.sourceId === source.id && source.url === source.sourceUrl && source.title === record.title && source.section === record.id && source.sourceUrl === record.sourceUrl && source.retrievedAt === record.retrievedAt && verifyNavigationDestination(source.navigationDestination, source.id));
   }
-  return { typeLabels, knowledgeEntries, searchKnowledge, getKnowledgeEntry, verifyNavigationDestination, verifyEvidenceSnippet, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, knowledgeVersion };
+  return { typeLabels, knowledgeEntries, searchKnowledge, getKnowledgeEntry, correspondenceEvidence, verifyNavigationDestination, verifyEvidenceSnippet, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource, knowledgeVersion };
 }
 
-export const { typeLabels, knowledgeEntries, searchKnowledge, getKnowledgeEntry, verifyNavigationDestination, verifyEvidenceSnippet, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource } = createKnowledgeEngine();
+export const { typeLabels, knowledgeEntries, searchKnowledge, getKnowledgeEntry, correspondenceEvidence, verifyNavigationDestination, verifyEvidenceSnippet, knowledgeSource, retrieveKnowledgeContext, verifyKnowledgeSource } = createKnowledgeEngine();

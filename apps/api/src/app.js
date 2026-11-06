@@ -1,5 +1,5 @@
 import { acceptsJudgeContract } from './routes/contract.js';
-import {mkdirSync,lstatSync} from 'node:fs';
+import {mkdirSync,lstatSync,readFileSync} from 'node:fs';
 import {isAbsolute} from 'node:path';
 import { startMaintenance } from './storage/maintenance.js';
 
@@ -17,6 +17,17 @@ import { understandIntent } from './services/intent.service.js';
 import { createTestSessions } from './middleware/testSession.js';
 import { RequestSchema } from './schemas/intent.schema.js';
 import { ApiError, errorHandler } from './middleware/errorHandler.js';
+
+// The dedicated installer verifies this artifact's SHA-256 and sourceCommit before sealing the release.
+function readReleaseSha(manifest = new URL('../../../release.json', import.meta.url)) {
+  try {
+    const { sourceCommit } = JSON.parse(readFileSync(manifest, 'utf8'));
+    if (typeof sourceCommit === 'string' && sourceCommit.length === 40 && /^[a-f0-9]+$/.test(sourceCommit)) return sourceCommit;
+  } catch {
+    // A source checkout has no deployment manifest.
+  }
+  return 'unknown';
+}
 
 export function createApp(config, provider = null, repository = null) {
   config = { ...config };
@@ -42,7 +53,8 @@ export function createApp(config, provider = null, repository = null) {
     methods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type','If-Match','X-NAVI-Contract'], exposedHeaders: ['X-NAVI-AI-Mode'], maxAge: 600,
   }));
   app.use('/api', async (req, res, next) => { res.set({ 'Referrer-Policy':'no-referrer', 'Cross-Origin-Resource-Policy':'same-site', 'X-NAVI-AI-Mode': provider.mode === 'demo' ? 'demo' : provider.mode === 'unavailable' ? 'unavailable' : 'live', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); next(); });
-  app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey || provider.backend === 'ollama') }));
+  const release = readReleaseSha(config.releaseManifest);
+  app.get('/api/health', (req, res) => res.json({ status: 'ok', aiProviderConfigured: Boolean(config.apiKey || provider.backend === 'ollama'), release }));
   // ponytail: in-memory limit is per process; use a shared store only when deploying multiple instances.
   const limiter = rateLimit({ windowMs: 60000, limit: config.rateLimit, standardHeaders: 'draft-8', legacyHeaders: false, handler: (req, res) => res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: '操作次數較多，請稍後再試。', retryable: true } }) });
   app.use('/api', limiter, express.json({ limit: '16kb' }));
