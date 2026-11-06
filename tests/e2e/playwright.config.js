@@ -20,7 +20,7 @@ export default defineConfig({
   use: { baseURL: deployed ?? `http://127.0.0.1:${SITE}`, browserName: engine, ...device },
   webServer: deployed ? undefined : [
     {
-      command: `npm run dev --workspace @navi/web -- --port ${NAVI} --strictPort`,
+      command: `npm run dev --workspace @navi/web -- --port ${NAVI} --strictPort --config ../../tests/e2e/vite.config.js`,
       url: `http://127.0.0.1:${NAVI}/embed?mode=demo`,
       reuseExistingServer: false,
       timeout: 90_000,

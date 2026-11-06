@@ -15,8 +15,8 @@ const navi = page => page.frameLocator('iframe[title="NAVI 服務導航助手"]'
 const ring = page => navi(page).locator('[role=progressbar][aria-label="準備完成度"]').first();
 
 async function formalBackend(context) {
-  const origin = 'https://app.navitw.com', demo = createDemoProvider();
-  const state = { calls: [], fail: null, cookie: null };
+  const origin = 'http://127.0.0.1:4186', demo = createDemoProvider();
+  const state = { calls: [], fail: null };
   const config = { ...loadConfig({ AI_MODE: 'live', AI_SYNTHETIC_TEST_ONLY: 'true', AI_PUBLIC_SYNTHETIC: 'true', GEMINI_API_KEY: 'synthetic-mock-key', GEMINI_FREE_TIER_CONFIRMED: 'true', WEB_ORIGINS: origin }), rateLimit: 1000 };
   const provider = createGeminiProvider(config, async (_url, options) => {
     const body = JSON.parse(options.body), message = body.contents[0].parts[0].text;
@@ -36,16 +36,14 @@ async function formalBackend(context) {
     return new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(raw) }] } }] }));
   });
   // Only the HTTP transport is mocked; inline PDF bytes and schema validation use the actual provider.
-  const server = createApp(config, provider).listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
-  await context.route('**/api/**', async route => {
-    const request = route.request();
-    const response = await fetch(base + new URL(request.url()).pathname + new URL(request.url()).search, { method: request.method(), headers: { Origin: origin, ...(state.cookie ? { Cookie: state.cookie } : {}), ...(request.headers()['content-type'] ? { 'Content-Type': request.headers()['content-type'] } : {}) }, ...(request.postDataBuffer() ? { body: request.postDataBuffer() } : {}) });
-    state.cookie = response.headers.get('set-cookie')?.split(';')[0] ?? state.cookie;
-    await route.fulfill({ status: response.status, headers: { 'Content-Type': 'application/json', ...(response.headers.has('X-NAVI-AI-Mode') ? { 'X-NAVI-AI-Mode': response.headers.get('X-NAVI-AI-Mode') } : {}) }, body: await response.text() }).catch(() => {});
-  });
-  state.close = async () => { await context.unroute('**/api/**'); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); };
-  state.journey = id => fetch(`${base}/api/journeys/${id}`, { headers: { Origin: origin, Cookie: state.cookie } }).then(r => r.json());
+  const server = createApp(config, provider).listen(4188, '127.0.0.1');
+  await new Promise((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
+  const base = 'http://127.0.0.1:4188';
+  state.close = async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); };
+  state.journey = async id => {
+    const cookie = (await context.cookies(origin)).find(item => item.name === 'navi-loopback-test');
+    return fetch(`${base}/api/journeys/${id}`, { headers: { Origin: origin, Cookie: '__Host-navi-test=' + cookie?.value } }).then(r => r.json());
+  };
   return state;
 }
 
