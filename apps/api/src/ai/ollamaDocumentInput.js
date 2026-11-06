@@ -99,10 +99,10 @@ export async function prepareOllamaDocument(upload, allowedHashes, signal) {
   }
   if (bytes.length > MAX_PDF_BYTES || bytes.subarray(0, 5).toString() !== '%PDF-') throw deny();
   const info = (await poppler('pdfinfo', ['-'], bytes, { signal, maxOutputBytes: 8192 })).toString('utf8');
-  const pages = Number(/^Pages:\\s*(\\d+)$/m.exec(info)?.[1]);
+  const pages = Number(/^Pages:\s*(\d+)$/m.exec(info)?.[1]);
   if (!Number.isSafeInteger(pages) || pages < 1 || pages > MAX_PDF_PAGES) throw deny('PDF 頁數超過目前的安全辨識上限（2 頁）。');
-  const text = (await poppler('pdftotext', ['-f', '1', '-l', String(pages), '-layout', '-', '-'], bytes, { signal })).toString('utf8').replace(/\\x00/g, '').trim();
-  if (text.length >= 80) return { text: '以下是從合成 PDF 文字層擷取的原文，不代表內容真實。只抽取原文明确載明的欄位：\\n' + text.slice(0, MAX_EXTRACTED_TEXT), media: null, kind: 'text_pdf' };
+  const text = (await poppler('pdftotext', ['-f', '1', '-l', String(pages), '-layout', '-', '-'], bytes, { signal })).toString('utf8').replace(/\x00/g, '').trim();
+  if (text.length >= 80) return { text: '以下是從合成 PDF 文字層擷取的原文，不代表內容真實。只抽取原文明確載明的欄位：\n' + text.slice(0, MAX_EXTRACTED_TEXT), media: null, kind: 'text_pdf' };
   const media = [];
   for (let page = 1; page <= pages; page++) {
     const png = await poppler('pdftoppm', ['-f', String(page), '-l', String(page), '-scale-to', '1200', '-singlefile', '-png', '-'], bytes, { signal, maxOutputBytes: MAX_IMAGE_BYTES });
