@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - feat/ollama-offline
+      - feat/ollama-product-cutover
       - main
 
 permissions:
@@ -41,6 +42,10 @@ jobs:
           node --check scripts/ollama/vision40.mjs
       - name: Ollama provider mocked offline tests — zero generation
         run: node --import ./apps/api/test/networkGuard.js --test apps/api/test/ollama.test.js
+      - name: Shared broker, mTLS and real Poppler preprocessing
+        run: node --import ./apps/api/test/networkGuard.js --test scripts/ollama/broker/*.test.mjs apps/api/test/ollamaPdf.test.js
+      - name: Dedicated deployment and safe rollback
+        run: python3 -m unittest discover -s scripts/deploy/dedicated -p 'test_*.py'
       - name: Vision40 synthetic fixtures dry run — zero generation
         run: node scripts/ollama/vision40.mjs --dry-run --limit 40 > /tmp/navi-vision40-dry-run.json
       - name: Rasterize all 40 synthetic PDFs without model generation
