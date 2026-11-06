@@ -6,7 +6,10 @@ function start() {
   const path = process.argv[2];
   if (process.argv.length !== 3 || !isAbsolute(path)) throw new Error('Provide an absolute credential file path');
   const stat = lstatSync(path);
-  if (!stat.isFile() || stat.size > 8192 || stat.mode & 0o077 ||
+  const systemdCredential = path === '/run/credentials/navi-inference-broker.service/clients.json' &&
+    process.env.CREDENTIALS_DIRECTORY === '/run/credentials/navi-inference-broker.service' && stat.uid === 0;
+  const unsafeBits = systemdCredential ? 0o037 : 0o077;
+  if (!stat.isFile() || stat.size > 8192 || stat.mode & unsafeBits ||
       ![0, process.getuid()].includes(stat.uid)) throw new Error('Unsafe credential file');
   const clients = JSON.parse(readFileSync(path, 'utf8'));
   const broker = createInferenceBroker({ clients, log: event => console.log(JSON.stringify(event)) });
